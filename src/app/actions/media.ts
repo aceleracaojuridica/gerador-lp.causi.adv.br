@@ -1,77 +1,49 @@
 "use server";
 
 import type { ActionResult } from "@/app/actions/lps";
-import { getUserSubdomain } from "@/lib/landing-pages/lp-store";
-import {
-  buildMediaPath,
-  persistMediaResource,
-  uploadMediaToPath,
-} from "@/lib/landing-pages/media-storage";
+import { mapLpDbError } from "@/lib/errors";
+import { persistMediaToGallery } from "@/lib/landing-pages/media-storage";
 import type { MediaResource } from "@/lib/landing-pages/media-types";
 import { requireLpSession } from "@/lib/session";
 
 function toMessage(err: unknown, fallback: string): string {
-  return err instanceof Error ? err.message : fallback;
+  if (err instanceof Error) {
+    if (err.message === "UNAUTHENTICATED") return "Não autenticado.";
+    if (err.message === "FORBIDDEN")
+      return "Acesso negado ao gerador de landing pages.";
+    const mapped = mapLpDbError(err);
+    return mapped.description || err.message;
+  }
+  return fallback;
 }
 
 export type UploadMediaResult = ActionResult & { url?: string };
 
-/** Upload imediato de mídia para o Supabase Storage (editor). */
+/** Upload de mídia para a galeria da conta (editor). */
 export async function uploadLpMediaAction(
-  slug: string,
-  resource: MediaResource,
+  _slug: string,
+  _resource: MediaResource,
   source: string,
+  originalFilename?: string,
 ): Promise<UploadMediaResult> {
-  let userId: string;
   try {
-    userId = (await requireLpSession()).user.id;
+    const session = await requireLpSession();
+    const url = await persistMediaToGallery(session, source, originalFilename);
+    return { ok: true, url };
   } catch (err) {
     return {
       ok: false,
-      error: toMessage(err, "Não autenticado."),
+      error: toMessage(err, "Erro ao enviar imagem."),
     };
-  }
-
-  const safeSlug = slug?.trim();
-  if (!safeSlug) return { ok: false, error: "Slug não informado." };
-  if (!source?.trim()) return { ok: false, error: "Imagem vazia." };
-
-  try {
-    const subdomain = await getUserSubdomain(userId);
-    const path = buildMediaPath(subdomain, userId, safeSlug, resource);
-    const url = await uploadMediaToPath(source, path);
-    return { ok: true, url };
-  } catch (err) {
-    return { ok: false, error: toMessage(err, "Erro ao enviar imagem.") };
   }
 }
 
-/** Atalho para upload com persistência por recurso. */
+/** Atalho: envia para galeria e retorna URL pública. */
 export async function persistLpMediaAction(
   slug: string,
   resource: MediaResource,
   source: string,
+  originalFilename?: string,
 ): Promise<UploadMediaResult> {
-  let userId: string;
-  try {
-    userId = (await requireLpSession()).user.id;
-  } catch (err) {
-    return {
-      ok: false,
-      error: toMessage(err, "Não autenticado."),
-    };
-  }
-
-  try {
-    const subdomain = await getUserSubdomain(userId);
-    const url = await persistMediaResource(source, {
-      subdomain,
-      userId,
-      slug,
-      resource,
-    });
-    return { ok: true, url };
-  } catch (err) {
-    return { ok: false, error: toMessage(err, "Erro ao salvar imagem.") };
-  }
+  return uploadLpMediaAction(slug, resource, source, originalFilename);
 }

@@ -5,6 +5,7 @@ const RESERVED_SEGMENTS = new Set([
   "confirmar",
   "redefinir",
   "nova",
+  "galeria",
   "lp",
   "dashboard",
   "debug",

@@ -1,7 +1,8 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createLpServiceClient } from "@/lib/supabase/lp-client";
 import { getLpAdminEnv } from "@/lib/env";
+import { createClient } from "@supabase/supabase-js";
 
 /** Cliente admin do banco de LPs (Projeto B). Nunca expor ao browser. */
 export function lpAdmin() {
@@ -10,3 +11,6 @@ export function lpAdmin() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
+
+/** Alias para jobs de migração e leitura de profiles. */
+export { createLpServiceClient };

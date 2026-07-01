@@ -17,12 +17,6 @@ export function AutoTextarea({ value, onChange, ...props }: AutoTextareaProps) {
   }, [value]);
 
   return (
-    <Textarea
-      ref={ref}
-      value={value}
-      onChange={onChange}
-      rows={1}
-      {...props}
-    />
+    <Textarea ref={ref} value={value} onChange={onChange} rows={1} {...props} />
   );
 }

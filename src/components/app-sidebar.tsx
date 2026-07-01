@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  Add,
   ChevronLeft,
   EventAvailable,
   GridView,
   Help,
+  Home,
   IdCard,
+  Image,
   Inbox,
   Paid,
   Robot2,
@@ -20,6 +23,7 @@ import CausiLogoIcon from "@/components/icons/causi-logo";
 import { SupportModal } from "@/components/support-modal";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/use-access-control";
+import { useLpAccess } from "@/components/lp-access-provider";
 import { useSession } from "@/hooks/use-session";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -72,6 +76,7 @@ export function AppSidebar({
   const [localIsOpen, setLocalIsOpen] = React.useState(false);
   const [supportModalOpen, setSupportModalOpen] = React.useState(false);
   const session = useSession();
+  const hasLpAccess = useLpAccess();
   const { hasFeature } = useAccessControl();
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : localIsOpen;
   const setIsOpen = externalSetIsOpen || setLocalIsOpen;
@@ -98,6 +103,26 @@ export function AppSidebar({
     },
     [currentPath],
   );
+
+  const lpNavItems: NavItem[] = [
+    {
+      href: "/",
+      icon: Home,
+      label: "Página inicial",
+    },
+    {
+      href: "/nova",
+      icon: Add,
+      label: "Nova landing page",
+      routes: ["/nova"],
+    },
+    {
+      href: "/galeria",
+      icon: Image,
+      label: "Galeria de imagens",
+      routes: ["/galeria"],
+    },
+  ];
 
   const navItems = [
     {
@@ -135,6 +160,8 @@ export function AppSidebar({
     { href: "/canais", icon: Inbox, label: "Canais", feature: "channels" },
     { href: "/agentes", icon: Robot2, label: "Agentes", feature: "agents" },
   ].filter((item) => !item.feature || hasFeature(item.feature));
+
+  const mainNavItems = [...(hasLpAccess ? lpNavItems : []), ...navItems];
 
   const bottomItems: BottomNavItem[] = [
     {
@@ -251,7 +278,7 @@ export function AppSidebar({
 
         {/* Main Navigation */}
         <nav className="flex flex-col gap-1 w-full items-center">
-          {navItems.map((item) => {
+          {mainNavItems.map((item) => {
             const isActive = isNavItemActive(item);
             return (
               <Tooltip key={item.href}>

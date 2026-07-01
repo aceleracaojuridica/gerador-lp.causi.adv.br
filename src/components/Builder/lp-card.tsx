@@ -4,15 +4,15 @@ import { Delete, OpenInNew, Web } from "@material-symbols-svg/react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { deleteLpAction } from "@/app/actions/lps";
 import { useLpAccess } from "@/components/lp-access-provider";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useLpPermissions } from "@/hooks/use-lp-permissions";
 import { isAccessDeniedError } from "@/lib/errors";
 import type { LpListPreview } from "@/lib/landing-pages/lp-preview";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
-import { showAccessDeniedToast } from "@/lib/toast";
+import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type LpCardProps = {
@@ -21,20 +21,41 @@ type LpCardProps = {
   tema: string;
   status: "draft" | "published";
   preview: LpListPreview;
+  createdByUserId: string;
+  createdByLabel?: string;
+  isOwnLp?: boolean;
 };
 
-export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
+export function LpCard({
+  slug,
+  name,
+  tema,
+  status,
+  preview,
+  createdByUserId,
+  createdByLabel,
+  isOwnLp,
+}: LpCardProps) {
   const router = useRouter();
   const hasLpAccess = useLpAccess();
+  const { canDelete, canEdit, session } = useLpPermissions(createdByUserId);
   const [excluindo, setExcluindo] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const statusLabel = status === "published" ? "Publicada" : "Rascunho";
+  const showCreator =
+    createdByLabel && createdByUserId !== session.user.id && !isOwnLp;
 
   function pedirExclusao(event: React.MouseEvent) {
     event.stopPropagation();
     if (!hasLpAccess) {
       showAccessDeniedToast();
+      return;
+    }
+    if (!canDelete) {
+      showLpMessageError(
+        "Somente o proprietário da conta pode excluir landing pages.",
+      );
       return;
     }
     setDeleteOpen(true);
@@ -48,7 +69,7 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
         if (isAccessDeniedError(res.error)) {
           showAccessDeniedToast();
         } else {
-          throw new Error(res.error);
+          showLpMessageError(res.error);
         }
         return;
       }
@@ -56,10 +77,18 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
       router.refresh();
     } catch {
       setExcluindo(false);
-      toast.error("Não foi possível excluir", {
-        description: "Tente de novo em instantes.",
-      });
+      showLpMessageError(
+        "Não foi possível excluir. Tente de novo em instantes.",
+      );
     }
+  }
+
+  function openEditor() {
+    if (!canEdit) {
+      showLpMessageError("Você só pode editar landing pages que você criou.");
+      return;
+    }
+    router.push(`/lp/${slug}`);
   }
 
   return (
@@ -70,7 +99,7 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
           if (!excluindo) setDeleteOpen(open);
         }}
         title={`Excluir "${name}"?`}
-        description="Esta ação não pode ser desfeita. A página e seus arquivos serão removidos permanentemente."
+        description="Esta ação não pode ser desfeita. A página será removida permanentemente."
         confirmLabel="Excluir"
         variant="destructive"
         loading={excluindo}
@@ -81,7 +110,7 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
         <button
           type="button"
           className="w-full cursor-pointer rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50"
-          onClick={() => router.push(`/lp/${slug}`)}
+          onClick={openEditor}
         >
           <div className="mb-3 flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full border-6 border-border bg-primary/10 sm:size-12">
@@ -98,6 +127,16 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
           </div>
 
           <div className="space-y-1.5">
+            {showCreator ? (
+              <div className="flex items-center gap-2">
+                <span className="w-12 shrink-0 text-xs text-muted-foreground sm:w-14 sm:text-sm">
+                  Criador
+                </span>
+                <span className="flex-1 truncate text-xs sm:text-sm">
+                  {createdByLabel}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center gap-2">
               <span className="w-12 shrink-0 text-xs text-muted-foreground sm:w-14 sm:text-sm">
                 Tema
@@ -144,18 +183,20 @@ export function LpCard({ slug, name, tema, status, preview }: LpCardProps) {
               </a>
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-            aria-label={`Excluir ${name}`}
-            title="Excluir"
-            onClick={pedirExclusao}
-            disabled={excluindo}
-          >
-            <Delete className="size-5 text-muted-foreground group-hover:text-destructive" />
-          </Button>
+          {canDelete ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+              aria-label={`Excluir ${name}`}
+              title="Excluir"
+              onClick={pedirExclusao}
+              disabled={excluindo}
+            >
+              <Delete className="size-5 text-muted-foreground group-hover:text-destructive" />
+            </Button>
+          ) : null}
         </div>
       </div>
     </>

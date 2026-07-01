@@ -104,7 +104,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const slug = await allocateUniqueLpSlug(slugBase, isLpSlugTaken);
+  const slug = await allocateUniqueLpSlug(slugBase, (s) =>
+    isLpSlugTaken(user, s),
+  );
   if (!slug) {
     return Response.json(
       {
@@ -208,7 +210,7 @@ export async function POST(request: Request) {
 
   // 4. Salva e devolve o slug
   try {
-    await saveLp(user.user.id, {
+    await saveLp(user, {
       slug,
       name,
       tema,

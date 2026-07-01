@@ -1,0 +1,95 @@
+{
+  "causi": {
+    "billing": {
+      "plans": [
+        {
+          "idx": 7,
+          "id": 9,
+          "created_at": "2026-06-26 15:28:53.803728+00",
+          "updated_at": "2026-06-26 15:28:53.803728+00",
+          "name": "Landing Pages",
+          "slug": "landing_pages",
+          "description": null,
+          "base_price": "0",
+          "base_limits": "{\"max_users\": 1, \"max_channels\": 0, \"max_contacts\": 0, \"max_pipelines\": 1}",
+          "features": "{\"classroom\": true}",
+          "is_active": false,
+          "order": 8,
+          "trial_days": 0,
+          "tier_level": 3
+        }
+      ]
+    }
+  },
+  "gerador": {
+    "public": {
+      "profiles": [
+        {
+          "idx": 0,
+          "id": "02f986ac-bb3a-46ca-bbba-18444a8f35b7",
+          "subdomain": "cafia",
+          "created_at": "2026-05-28 20:16:14.054815"
+        },
+        {
+          "idx": 1,
+          "id": "0d215da6-ea43-4570-9c28-29be85719a3c",
+          "subdomain": "id-preview-831181fc--cb38a887-2134-45d5-a3b2-62a04db999a0",
+          "created_at": "2026-06-18 19:38:51.471458"
+        },
+        {
+          "idx": 2,
+          "id": "11c24c36-e6d2-43a4-99ad-7d96a248c539",
+          "subdomain": "marcelovieiraadvogados",
+          "created_at": "2026-04-08 18:14:35.360707"
+        }
+      ],
+      "leads": [
+        {
+          "idx": 0,
+          "id": 2,
+          "created_at": "2026-06-05 17:02:19+00",
+          "nome": "Rafael Stefano",
+          "telefone": "(11) 99910-1217",
+          "page_url": "https://cafia.advlanding.com.br/calculadora-itbi",
+          "subdomain": "cafia"
+        },
+        {
+          "idx": 1,
+          "id": 3,
+          "created_at": "2026-06-08 00:22:28+00",
+          "nome": "Erick",
+          "telefone": "(11) 98859-8743",
+          "page_url": "https://cafia.advlanding.com.br/calculadora-itbi",
+          "subdomain": "cafia"
+        },
+        {
+          "idx": 3,
+          "id": 5,
+          "created_at": "2026-06-08 17:20:44+00",
+          "nome": "Andrea Bastos Evangelista",
+          "telefone": "(11) 95133-7654",
+          "page_url": "https://cafia.advlanding.com.br/calculadora-itbi",
+          "subdomain": "cafia"
+        }
+      ],
+      "landing_pages": [
+        {
+          "idx": 0,
+          "id": "032b8753-b6bc-4372-8637-b33cac293772",
+          "causi_user_id": "eee1c81d-06de-49d2-9a4c-4ef216efbaed",
+          "profile_id": null,
+          "slug": "darlley-dev",
+          "name": "Darlley Dev",
+          "tema": "direito previdenciário",
+          "schema": "{\"dor\": {\"cards\": [{\"icon\": \"alert\", \"text\": \"A burocracia pode atrasar a concessão de benefícios.\", \"title\": \"Processos demorados\"}, {\"icon\": \"file-x\", \"text\": \"Falta de informações pode prejudicar seus direitos.\", \"title\": \"Documentação inadequada\"}, {\"icon\": \"timer\", \"text\": \"Perder prazos pode complicar ainda mais seu caso.\", \"title\": \"Prazos apertados\"}], \"intro\": \"Muitos assegurados enfrentam dificuldades na obtenção de seus direitos previdenciários. Entendemos como as burocracias e dúvidas podem ser desafiadoras.\", \"eyebrow\": \"Compreendemos seus desafios\", \"headline\": {\"em\": \"dificuldades no acesso\", \"pre\": \"Está enfrentando \", \"post\": \" ao seu benefício? \"}}, \"faq\": {\"items\": [{\"a\": \"Documentos pessoais, comprovantes de tempo de contribuição e laudos médicos, quando aplicável.\", \"q\": \"Quais documentos são necessários para requerer um benefício?\"}, {\"a\": \"É possível recorrer à decisão. Analisamos o motivo e orientamos sobre os passos a seguir.\", \"q\": \"O que fazer se meu benefício for negado?\"}, {\"a\": \"Revisamos os critérios utilizados para concessão para identificar possíveis ajustes.\", \"q\": \"Como funciona a revisão de benefício?\"}, {\"a\": \"Depende do tipo de benefício. Recomendamos agir rapidamente para evitar complicações.\", \"q\": \"Qual o prazo para solicitar um benefício previdenciário?\"}], \"eyebrow\": \"Perguntas Frequentes\", \"headline\": {\"em\": \"dúvidas comuns\", \"pre\": \"Esclareça suas \", \"post\": \"\"}}, \"seo\": {\"title\": \"Direito Previdenciário | Darlley Dev\", \"favicon\": \"\", \"ogImage\": \"https://wtjvgnybroekzcugfhch.supabase.co/storage/v1/object/public/gerador-lp-assets/466/gallery/d4e5abf5-a55d-4390-a49c-75487176f952.webp\", \"ogTitle\": \"\", \"keywords\": \"Direito Previdenciário, Direito Previdenciário, Campo Grande/MS, Darlley Dev\", \"siteName\": \"Darlley Dev\", \"indexable\": false, \"description\": \"Acesse seus direitos previdenciários com segurança. Agende atendimento para análise personalizada. Sem promessas de resultados garantidos.\", \"canonicalUrl\": \"\", \"ogDescription\": \"\"}, \"hero\": {\"sub\": \"Nossa equipe oferece orientação especializada em direitos previdenciários, garantindo que você compreenda e acesse seus direitos.\", \"eyebrow\": \"Direito Previdenciário\", \"features\": [{\"icon\": \"shield-check\", \"text\": \"Tratamos cada caso com atenção única.\", \"title\": \"Orientação Personalizada\"}, {\"icon\": \"clock\", \"text\": \"Respostas rápidas às suas necessidades.\", \"title\": \"Atendimento Ágil\"}, {\"icon\": \"user-check\", \"text\": \"Profissionais focados na área previdenciária.\", \"title\": \"Equipe Especializada\"}], \"headline\": {\"em\": \"benefício com segurança\", \"pre\": \"Tenha acesso ao seu \", \"post\": \"\"}, \"ctaPrimary\": \"Agendar atendimento\", \"ctaSecondary\": \"Tirar minha dúvida\"}, \"areas\": {\"cta\": \"Ver todas as áreas\", \"sub\": \"Exploramos todas as ramificações para garantir seus direitos.\", \"cards\": [{\"icon\": \"home\", \"text\": \"Aconselhamento sobre tipos e direitos de aposentadoria.\", \"title\": \"Aposentadorias\"}, {\"icon\": \"briefcase\", \"text\": \"Orientação para obtenção de auxílios como doença e acidente.\", \"title\": \"Auxílios\"}, {\"icon\": \"badge-dollar\", \"text\": \"Revisamos benefícios para assegurar cálculos corretos.\", \"title\": \"Revisões\"}, {\"icon\": \"heart-pulse\", \"text\": \"Assessoria na obtenção de auxílio ou aposentadoria por incapacidade.\", \"title\": \"Benefícios por Incapacidade\"}], \"eyebrow\": \"Nossas áreas de atuação\", \"headline\": {\"em\": \"em direito previdenciário\", \"pre\": \"Cobertura completa \", \"post\": \"\"}}, \"theme\": {\"ink\": \"#1b2536\", \"brand\": \"#1b2a4a\", \"cream\": \"#faf7f1\", \"accent\": \"#c79a3f\", \"inkSoft\": \"#59647b\", \"brandDark\": \"#111a30\", \"creamDeep\": \"#efe6d6\", \"accentSoft\": \"#e6c87c\"}, \"etapas\": {\"steps\": [{\"text\": \"Você fala com a gente e conta a sua situação, sem compromisso.\", \"title\": \"Primeiro contato\"}, {\"text\": \"Avaliamos os documentos e esclarecemos os seus direitos.\", \"title\": \"Análise do caso\"}, {\"text\": \"Definimos a melhor estratégia e os próximos passos.\", \"title\": \"Plano de ação\"}, {\"text\": \"Conduzimos o caso e atualizamos você até a solução.\", \"title\": \"Acompanhamento\"}], \"eyebrow\": \"Etapas do atendimento\", \"headline\": {\"em\": \"começo ao fim\", \"pre\": \"Simples do \", \"post\": \"\"}}, \"layout\": {\"dor\": \"soCards\", \"hero\": \"split\", \"areas\": \"lista\", \"sobre\": \"fotoLista\", \"tones\": {\"dor\": \"dark\", \"faq\": \"light\", \"hero\": \"dark\", \"areas\": \"light\", \"sobre\": \"dark\", \"equipe\": \"dark\", \"etapas\": \"dark\", \"solucao\": \"light\", \"ctaFinal\": \"dark\"}, \"etapas\": \"timeline\", \"hidden\": {\"ctaFinal\": false}, \"solucao\": \"destaque\"}, \"office\": {\"area\": \"Direito Previdenciário\", \"city\": \"Campo Grande/MS\", \"name\": \"Darlley Dev\", \"tags\": {\"body\": \"\", \"head\": \"\", \"footer\": \"\"}, \"about\": \"O escritório Darlley Dev é especializado em direito previdenciário, oferecendo orientação jurídica personalizada e eficaz para seus clientes. Nossa equipe se dedica a entender as necessidades individuais de cada caso, buscando sempre soluções adequadas e seguras.\", \"email\": \"darlleybrito@gmail.com\", \"fonts\": {\"body\": \"\", \"heading\": \"cinzel\"}, \"domain\": \"\", \"logoBg\": {\"type\": \"transparent\", \"color\": \"\"}, \"address\": \"Vila Danúbio Azul\", \"buttons\": {\"link\": \"\", \"popup\": {\"questions\": []}, \"action\": \"popup\", \"radius\": \"square\"}, \"lawyers\": [], \"logoSrc\": \"\", \"mapsUrl\": \"\", \"metrics\": [], \"product\": \"Direito Previdenciário\", \"socials\": [], \"fullName\": \"Darlley Dev\", \"whatsapp\": \"5567993328678\", \"cardRadius\": \"square\", \"diferenciais\": [], \"heroFeatures\": [{\"icon\": \"shield-check\", \"text\": \"Orientação Personalizada\"}, {\"icon\": \"clock\", \"text\": \"Atendimento Ágil\"}, {\"icon\": \"user-check\", \"text\": \"Equipe Especializada\"}], \"extraContacts\": [], \"sectionImages\": {\"dor\": \"https://wtjvgnybroekzcugfhch.supabase.co/storage/v1/object/public/gerador-lp-assets/466/gallery/37e50d6d-9e9a-41fb-b699-67a4016f04ea.webp\", \"hero\": \"https://wtjvgnybroekzcugfhch.supabase.co/storage/v1/object/public/gerador-lp-assets/466/gallery/eb634460-e8e6-45b5-ac6f-30cdc97a3144.webp\", \"sobre\": \"https://wtjvgnybroekzcugfhch.supabase.co/storage/v1/object/public/gerador-lp-assets/466/gallery/ec577d0d-842f-431c-afb9-72c8db8b50c9.webp\", \"solucao\": \"https://wtjvgnybroekzcugfhch.supabase.co/storage/v1/object/public/gerador-lp-assets/466/gallery/ea6c6ff9-e6f4-4ba1-80d3-a928d26a3b79.webp\"}, \"extraAddresses\": [], \"whatsappDisplay\": \"(67) 99332-8678\"}, \"solucao\": {\"sub\": \"Estamos prontos para ajudá-lo a acessar seus direitos previdenciários.\", \"cards\": [{\"icon\": \"search\", \"text\": \"Examinamos detalhadamente seu caso.\", \"title\": \"Análise Completa\"}, {\"icon\": \"handshake\", \"text\": \"Explicamos seus direitos de forma acessível.\", \"title\": \"Comunicação Clara\"}, {\"icon\": \"gavel\", \"text\": \"Defendemos seus interesses em todas as etapas.\", \"title\": \"Representação Jurídica\"}, {\"icon\": \"scale\", \"text\": \"Elaboramos a melhor abordagem para seu caso.\", \"title\": \"Estratégia Eficaz\"}], \"eyebrow\": \"Apoio especializado\", \"headline\": {\"em\": \"profissionais dedicados\", \"pre\": \"Conte com \", \"post\": \"\"}}, \"ctaFinal\": {\"cta\": \"Fale com um especialista\", \"sub\": \"Nossas ações são baseadas na defesa dos seus direitos previdenciários. Entre em contato e veja como podemos ajudar.\", \"headline\": {\"em\": \"proteger seus direitos?\", \"pre\": \"Pronto para \", \"post\": \"\"}}, \"customSections\": []}",
+          "created_at": "2026-07-01 14:43:12.944221+00",
+          "updated_at": "2026-07-01 14:44:39.686681+00",
+          "status": "published",
+          "published_at": "2026-07-01 14:44:38.669+00",
+          "account_id": 466,
+          "created_by_user_id": "eee1c81d-06de-49d2-9a4c-4ef216efbaed"
+        }
+      ]
+    }
+  }
+}

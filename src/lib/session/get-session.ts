@@ -85,6 +85,7 @@ export function mapRpcToSession(row: CurrentUserDetailsRow): Session {
 
   const role: SessionRole = {
     id: rawRole?.id ?? 0,
+    slug: rawRole?.slug ?? "user",
     accessLevel: rawRole?.access_level ?? 0,
     permissions:
       (row.role_permissions as unknown as Record<string, string[]>) ?? {},
@@ -153,7 +154,7 @@ function buildFallbackSession(user: User): Session {
       photo: null,
     },
     account: { id: 0, name: "", status: null },
-    role: { id: 0, accessLevel: 0, permissions: {} },
+    role: { id: 0, slug: "user", accessLevel: 0, permissions: {} },
     plan: null,
     subscription: { status: null },
     usage: {

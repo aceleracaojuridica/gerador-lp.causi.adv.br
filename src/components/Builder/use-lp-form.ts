@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { uploadLpMediaAction } from "@/app/actions/media";
 import {
   DEFAULT_LOGO_BG,
   detectLogoBackground,
@@ -13,7 +12,6 @@ import {
   focoGenerico,
   matchFoco,
 } from "@/lib/landing-pages/focos";
-import type { MediaResource } from "@/lib/landing-pages/media-types";
 import type {
   CustomSection,
   Layout,
@@ -216,31 +214,14 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     }));
   }
 
-  async function pushToStorage(dataUrl: string, resource: MediaResource) {
-    if (!slug) return dataUrl;
-    const res = await uploadLpMediaAction(slug, resource, dataUrl);
-    return res.ok && res.url ? res.url : dataUrl;
-  }
-
-  /* ----- fotos do(s) advogado(s) ----- */
-  // Advogados/sócios. 1 = solo (Sobre + card do Hero); 2+ = seção Equipe.
   function onAddLawyerPhotos(files: FileList | File[]) {
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = async () => {
+      reader.onload = () => {
         const dataUrl = String(reader.result);
-        const id = newLawyerId();
         setOffice((o) => ({
           ...o,
           lawyers: [...o.lawyers, { photo: dataUrl, name: "", role: "" }],
-        }));
-        const url = await pushToStorage(dataUrl, { kind: "lawyers", id });
-        if (url === dataUrl) return;
-        setOffice((o) => ({
-          ...o,
-          lawyers: o.lawyers.map((l) =>
-            l.photo === dataUrl ? { ...l, photo: url } : l,
-          ),
         }));
       };
       reader.readAsDataURL(file);
@@ -527,17 +508,6 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
       ...o,
       lawyers: o.lawyers.map((l, idx) => (idx === i ? { ...l, photo } : l)),
     }));
-    void (async () => {
-      const id = newLawyerId();
-      const url = await pushToStorage(photo, { kind: "lawyers", id });
-      if (url === photo) return;
-      setOffice((o) => ({
-        ...o,
-        lawyers: o.lawyers.map((l, idx) =>
-          idx === i ? { ...l, photo: url } : l,
-        ),
-      }));
-    })();
   }
   // Define o enquadramento (ponto focal % x/y) da foto de um advogado.
   function setLawyerFocal(i: number, focal: { x: number; y: number }) {
@@ -550,17 +520,11 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
   // Imagem por seção (Hero/Dor/Sobre): o usuário sobe no editor e escolhe onde.
   function onSectionImage(key: SectionImageKey, file: File) {
     const reader = new FileReader();
-    reader.onload = async () => {
+    reader.onload = () => {
       const dataUrl = String(reader.result);
       setOffice((o) => ({
         ...o,
         sectionImages: { ...o.sectionImages, [key]: dataUrl },
-      }));
-      const url = await pushToStorage(dataUrl, { kind: "sections", key });
-      if (url === dataUrl) return;
-      setOffice((o) => ({
-        ...o,
-        sectionImages: { ...o.sectionImages, [key]: url },
       }));
     };
     reader.readAsDataURL(file);
@@ -604,12 +568,21 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
         );
       };
       img.src = dataUrl;
-      void (async () => {
-        const url = await pushToStorage(dataUrl, { kind: "logo" });
-        if (url !== dataUrl) set("logoSrc", url);
-      })();
     };
     reader.readAsDataURL(file);
+  }
+
+  function setLogoUrl(url: string) {
+    set("logoSrc", url);
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => {
+      const pal = extractPalette(img);
+      setTheme(pal);
+      setOffice((o) => ({ ...o, logoBg: detectLogoBackground(img) }));
+      setAutoTheme(true);
+    };
+    img.src = url;
   }
 
   function resetTheme() {
@@ -729,6 +702,7 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     setSectionImageUrl,
     onPhone,
     onLogo,
+    setLogoUrl,
     theme,
     autoTheme,
     resetTheme,

@@ -1,25 +1,50 @@
-import { lpAdmin } from "@/lib/supabase/admin";
-import { GENERIC_ETAPAS } from "./focos";
-import { buildLpListPreview, type LpListPreview } from "./lp-preview";
+import type { LpDbClient } from "@/lib/supabase/lp-client";
 import {
-  GERADOR_LP_BUCKET,
-  persistLpSchemaMedia,
-  storageSiteRoot,
-} from "./media-storage";
+  createLpAnonClient,
+  createLpServiceClient,
+  createLpUserClient,
+  type LpContext,
+  sessionToLpContext,
+} from "@/lib/supabase/lp-client";
+import type { Session } from "@/lib/session/types";
+import { GENERIC_ETAPAS } from "./focos";
+import { syncImageUsagesFromSchema } from "./image-usages";
+import { buildLpListPreview, type LpListPreview } from "./lp-preview";
+import { persistLpSchemaMedia } from "./media-storage";
 import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
 
-const db = () => lpAdmin();
-
 const safeSlug = (s: string) =>
   (s || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type LandingPageRow = {
+  id: string;
+  slug: string;
+  name: string;
+  tema: string;
+  status: "draft" | "published";
+  schema: StoredLp["schema"];
+  created_by_user_id: string;
+  causi_user_id: string;
+};
+
+function throwDbError(error: { message: string; code?: string }): never {
+  throw Object.assign(new Error(error.message), { code: error.code });
+}
+
 /** Verifica se um slug já está em uso (qualquer usuário). */
-export async function isLpSlugTaken(slug: string): Promise<boolean> {
+export async function isLpSlugTaken(
+  session: Session,
+  slug: string,
+): Promise<boolean> {
   const safe = safeSlug(slug);
   if (!safe) return true;
-  const { data } = await db()
+  const db = createLpUserClient(session);
+  const { data } = await db
     .from("landing_pages")
     .select("id")
     .eq("slug", safe)
@@ -27,21 +52,12 @@ export async function isLpSlugTaken(slug: string): Promise<boolean> {
   return !!data;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-type LandingPageRow = {
-  slug: string;
-  name: string;
-  tema: string;
-  status: "draft" | "published";
-  schema: StoredLp["schema"];
-};
-
-/** Vínculo opcional com `profiles` (Lovable) quando o usuário tem subdomínio. */
-async function resolveProfileId(causiUserId: string): Promise<string | null> {
+async function resolveProfileId(
+  db: LpDbClient,
+  causiUserId: string,
+): Promise<string | null> {
   if (!UUID_RE.test(causiUserId)) return null;
-  const { data } = await db()
+  const { data } = await db
     .from("profiles")
     .select("id")
     .eq("id", causiUserId)
@@ -57,20 +73,25 @@ export type LpListItem = {
   status: "draft" | "published";
   preview: LpListPreview;
   updatedAt: string | null;
+  createdByUserId: string;
 };
 
-/** Lista resumida das LPs do usuário (para a galeria). */
-export async function listLps(userId: string): Promise<LpListItem[]> {
-  const { data, error } = await db()
+/** Lista resumida das LPs da conta (para a galeria). */
+export async function listLps(session: Session): Promise<LpListItem[]> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
+  const { data, error } = await db
     .from("landing_pages")
-    .select("slug,name,tema,status,schema,updated_at")
-    .eq("causi_user_id", userId)
+    .select("slug,name,tema,status,schema,updated_at,created_by_user_id")
+    .eq("account_id", ctx.accountId)
     .order("updated_at", { ascending: false });
-  if (error || !data) return [];
+  if (error) throwDbError(error);
+  if (!data) return [];
+
   return (
     data as Pick<
       LandingPageRow,
-      "slug" | "name" | "tema" | "status" | "schema"
+      "slug" | "name" | "tema" | "status" | "schema" | "created_by_user_id"
     >[]
   ).map((r) => {
     const slug = r.slug;
@@ -85,23 +106,50 @@ export async function listLps(userId: string): Promise<LpListItem[]> {
       status: r.status ?? "draft",
       preview: buildLpListPreview({ schema, slug, tema, name }),
       updatedAt: (r as { updated_at?: string | null }).updated_at ?? null,
+      createdByUserId: r.created_by_user_id,
     };
   });
 }
 
-/** Carrega uma LP completa do usuário pelo slug. */
+/** Carrega metadados da LP (sem schema) para checagem de permissão. */
+export async function getLpMeta(
+  session: Session,
+  slug: string,
+): Promise<{
+  id: string;
+  slug: string;
+  createdByUserId: string;
+} | null> {
+  const safe = safeSlug(slug);
+  const db = createLpUserClient(session);
+  const { data, error } = await db
+    .from("landing_pages")
+    .select("id,slug,created_by_user_id")
+    .eq("slug", safe)
+    .maybeSingle();
+  if (error) throwDbError(error);
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    slug: data.slug as string,
+    createdByUserId: data.created_by_user_id as string,
+  };
+}
+
+/** Carrega uma LP completa pelo slug (conta ativa). */
 export async function getLp(
-  userId: string,
+  session: Session,
   slug: string,
 ): Promise<StoredLp | null> {
   const safe = safeSlug(slug);
-  const { data, error } = await db()
+  const db = createLpUserClient(session);
+  const { data, error } = await db
     .from("landing_pages")
     .select("slug,name,tema,status,schema")
-    .eq("causi_user_id", userId)
     .eq("slug", safe)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) throwDbError(error);
+  if (!data) return null;
   const row = data as LandingPageRow;
   return migrate({
     slug: row.slug,
@@ -112,30 +160,39 @@ export async function getLp(
   });
 }
 
-/** Salva (cria ou sobrescreve) uma LP do usuário. */
-export async function saveLp(userId: string, lp: StoredLp): Promise<void> {
+/** Salva (cria ou sobrescreve) uma LP da conta. */
+export async function saveLp(session: Session, lp: StoredLp): Promise<void> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
   const safe = safeSlug(lp.slug);
   if (!safe) throw new Error("slug inválido");
 
-  // Slug é global: garante que não está ocupado por outro usuário
-  const { data: conflict } = await db()
+  const { data: conflict } = await db
     .from("landing_pages")
-    .select("id")
+    .select("id,account_id,created_by_user_id")
     .eq("slug", safe)
-    .neq("causi_user_id", userId)
     .maybeSingle();
-  if (conflict) throw new Error(`slug-conflict:${safe}`);
 
-  const subdomain = await getUserSubdomain(userId);
+  if (conflict && Number(conflict.account_id) !== ctx.accountId) {
+    throw new Error(`slug-conflict:${safe}`);
+  }
+
+  const subdomain = await getUserSubdomain(session);
   const schema = await persistLpSchemaMedia(lp.schema, {
+    session,
     subdomain,
-    userId,
+    userId: ctx.userId,
+    accountId: ctx.accountId,
     slug: safe,
   });
 
-  const profileId = await resolveProfileId(userId);
+  const profileId = await resolveProfileId(db, ctx.userId);
   const row = {
-    causi_user_id: userId,
+    causi_user_id: ctx.userId,
+    account_id: ctx.accountId,
+    created_by_user_id: conflict
+      ? (conflict.created_by_user_id as string)
+      : ctx.userId,
     profile_id: profileId,
     slug: safe,
     name: lp.name ?? "",
@@ -145,50 +202,48 @@ export async function saveLp(userId: string, lp: StoredLp): Promise<void> {
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await db()
+  const { data: saved, error } = await db
     .from("landing_pages")
-    .upsert(row, { onConflict: "slug" });
-  if (error) throw new Error(error.message);
+    .upsert(row, { onConflict: "slug" })
+    .select("id")
+    .single();
+  if (error) throwDbError(error);
+
+  await syncImageUsagesFromSchema(db, saved.id as string, schema);
 }
 
-/**
- * Publica uma LP: muda status para 'published' e registra published_at.
- * Só altera a LP se pertencer ao usuário.
- */
-export async function publishLp(userId: string, slug: string): Promise<void> {
+export async function publishLp(session: Session, slug: string): Promise<void> {
   const safe = safeSlug(slug);
   if (!safe) throw new Error("slug inválido");
-  const { error } = await db()
+  const db = createLpUserClient(session);
+  const { error } = await db
     .from("landing_pages")
     .update({ status: "published", published_at: new Date().toISOString() })
-    .eq("causi_user_id", userId)
     .eq("slug", safe);
-  if (error) throw new Error(error.message);
+  if (error) throwDbError(error);
 }
 
-/**
- * Despublica uma LP: volta para draft. Só altera se pertencer ao usuário.
- */
-export async function unpublishLp(userId: string, slug: string): Promise<void> {
+export async function unpublishLp(
+  session: Session,
+  slug: string,
+): Promise<void> {
   const safe = safeSlug(slug);
   if (!safe) throw new Error("slug inválido");
-  const { error } = await db()
+  const db = createLpUserClient(session);
+  const { error } = await db
     .from("landing_pages")
     .update({ status: "draft", published_at: null })
-    .eq("causi_user_id", userId)
     .eq("slug", safe);
-  if (error) throw new Error(error.message);
+  if (error) throwDbError(error);
 }
 
-/**
- * Carrega uma LP pelo slug sem exigir autenticação — usada pela rota pública
- * `app/[slug]` (acesso via subdomínio). Só retorna LPs com status 'published'.
- */
+/** LP publicada — sem autenticação (cliente anônimo + policy pública). */
 export async function getLpPublic(slug: string): Promise<StoredLp | null> {
   const safe = safeSlug(slug);
   if (!safe) return null;
 
-  const { data, error } = await db()
+  const db = createLpAnonClient();
+  const { data, error } = await db
     .from("landing_pages")
     .select("slug,name,tema,status,schema")
     .eq("slug", safe)
@@ -205,52 +260,22 @@ export async function getLpPublic(slug: string): Promise<StoredLp | null> {
   });
 }
 
-/** Remove uma LP do usuário pelo slug e limpa os assets no Storage. */
-export async function deleteLp(userId: string, slug: string): Promise<void> {
+/** Remove uma LP (RLS: owner/super_admin). */
+export async function deleteLp(session: Session, slug: string): Promise<void> {
   const safe = safeSlug(slug);
   if (!safe) return;
-
-  // Remove a linha do banco
-  await db()
-    .from("landing_pages")
-    .delete()
-    .eq("causi_user_id", userId)
-    .eq("slug", safe);
-
-  // Limpa os assets do Storage (melhor esforço — não lança erro se falhar)
-  try {
-    const subdomain = await getUserSubdomain(userId);
-    const prefix = storageSiteRoot(subdomain, userId);
-    const storage = lpAdmin().storage.from(GERADOR_LP_BUCKET);
-
-    // Lista todos os arquivos sob o prefixo da LP (logo, lawyers, sections)
-    const { data: files } = await storage.list(`${prefix}/${safe}`, {
-      limit: 200,
-    });
-    if (files && files.length > 0) {
-      const paths = files.map((f) => `${prefix}/${safe}/${f.name}`);
-      await storage.remove(paths);
-    }
-
-    // Remove também subpastas (sections/, lawyers/, logo/)
-    for (const folder of ["sections", "lawyers", "logo"]) {
-      const { data: sub } = await storage.list(`${prefix}/${safe}/${folder}`, {
-        limit: 200,
-      });
-      if (sub && sub.length > 0) {
-        const paths = sub.map((f) => `${prefix}/${safe}/${folder}/${f.name}`);
-        await storage.remove(paths);
-      }
-    }
-  } catch {
-    // Storage cleanup é melhor esforço
-  }
+  const db = createLpUserClient(session);
+  const { error } = await db.from("landing_pages").delete().eq("slug", safe);
+  if (error) throwDbError(error);
 }
 
-/** Subdomínio Lovable do usuário (quando existir profile vinculado). */
-export async function getUserSubdomain(userId: string): Promise<string | null> {
+export async function getUserSubdomain(
+  session: Session,
+): Promise<string | null> {
+  const userId = session.user.id;
   if (!UUID_RE.test(userId)) return null;
-  const { data } = await db()
+  const db = createLpServiceClient();
+  const { data } = await db
     .from("profiles")
     .select("subdomain")
     .eq("id", userId)
@@ -258,7 +283,6 @@ export async function getUserSubdomain(userId: string): Promise<string | null> {
   return (data?.subdomain as string | undefined) ?? null;
 }
 
-/* Compatibiliza LPs antigas com o schema atual. */
 function migrate(lp: StoredLp): StoredLp {
   const office = lp.schema?.office as
     | (StoredLp["schema"]["office"] & { lawyerPhotos?: string[] })
@@ -329,3 +353,5 @@ function migrate(lp: StoredLp): StoredLp {
 
   return lp;
 }
+
+export type { LpContext };

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { categoriaDoTema, imagemAleatoria } from "@/lib/landing-pages/image-bank";
+import {
+  categoriaDoTema,
+  imagemAleatoria,
+} from "@/lib/landing-pages/image-bank";
 import { buscarUmaImagem } from "@/lib/landing-pages/unsplash";
 import { requireLpSession } from "@/lib/session";
 

@@ -58,10 +58,7 @@ export function buildAuthCallbackUrl(nextPath: string) {
  * Decodifica o candidato com `decodeURIComponent` antes de validar para
  * bloquear ataques via URL encoding (ex: `/%2F%2Fevil.com`).
  */
-export function getSafeRedirectPath(
-  value?: string | null,
-  fallbackPath = "/",
-) {
+export function getSafeRedirectPath(value?: string | null, fallbackPath = "/") {
   const candidate = typeof value === "string" ? value.trim() : "";
 
   if (!candidate) {

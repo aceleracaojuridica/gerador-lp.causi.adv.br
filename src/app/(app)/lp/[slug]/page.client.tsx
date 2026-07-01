@@ -14,7 +14,11 @@ export function LpEditorPageClient({
   startTour,
 }: LpEditorPageClientProps) {
   return (
-    <Container orientation="vertical" overflow="hidden" className="min-h-0 flex-1">
+    <Container
+      orientation="vertical"
+      overflow="hidden"
+      className="min-h-0 flex-1"
+    >
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <LpStudio initial={initial} startTour={startTour} />
       </div>

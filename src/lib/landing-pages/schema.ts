@@ -245,7 +245,12 @@ export type SectionTones = {
 };
 
 /** Seções não obrigatórias que podem ser ligadas/desligadas pela chave. */
-export type ToggleableSection = "areas" | "etapas" | "faq" | "ctaFinal" | "equipe";
+export type ToggleableSection =
+  | "areas"
+  | "etapas"
+  | "faq"
+  | "ctaFinal"
+  | "equipe";
 
 /**
  * Variações ativas por seção — fonte da verdade para render (editor e site publicado).

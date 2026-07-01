@@ -13,6 +13,7 @@ export interface SessionAccount {
 
 export interface SessionRole {
   id: number;
+  slug: string;
   accessLevel: number;
   permissions: Record<string, string[]>;
 }

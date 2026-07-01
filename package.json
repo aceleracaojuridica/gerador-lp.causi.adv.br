@@ -9,6 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
+    "backfill:lp-accounts": "npx tsx scripts/backfill-lp-account-id.ts",
     "prepare": "husky"
   },
   "dependencies": {

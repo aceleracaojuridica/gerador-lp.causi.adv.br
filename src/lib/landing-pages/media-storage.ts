@@ -1,7 +1,7 @@
 import "server-only";
 
-import sharp from "sharp";
-import { lpAdmin } from "@/lib/supabase/admin";
+import type { Session } from "@/lib/session/types";
+import { uploadGalleryImage } from "./gallery-store";
 import type { MediaResource } from "./media-types";
 import type { LpSchema, SectionImageKey } from "./schema";
 
@@ -19,7 +19,7 @@ const safeSegment = (s: string) =>
     .replace(/(^-|-$)/g, "")
     .toLowerCase();
 
-/** Raiz do site no bucket: `{subdomain}.causi.adv.br` ou fallback por usuário. */
+/** Raiz do site no bucket (legado): `{subdomain}.causi.adv.br` ou fallback por usuário. */
 export function storageSiteRoot(
   subdomain: string | null,
   userId: string,
@@ -30,7 +30,7 @@ export function storageSiteRoot(
   return `_sem-subdominio/${safeSegment(userId)}`;
 }
 
-/** Monta o path completo de um arquivo no bucket. */
+/** Monta path legado de um arquivo no bucket. */
 export function buildMediaPath(
   subdomain: string | null,
   userId: string,
@@ -64,122 +64,55 @@ export function isGeradorStorageUrl(src: string): boolean {
 }
 
 export function getPublicMediaUrl(path: string): string {
-  const { data } = lpAdmin().storage.from(GERADOR_LP_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
-}
-
-function decodeDataUrl(dataUrl: string): Buffer {
-  const match = dataUrl.trim().match(/^data:image\/[^;]+;base64,([\s\S]+)$/);
-  if (!match) throw new Error("Data URL de imagem inválida.");
-  return Buffer.from(match[1], "base64");
-}
-
-async function fetchImageBuffer(url: string): Promise<Buffer> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) throw new Error(`Falha ao baixar imagem (${res.status}).`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-async function optimizeImage(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
-    .rotate()
-    .resize({
-      width: 2400,
-      height: 2400,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .webp({ quality: 85 })
-    .toBuffer();
-}
-
-async function uploadBuffer(path: string, buffer: Buffer): Promise<void> {
-  const { error } = await lpAdmin()
-    .storage.from(GERADOR_LP_BUCKET)
-    .upload(path, buffer, {
-      contentType: "image/webp",
-      upsert: true,
-      cacheControl: "31536000",
-    });
-  if (error) throw new Error(error.message);
+  const base = process.env.LP_SUPABASE_URL?.replace(/\/$/, "");
+  if (!base) return path;
+  return `${base}/storage/v1/object/public/${GERADOR_LP_BUCKET}/${path}`;
 }
 
 /**
- * Faz upload de uma imagem (data URL ou URL externa) para o path indicado.
- * Retorna a URL pública no Storage.
+ * Envia data URL ou URL externa para a galeria da conta.
+ * URLs já no bucket são mantidas.
  */
-export async function uploadMediaToPath(
+export async function persistMediaToGallery(
+  session: Session,
   source: string,
-  path: string,
+  originalFilename?: string,
 ): Promise<string> {
   const trimmed = source.trim();
   if (!trimmed) return "";
-
   if (isGeradorStorageUrl(trimmed)) return trimmed;
 
-  let buffer: Buffer;
-  if (isDataUrl(trimmed)) {
-    buffer = decodeDataUrl(trimmed);
-  } else if (/^https?:\/\//i.test(trimmed)) {
-    buffer = await fetchImageBuffer(trimmed);
-  } else {
-    return trimmed;
-  }
-
-  const optimized = await optimizeImage(buffer);
-  await uploadBuffer(path, optimized);
-  return getPublicMediaUrl(path);
+  const item = await uploadGalleryImage(session, trimmed, originalFilename);
+  return item.url;
 }
 
-/** Persiste uma mídia conforme o recurso (logo, advogado, seção). */
-export async function persistMediaResource(
-  source: string,
-  ctx: {
-    subdomain: string | null;
-    userId: string;
-    slug: string;
-    resource: MediaResource;
-  },
-): Promise<string> {
-  if (!source.trim()) return "";
-  if (isGeradorStorageUrl(source)) return source;
-
-  const path = buildMediaPath(
-    ctx.subdomain,
-    ctx.userId,
-    ctx.slug,
-    ctx.resource,
-  );
-  return uploadMediaToPath(source, path);
-}
-
-/** Percorre o schema e envia todas as mídias inline/externas para o Storage. */
+/**
+ * Percorre o schema e envia mídias inline/externas para a galeria.
+ * URLs já no Storage (legado ou galeria) são preservadas.
+ */
 export async function persistLpSchemaMedia(
   schema: LpSchema,
-  ctx: { subdomain: string | null; userId: string; slug: string },
+  ctx: {
+    session: Session;
+    subdomain: string | null;
+    userId: string;
+    accountId: number;
+    slug: string;
+  },
 ): Promise<LpSchema> {
   const office = { ...schema.office };
   const sectionImages = { ...office.sectionImages };
 
   if (office.logoSrc) {
-    office.logoSrc = await persistMediaResource(office.logoSrc, {
-      ...ctx,
-      resource: { kind: "logo" },
-    });
+    office.logoSrc = await persistMediaToGallery(ctx.session, office.logoSrc);
   }
 
   office.lawyers = await Promise.all(
     office.lawyers.map(async (lawyer) => {
       if (!lawyer.photo) return lawyer;
-      const id =
-        lawyer.photo.match(/\/lawyers\/([^./]+)\.webp/i)?.[1] ??
-        crypto.randomUUID();
       return {
         ...lawyer,
-        photo: await persistMediaResource(lawyer.photo, {
-          ...ctx,
-          resource: { kind: "lawyers", id },
-        }),
+        photo: await persistMediaToGallery(ctx.session, lawyer.photo),
       };
     }),
   );
@@ -187,28 +120,35 @@ export async function persistLpSchemaMedia(
   for (const key of Object.keys(sectionImages) as SectionImageKey[]) {
     const src = sectionImages[key];
     if (!src) continue;
-    sectionImages[key] = await persistMediaResource(src, {
-      ...ctx,
-      resource: { kind: "sections", key },
-    });
+    sectionImages[key] = await persistMediaToGallery(ctx.session, src);
   }
   office.sectionImages = sectionImages;
 
   const seo = schema.seo ? { ...schema.seo } : undefined;
   if (seo) {
     if (seo.ogImage) {
-      seo.ogImage = await persistMediaResource(seo.ogImage, {
-        ...ctx,
-        resource: { kind: "seo", key: "ogImage" },
-      });
+      seo.ogImage = await persistMediaToGallery(ctx.session, seo.ogImage);
     }
     if (seo.favicon) {
-      seo.favicon = await persistMediaResource(seo.favicon, {
-        ...ctx,
-        resource: { kind: "seo", key: "favicon" },
-      });
+      seo.favicon = await persistMediaToGallery(ctx.session, seo.favicon);
     }
   }
 
   return { ...schema, office, ...(seo ? { seo } : {}) };
+}
+
+/** Upload para galeria (substitui path legado por galeria centralizada). */
+export async function uploadMediaToPath(
+  session: Session,
+  source: string,
+  _path: string,
+): Promise<string> {
+  const trimmed = source.trim();
+  if (!trimmed) return "";
+  if (isGeradorStorageUrl(trimmed)) return trimmed;
+
+  if (isDataUrl(trimmed) || /^https?:\/\//i.test(trimmed)) {
+    return persistMediaToGallery(session, trimmed);
+  }
+  return trimmed;
 }

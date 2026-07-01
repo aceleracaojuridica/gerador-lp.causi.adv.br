@@ -97,6 +97,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { useIsLgUp } from "@/hooks/use-media-query";
 import { isAccessDeniedError } from "@/lib/errors";
+import { LazyImageSlot } from "@/components/Builder/image-picker-dialog";
 import {
   AREAS_CTA_FALLBACK,
   CTA_PRIMARY,
@@ -128,10 +129,7 @@ import {
   SEO_TITLE_MAX,
   seoCharStatus,
 } from "@/lib/landing-pages/seo";
-import {
-  BODY_FONTS,
-  HEADING_FONTS,
-} from "@/lib/landing-pages/fonts";
+import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import {
   TEMPLATES,
   templatePreviewSrc,
@@ -139,7 +137,7 @@ import {
 } from "@/lib/landing-pages/templates";
 import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
-import { showAccessDeniedToast } from "@/lib/toast";
+import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { type EditorSectionMeta, EditorSectionNav } from "./editor-section-nav";
 import { Field, inputCls } from "./fields";
@@ -327,7 +325,6 @@ export function Editor({
 }) {
   const router = useRouter();
   const { office, set, theme, autoTheme, layout } = form;
-  const logoRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const isLgUp = useIsLgUp();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -546,6 +543,8 @@ export function Editor({
       if ("error" in res) {
         if (isAccessDeniedError(res.error)) {
           showAccessDeniedToast();
+        } else {
+          showLpMessageError(res.error);
         }
         setSaveState("error");
         return;
@@ -563,6 +562,7 @@ export function Editor({
       const res = await publishLpAction(slug);
       if ("error" in res) {
         if (isAccessDeniedError(res.error)) showAccessDeniedToast();
+        else showLpMessageError(res.error);
         setPublishState("error");
         return;
       }
@@ -578,6 +578,8 @@ export function Editor({
     try {
       const res = await unpublishLpAction(slug);
       if (!res.ok) {
+        if (res.error && isAccessDeniedError(res.error)) showAccessDeniedToast();
+        else if (res.error) showLpMessageError(res.error);
         setPublishState("error");
         return;
       }
@@ -672,9 +674,7 @@ export function Editor({
               {detailSection === "modelo" && (
                 <ModeloPicker form={form} currentId={currentTemplateId} />
               )}
-              {detailSection === "seo" && (
-                <SeoPanel form={form} />
-              )}
+              {detailSection === "seo" && <SeoPanel form={form} />}
               {detailSection === "hero" && (
                 <>
                   <ToneToggle
@@ -827,7 +827,9 @@ export function Editor({
                         aria-label="Fonte dos títulos"
                         className={inputCls}
                         value={office.fonts?.heading ?? ""}
-                        onChange={(e) => form.setFont("heading", e.target.value)}
+                        onChange={(e) =>
+                          form.setFont("heading", e.target.value)
+                        }
                       >
                         <option value="">Padrão do site</option>
                         {HEADING_FONTS.map((f) => (
@@ -873,7 +875,9 @@ export function Editor({
                           className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
                           value={office.tags?.head ?? ""}
                           onChange={(e) => form.setTag("head", e.target.value)}
-                          placeholder={"<script>\n  // seu código aqui\n</script>"}
+                          placeholder={
+                            "<script>\n  // seu código aqui\n</script>"
+                          }
                         />
                       </Field>
                       <Field
@@ -1322,55 +1326,23 @@ export function Editor({
                     </Field>
                   ) : null}
 
-                  {/* Logo */}
+                  {/* Logo — galeria sob demanda */}
                   <div className="space-y-2 border-t border-slate-100 pt-3">
                     <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
                       Logo
                     </p>
-                    <input
-                      ref={logoRef}
-                      type="file"
-                      aria-label="Enviar logo"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) form.onLogo(f);
-                      }}
+                    <LazyImageSlot
+                      src={office.logoSrc}
+                      label="Logo do escritório"
+                      onChange={form.setLogoUrl}
+                      onClear={() => form.setLogoUrl("")}
                     />
-                    {office.logoSrc ? (
-                      <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-                        <ZoomableImage
-                          src={office.logoSrc}
-                          alt="logo"
-                          fit="contain"
-                          className="h-12 w-12 rounded"
-                        />
-                        <div className="flex-1 text-xs text-slate-500">
-                          {matchPalette(theme) ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-600">
-                              <Palette size={13} /> Cores ajustadas à paleta
-                            </span>
-                          ) : autoTheme ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-600">
-                              <Palette size={13} /> Cores extraídas da logo
-                            </span>
-                          ) : (
-                            <span>
-                              Cores padrão (envie PNG/JPG para extrair).
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                    {office.logoSrc && autoTheme ? (
+                      <p className="text-xs text-emerald-600">
+                        <Palette size={13} className="inline" /> Cores extraídas
+                        da logo
+                      </p>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => logoRef.current?.click()}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-ui-hover"
-                    >
-                      <Upload size={16} />
-                      {office.logoSrc ? "Trocar logo" : "Enviar logo"}
-                    </button>
                   </div>
 
                   {/* Cores da marca */}
@@ -3050,8 +3022,7 @@ function LawyerPhotosInput({ form }: { form: LpForm }) {
   );
 }
 
-// Upload de imagem de uma seção específica (Hero/Dor/Sobre). O usuário escolhe
-// a foto e ela vai exatamente nessa seção. Sem imagem, a seção usa a cor da marca.
+// Upload de imagem de seção — abre galeria sob demanda (clique).
 function SectionImageInput({
   form,
   sectionKey,
@@ -3061,11 +3032,9 @@ function SectionImageInput({
   sectionKey: SectionImageKey;
   label?: string;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
   const src = form.office.sectionImages[sectionKey];
   const [loadingIA, setLoadingIA] = useState(false);
 
-  // IA escolhe: busca no Unsplash uma imagem diferente, relacionada ao tema.
   async function iaEscolhe() {
     setLoadingIA(true);
     try {
@@ -3077,90 +3046,35 @@ function SectionImageInput({
       const data = (await res.json().catch(() => ({}))) as { url?: string };
       if (data.url) form.setSectionImageUrl(sectionKey, data.url);
     } catch {
-      /* silencioso: mantém a imagem atual */
+      /* mantém imagem atual */
     } finally {
       setLoadingIA(false);
     }
   }
 
   return (
-    <div className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white p-3">
-      <input
-        ref={ref}
-        type="file"
-        aria-label="Enviar imagem da seção"
-        accept="image/png,image/jpeg,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) form.onSectionImage(sectionKey, f);
-          e.target.value = "";
-        }}
-      />
-
-      {/* Imagem grande no topo (ou área pra adicionar) */}
-      {src ? (
-        <div className="relative min-w-0 max-w-full">
-          <ZoomableImage
-            src={src}
-            alt={label ?? "imagem da seção"}
-            className="h-[120px] w-full rounded-lg ring-1 ring-slate-200"
-          />
-          <button
-            type="button"
-            aria-label="Remover imagem"
-            onClick={(e) => {
-              e.stopPropagation();
-              form.clearSectionImage(sectionKey);
-            }}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-          >
-            <Close size={14} />
-          </button>
-        </div>
-      ) : (
+    <LazyImageSlot
+      src={src}
+      label={label ?? "Imagem da seção"}
+      onChange={(url) => form.setSectionImageUrl(sectionKey, url)}
+      onClear={() => form.clearSectionImage(sectionKey)}
+      extraActions={
         <button
           type="button"
-          onClick={() => ref.current?.click()}
-          className="flex h-[120px] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-ui/40 hover:bg-ui-soft/40 hover:text-ui"
+          onClick={iaEscolhe}
+          disabled={loadingIA}
+          title="Busca uma imagem relacionada ao tema da página"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-ui/30 bg-ui-soft px-2.5 py-1.5 text-xs font-medium text-ui transition hover:bg-ui/15 disabled:opacity-60"
         >
-          <AddPhotoAlternate size={26} />
-          <span className="text-xs font-medium">Adicionar imagem</span>
+          {loadingIA ? (
+            <ProgressActivity size={14} className="animate-spin" />
+          ) : (
+            <WandStars size={14} />
+          )}
+          {loadingIA ? "Buscando…" : "IA escolhe"}
         </button>
-      )}
-
-      {/* Ações: nome à esquerda, IA escolhe + Trocar (ícone) à direita */}
-      <div className="mt-2.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="min-w-0 truncate text-sm font-medium text-slate-700">
-          {label ?? "Imagem da seção"}
-        </span>
-        <div className="flex shrink-0 items-center gap-1.5 self-end">
-          <button
-            type="button"
-            onClick={iaEscolhe}
-            disabled={loadingIA}
-            title="Busca uma imagem relacionada ao tema da página"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ui/30 bg-ui-soft px-2.5 py-1.5 text-xs font-medium text-ui transition hover:bg-ui/15 disabled:opacity-60"
-          >
-            {loadingIA ? (
-              <ProgressActivity size={14} className="animate-spin" />
-            ) : (
-              <WandStars size={14} />
-            )}
-            {loadingIA ? "Buscando…" : "IA escolhe"}
-          </button>
-          <button
-            type="button"
-            onClick={() => ref.current?.click()}
-            aria-label={src ? "Trocar imagem" : "Enviar imagem"}
-            title={src ? "Trocar imagem" : "Enviar imagem"}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-ui-hover hover:text-slate-800"
-          >
-            <AddPhotoAlternate size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
+      }
+    />
   );
 }
 
@@ -4087,7 +4001,9 @@ function ModeloPicker({
               role="img"
               aria-label={template.name}
               className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center ring-1 ring-slate-200"
-              style={{ backgroundImage: `url('${templatePreviewSrc(template.id)}')` }}
+              style={{
+                backgroundImage: `url('${templatePreviewSrc(template.id)}')`,
+              }}
             />
             <div className="min-w-0 flex-1">
               <div className="mb-0.5 flex items-center gap-2">

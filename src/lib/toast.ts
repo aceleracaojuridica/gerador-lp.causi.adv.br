@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { mapLpDbError, mapLpMessageError, type LpToastMessage } from "./errors";
 
 export function showAccessDeniedToast(description?: string) {
   toast.error("Acesso negado", {
@@ -6,4 +7,16 @@ export function showAccessDeniedToast(description?: string) {
       description ??
       "Você não tem permissão para usar o gerador de landing pages.",
   });
+}
+
+export function showLpToast(msg: LpToastMessage) {
+  toast.error(msg.title, { description: msg.description });
+}
+
+export function showLpError(error: unknown) {
+  showLpToast(mapLpDbError(error));
+}
+
+export function showLpMessageError(message: string) {
+  showLpToast(mapLpMessageError(message));
 }

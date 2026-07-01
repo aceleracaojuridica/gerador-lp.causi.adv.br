@@ -16,20 +16,19 @@ import {
 import { Container } from "@/components/ui-patterns/container";
 import {
   Header,
-  HeaderActions,
   HeaderContent,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
-import { useBreakpoints } from "@/hooks/use-breakpoints";
 import type { LpListItem } from "@/lib/landing-pages/lp-store";
 
 type HomePageClientProps = {
-  lps: LpListItem[];
+  lps: (LpListItem & {
+    createdByLabel: string;
+    isOwnLp: boolean;
+  })[];
 };
 
 export function HomePageClient({ lps }: HomePageClientProps) {
-  const { isSm } = useBreakpoints();
-
   return (
     <Container orientation="vertical" overflow="hidden">
       <Header>
@@ -41,15 +40,6 @@ export function HomePageClient({ lps }: HomePageClientProps) {
             </Badge>
           </HeaderHeading>
         </HeaderContent>
-
-        <HeaderActions>
-          <Button asChild size={isSm ? "lg" : "icon-lg"}>
-            <Link href="/nova">
-              <Add />
-              <span className="max-sm:hidden">Nova landing page</span>
-            </Link>
-          </Button>
-        </HeaderActions>
       </Header>
 
       {lps.length === 0 ? (
@@ -86,6 +76,9 @@ export function HomePageClient({ lps }: HomePageClientProps) {
                 tema={lp.tema}
                 status={lp.status}
                 preview={lp.preview}
+                createdByUserId={lp.createdByUserId}
+                createdByLabel={lp.createdByLabel}
+                isOwnLp={lp.isOwnLp}
               />
             ))}
           </div>

@@ -62,7 +62,10 @@ function HeaderActions({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="header-actions"
-      className={cn("flex justify-end items-center gap-2.5 shrink-0", className)}
+      className={cn(
+        "flex justify-end items-center gap-2.5 shrink-0",
+        className,
+      )}
       {...props}
     />
   );

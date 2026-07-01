@@ -23,6 +23,8 @@ const serverEnvSchema = z
   .object({
     APP_URL: z.string().min(1).optional(),
     LP_SUPABASE_URL: supabaseUrl,
+    LP_SUPABASE_ANON_KEY: z.string().min(1),
+    LP_SUPABASE_JWT_SECRET: z.string().min(1),
     LP_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     OPENAI_API_KEY: optionalSecret,
     UNSPLASH_ACCESS_KEY: optionalSecret,
@@ -43,6 +45,8 @@ const runtimePublicEnv = {
 const runtimeServerEnv = {
   APP_URL: process.env.APP_URL,
   LP_SUPABASE_URL: process.env.LP_SUPABASE_URL,
+  LP_SUPABASE_ANON_KEY: process.env.LP_SUPABASE_ANON_KEY,
+  LP_SUPABASE_JWT_SECRET: process.env.LP_SUPABASE_JWT_SECRET,
   LP_SUPABASE_SERVICE_ROLE_KEY: process.env.LP_SUPABASE_SERVICE_ROLE_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY,
@@ -97,6 +101,16 @@ export function getLpAdminEnv() {
   return {
     url: server.LP_SUPABASE_URL,
     key: server.LP_SUPABASE_SERVICE_ROLE_KEY,
+  };
+}
+
+/** URL, anon key e JWT secret do Supabase de LPs (cliente com RLS). */
+export function getLpUserEnv() {
+  const server = getServerEnv();
+  return {
+    url: server.LP_SUPABASE_URL,
+    anonKey: server.LP_SUPABASE_ANON_KEY,
+    jwtSecret: server.LP_SUPABASE_JWT_SECRET,
   };
 }
 
