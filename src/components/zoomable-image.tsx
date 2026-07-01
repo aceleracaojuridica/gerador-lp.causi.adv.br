@@ -61,7 +61,7 @@ export function ZoomableImage({
         ref={dialogRef}
         aria-label={alt}
         onClose={() => setOpen(false)}
-        className="fixed inset-0 z-[100] m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-transparent p-6 backdrop:bg-black/75"
+        className="fixed inset-0 z-[100] m-0 hidden h-full max-h-none w-full max-w-none border-0 bg-transparent p-6 backdrop:bg-black/75 open:flex open:items-center open:justify-center"
       >
         <form method="dialog" className="absolute inset-0">
           <button

@@ -27,15 +27,19 @@ export function AuthFormShell({
   footerText,
 }: AuthFormShellProps) {
   return (
-    <div className="w-full max-w-120">
+    <div className="w-full">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
         </h1>
-        <p className="mt-1 text-base text-muted-foreground">{description}</p>
+        <p className="mt-2 text-base text-muted-foreground sm:text-lg">
+          {description}
+        </p>
       </div>
 
-      {children}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        {children}
+      </div>
 
       {footerLabel && footerHref && footerText ? (
         <div className="mt-6 flex items-center justify-center gap-2">
