@@ -23,6 +23,12 @@ function isPublicRoute(pathname: string) {
   );
 }
 
+function notFoundResponse(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/not-found";
+  return NextResponse.rewrite(url, { status: 404 });
+}
+
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get("host") ?? "";
@@ -40,11 +46,11 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
 
-    return new NextResponse(null, { status: 404 });
+    return notFoundResponse(request);
   }
 
   if (isPublicLpSlugPath(pathname)) {
-    return new NextResponse(null, { status: 404 });
+    return notFoundResponse(request);
   }
 
   const response = {

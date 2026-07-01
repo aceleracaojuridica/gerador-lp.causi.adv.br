@@ -72,10 +72,17 @@ export function getMainAppUrl(): string {
 
 /** Subdomínio do escritório quando o host é `{escritorio}.{APP_DOMAIN}`. */
 export function officeSubdomainFromHost(host: string): string | null {
-  const lpDomain = getLpPublicDomain();
-  if (!lpDomain) return null;
-
   const hostname = hostWithoutPort(host);
+
+  // Dev local: `{escritorio}.localhost` (independente de NEXT_PUBLIC_APP_DOMAIN).
+  if (hostname.endsWith(".localhost")) {
+    const office = hostname.slice(0, -".localhost".length);
+    if (office && !office.includes(".")) return office;
+  }
+
+  const lpDomain = getLpPublicDomain();
+  if (!lpDomain || lpDomain === "localhost") return null;
+
   if (!hostname.endsWith(`.${lpDomain}`)) return null;
 
   const office = hostname.slice(0, hostname.length - lpDomain.length - 1);
