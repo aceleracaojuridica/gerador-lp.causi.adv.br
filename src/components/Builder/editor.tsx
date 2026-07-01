@@ -117,9 +117,26 @@ import type {
   Layout,
   PopupQuestion,
   SectionImageKey,
+  SeoMeta,
   StoredLp,
   Tone,
 } from "@/lib/landing-pages/schema";
+import {
+  SEO_DESC_IDEAL,
+  SEO_DESC_MAX,
+  SEO_TITLE_IDEAL,
+  SEO_TITLE_MAX,
+  seoCharStatus,
+} from "@/lib/landing-pages/seo";
+import {
+  BODY_FONTS,
+  HEADING_FONTS,
+} from "@/lib/landing-pages/fonts";
+import {
+  TEMPLATES,
+  templatePreviewSrc,
+  type LpTemplate,
+} from "@/lib/landing-pages/templates";
 import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast } from "@/lib/toast";
@@ -215,7 +232,9 @@ const EQUIPE_VARIANT_LABELS: Record<string, string> = {
 };
 
 type DetailSectionId =
+  | "modelo"
   | "aparencia"
+  | "seo"
   | "hero"
   | "dor"
   | "solucao"
@@ -367,11 +386,34 @@ export function Editor({
     layout.equipe ??
     (office.lawyers.length <= 3 ? "splitAlternado" : "retratoElegante");
 
+  // Detecta qual template está aplicado no momento (match parcial por variantes).
+  const currentTemplateId = useMemo(() => {
+    return TEMPLATES.find(
+      (t) =>
+        t.layout.hero === layout.hero &&
+        t.layout.dor === layout.dor &&
+        t.layout.solucao === layout.solucao &&
+        t.layout.sobre === layout.sobre &&
+        t.layout.areas === layout.areas &&
+        t.layout.etapas === layout.etapas,
+    )?.id;
+  }, [layout]);
+
   const editorSections = useMemo((): EditorSectionMeta[] => {
     const items: EditorSectionMeta[] = [
       {
+        id: "modelo",
+        label: "Modelo",
+        previewTarget: "sec-hero",
+      },
+      {
         id: "aparencia",
         label: "Aparência",
+        previewTarget: "sec-hero",
+      },
+      {
+        id: "seo",
+        label: "SEO",
         previewTarget: "sec-hero",
       },
       {
@@ -601,12 +643,10 @@ export function Editor({
             </Link>
           )}
           <span className="pointer-events-none absolute inset-x-0 truncate px-20 text-center text-sm font-semibold text-foreground sm:px-28">
-            {detailSection && fullEditor
-              ? office.name || name
-              : detailSection
-                ? (editorSections.find((s) => s.id === detailSection)?.label ??
-                  (office.name || name))
-                : office.name || name}
+            {detailSection
+              ? (editorSections.find((s) => s.id === detailSection)?.label ??
+                (office.name || name))
+              : office.name || name}
           </span>
           <button
             type="button"
@@ -618,7 +658,7 @@ export function Editor({
           </button>
         </header>
 
-        {detailSection && fullEditor ? (
+        {detailSection ? (
           <EditorSectionNav
             sections={editorSections}
             current={detailSection}
@@ -629,6 +669,12 @@ export function Editor({
         <div className="min-h-0 min-w-0 max-w-full flex-1 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 sm:px-5">
           {detailSection ? (
             <div className="min-w-0 max-w-full space-y-3">
+              {detailSection === "modelo" && (
+                <ModeloPicker form={form} currentId={currentTemplateId} />
+              )}
+              {detailSection === "seo" && (
+                <SeoPanel form={form} />
+              )}
               {detailSection === "hero" && (
                 <>
                   <ToneToggle
@@ -766,6 +812,83 @@ export function Editor({
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Tipografia: fontes de títulos e textos da LP */}
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <p className="text-sm font-medium text-slate-700">
+                      Tipografia
+                    </p>
+                    <Field
+                      label="Títulos e destaques"
+                      hint="Fonte usada nos títulos de seção e manchetes."
+                    >
+                      <select
+                        aria-label="Fonte dos títulos"
+                        className={inputCls}
+                        value={office.fonts?.heading ?? ""}
+                        onChange={(e) => form.setFont("heading", e.target.value)}
+                      >
+                        <option value="">Padrão do site</option>
+                        {HEADING_FONTS.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field
+                      label="Textos e parágrafos"
+                      hint="Fonte usada nos parágrafos e textos de apoio."
+                    >
+                      <select
+                        aria-label="Fonte dos textos"
+                        className={inputCls}
+                        value={office.fonts?.body ?? ""}
+                        onChange={(e) => form.setFont("body", e.target.value)}
+                      >
+                        <option value="">Padrão do site</option>
+                        {BODY_FONTS.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  {/* Tags de rastreamento: Google Analytics, Meta Pixel, GTM etc. */}
+                  <div className="border-t border-slate-100 pt-3">
+                    <Accordion title="Tags de rastreamento" flush>
+                      <p className="text-xs leading-relaxed text-slate-500">
+                        Cole aqui os scripts do Google Analytics, Meta Pixel,
+                        Google Tag Manager ou qualquer outro código de tracking.
+                      </p>
+                      <Field
+                        label="Código no <head>"
+                        hint="Carrega antes do conteúdo — ideal para GTM e gtag."
+                      >
+                        <AutoTextarea
+                          aria-label="Tags no head"
+                          className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                          value={office.tags?.head ?? ""}
+                          onChange={(e) => form.setTag("head", e.target.value)}
+                          placeholder={"<script>\n  // seu código aqui\n</script>"}
+                        />
+                      </Field>
+                      <Field
+                        label="Código no <body>"
+                        hint="Logo após a abertura do body — para noscript do GTM."
+                      >
+                        <AutoTextarea
+                          aria-label="Tags no body"
+                          className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                          value={office.tags?.body ?? ""}
+                          onChange={(e) => form.setTag("body", e.target.value)}
+                          placeholder={"<noscript>...</noscript>"}
+                        />
+                      </Field>
+                    </Accordion>
                   </div>
                 </>
               )}
@@ -1163,7 +1286,7 @@ export function Editor({
               {!tourActive && simplePanel === null ? (
                 <ModeToggle advanced={advanced} onChange={setAdvanced} />
               ) : null}
-              {fullEditor ? (
+              {simplePanel === null ? (
                 <button
                   type="button"
                   onClick={() => setReorderMode(true)}
@@ -1308,6 +1431,17 @@ export function Editor({
                 <>
                   <AccordionListContext.Provider value={true}>
                     <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                      {/* Modelo: preset de layout (variantes + tones) pré-definido. */}
+                      <Accordion
+                        title="Modelo da página"
+                        flush
+                        domId="acc-modelo"
+                        icon={<GridView size={22} />}
+                        subtitle="Combinação de layouts pré-definida"
+                        open={false}
+                        onOpenChange={() => goToDetailSection("modelo")}
+                      />
+
                       {/* Aparência e botões — estilo da LP (cantos) e o que o botão faz ao
               ser clicado. Separado da Identidade para não misturar marca com
               comportamento. */}
@@ -1316,9 +1450,20 @@ export function Editor({
                         flush
                         domId="acc-aparencia"
                         icon={<Tune size={22} />}
-                        subtitle="Cantos dos cards e o que os botões fazem"
+                        subtitle="Cantos, tipografia e o que os botões fazem"
                         open={false}
                         onOpenChange={() => goToDetailSection("aparencia")}
+                      />
+
+                      {/* SEO: meta tags para Google, compartilhamento e tracking. */}
+                      <Accordion
+                        title="SEO e meta tags"
+                        flush
+                        domId="acc-seo"
+                        icon={<Search size={22} />}
+                        subtitle="Título, descrição e indexação nos buscadores"
+                        open={false}
+                        onOpenChange={() => goToDetailSection("seo")}
                       />
 
                       {/* Topo da página — abre as configs num painel à direita */}
@@ -1377,6 +1522,11 @@ export function Editor({
                         domId="acc-equipe"
                         icon={<Groups size={22} />}
                         subtitle="Fotos dos advogados/sócios"
+                        toggle={{
+                          on: !layout.hidden?.equipe,
+                          onChange: (on) =>
+                            form.setSectionHidden("equipe", !on),
+                        }}
                         open={false}
                         onOpenChange={() => goToDetailSection("equipe")}
                       />
@@ -2601,7 +2751,7 @@ function FocalPicker({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className="relative aspect-[3/4] w-28 shrink-0 cursor-move touch-none select-none overflow-hidden rounded-lg bg-brand ring-1 ring-slate-300"
+          className="relative aspect-[3/4] w-28 shrink-0 cursor-move touch-none select-none overflow-hidden rounded-lg bg-lp-brand ring-1 ring-slate-300"
           style={{
             backgroundImage: `url('${src}')`,
             backgroundSize: "cover",
@@ -3902,5 +4052,190 @@ function CustomSectionEditor({
         <Delete size={14} /> Excluir seção
       </button>
     </Accordion>
+  );
+}
+
+// Seletor de modelo (template): aplica uma combinação pré-definida de variantes
+// e tones em todas as seções de uma vez, preservando textos e imagens.
+function ModeloPicker({
+  form,
+  currentId,
+}: {
+  form: LpForm;
+  currentId: string | undefined;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs leading-relaxed text-slate-500">
+        Aplica um estilo visual completo (layouts e fundos de todas as seções).
+        Textos e imagens não são alterados.
+      </p>
+      {TEMPLATES.map((template: LpTemplate) => {
+        const active = currentId === template.id;
+        return (
+          <button
+            key={template.id}
+            type="button"
+            onClick={() => form.applyTemplate(template)}
+            className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+              active
+                ? "border-ui bg-ui-soft/60"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <div
+              role="img"
+              aria-label={template.name}
+              className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center ring-1 ring-slate-200"
+              style={{ backgroundImage: `url('${templatePreviewSrc(template.id)}')` }}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="mb-0.5 flex items-center gap-2">
+                <span
+                  className={`text-sm font-semibold ${active ? "text-ui" : "text-slate-800"}`}
+                >
+                  {template.name}
+                </span>
+                {active ? (
+                  <span className="rounded-[5px] bg-ui px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
+                    Atual
+                  </span>
+                ) : null}
+              </div>
+              <span className="text-xs text-slate-400">
+                {template.description}
+              </span>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Painel de edição do SEO: título, descrição, keywords, OG image, indexação.
+// Char counters ajudam o usuário manter os textos no tamanho ideal para Google.
+function SeoPanel({ form }: { form: LpForm }) {
+  const seo: Partial<SeoMeta> = form.schema.seo ?? {};
+  const rawSeo: Partial<SeoMeta> = form.copy.seo ?? {};
+
+  function update<K extends keyof SeoMeta>(key: K, value: SeoMeta[K]) {
+    form.setSeoField(key, value);
+  }
+
+  const titleLen = (rawSeo.title ?? seo.title ?? "").length;
+  const descLen = (rawSeo.description ?? seo.description ?? "").length;
+  const titleStatus = seoCharStatus(titleLen, SEO_TITLE_IDEAL, SEO_TITLE_MAX);
+  const descStatus = seoCharStatus(descLen, SEO_DESC_IDEAL, SEO_DESC_MAX);
+
+  const charCls = (s: "ok" | "short" | "long") =>
+    s === "ok"
+      ? "text-emerald-600"
+      : s === "long"
+        ? "text-red-500"
+        : "text-slate-400";
+
+  const indexable = rawSeo.indexable ?? seo.indexable ?? false;
+
+  return (
+    <div className="space-y-3">
+      <p className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-xs leading-relaxed text-slate-500">
+        Gerados automaticamente pela IA. Edite aqui para personalizar o que
+        aparece nos resultados de busca e no compartilhamento em redes sociais.
+      </p>
+
+      <AccordionListContext.Provider value={true}>
+        <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+          <Accordion title="Título e descrição" flush defaultOpen>
+            <Field
+              label={`Título (${titleLen}/${SEO_TITLE_MAX} chars)`}
+              hint="Aparece na aba do navegador e nos resultados de busca."
+            >
+              <input
+                aria-label="Título SEO"
+                className={inputCls}
+                value={rawSeo.title ?? seo.title ?? ""}
+                onChange={(e) => update("title", e.target.value)}
+                maxLength={SEO_TITLE_MAX + 10}
+              />
+              <p className={`mt-0.5 text-[0.7rem] ${charCls(titleStatus)}`}>
+                {titleStatus === "ok"
+                  ? "Comprimento ideal"
+                  : titleStatus === "long"
+                    ? "Muito longo — será cortado"
+                    : "Pode ser mais descritivo"}
+              </p>
+            </Field>
+            <Field
+              label={`Descrição (${descLen}/${SEO_DESC_MAX} chars)`}
+              hint="Aparece abaixo do título nos resultados de busca."
+            >
+              <AutoTextarea
+                aria-label="Descrição SEO"
+                className={`${inputCls} min-h-[80px] resize-y`}
+                value={rawSeo.description ?? seo.description ?? ""}
+                onChange={(e) => update("description", e.target.value)}
+              />
+              <p className={`mt-0.5 text-[0.7rem] ${charCls(descStatus)}`}>
+                {descStatus === "ok"
+                  ? "Comprimento ideal"
+                  : descStatus === "long"
+                    ? "Muito longa — será cortada"
+                    : "Pode ser mais descritiva"}
+              </p>
+            </Field>
+            <Field
+              label="Palavras-chave"
+              hint="Separadas por vírgula. Ex: direito trabalhista, advogado SP"
+            >
+              <input
+                aria-label="Keywords SEO"
+                className={inputCls}
+                value={rawSeo.keywords ?? seo.keywords ?? ""}
+                onChange={(e) => update("keywords", e.target.value)}
+                placeholder="direito trabalhista, advogado, São Paulo"
+              />
+            </Field>
+          </Accordion>
+
+          <Accordion title="Indexação e redes sociais" flush>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-700">
+                  Indexável nos buscadores
+                </p>
+                <p className="text-xs text-slate-400">
+                  Desative para LPs de tráfego pago (Google/Meta Ads).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => update("indexable", !indexable)}
+                className={`shrink-0 rounded-[5px] px-2 py-0.5 text-[0.7rem] font-semibold transition ${
+                  indexable
+                    ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
+                    : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                }`}
+              >
+                {indexable ? "Indexável" : "Noindex"}
+              </button>
+            </div>
+            <Field
+              label="Imagem de compartilhamento (OG)"
+              hint="Aparece ao compartilhar em WhatsApp, Instagram etc. 1200×630px."
+            >
+              <input
+                aria-label="OG Image URL"
+                className={inputCls}
+                value={rawSeo.ogImage ?? seo.ogImage ?? ""}
+                onChange={(e) => update("ogImage", e.target.value)}
+                placeholder="https://..."
+                inputMode="url"
+              />
+            </Field>
+          </Accordion>
+        </div>
+      </AccordionListContext.Provider>
+    </div>
   );
 }

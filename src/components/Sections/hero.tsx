@@ -180,15 +180,15 @@ function HeroCentered({
     sectionStyle = { backgroundColor: bg.color };
   }
 
-  // dark sem imagem e sem cor escura da logo → usa a classe bg-brand-dark.
+  // dark sem imagem e sem cor escura da logo → usa a classe bg-lp-brand-dark.
   const useBrandDark = dark && !img && !logoDark;
   // light com logo de fundo escuro cai no cream (não usa a cor escura da logo).
   const useCream =
     !dark && !img && (!bg || bg.type === "transparent" || logoDark);
-  const headlineCls = dark ? "text-white" : "text-brand";
-  const subCls = dark ? "text-white/85" : "text-ink-soft";
-  const eyebrowCls = dark ? "text-accent-soft" : "text-accent";
-  const ringTone = dark ? "border-white/[0.08]" : "border-brand/[0.06]";
+  const headlineCls = dark ? "text-white" : "text-lp-brand";
+  const subCls = dark ? "text-white/85" : "text-lp-ink-soft";
+  const eyebrowCls = dark ? "text-lp-accent-soft" : "text-lp-accent";
+  const ringTone = dark ? "border-white/[0.08]" : "border-lp-brand/[0.06]";
 
   // Mini-cards: usa os editados pelo usuário (heroFeatures) se houver; senão, os
   // destaques da copy gerada. Sem nenhum, a faixa some e o Hero fecha mais cedo.
@@ -200,8 +200,9 @@ function HeroCentered({
   return (
     <>
       <section
-        className={`relative overflow-hidden ${useCream ? "bg-cream" : ""} ${useBrandDark ? "bg-brand-dark" : ""
-          }`}
+        className={`relative overflow-hidden ${useCream ? "bg-lp-cream" : ""} ${
+          useBrandDark ? "bg-lp-brand-dark" : ""
+        }`}
         style={sectionStyle}
       >
         <div
@@ -221,8 +222,9 @@ function HeroCentered({
         />
 
         <div
-          className={`relative mx-auto flex max-w-4xl flex-col items-center px-6 pt-16 text-center md:pt-20 ${hasCards ? "pb-36 md:pb-44" : "pb-16 md:pb-20"
-            }`}
+          className={`relative mx-auto flex max-w-4xl flex-col items-center px-6 pt-16 text-center md:pt-20 ${
+            hasCards ? "pb-36 md:pb-44" : "pb-16 md:pb-20"
+          }`}
         >
           <LogoMark
             office={office}
@@ -269,8 +271,9 @@ function HeroSplit({ content, office, tone }: HeroProps) {
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2">
       <div
-        className={`relative flex flex-col justify-center px-6 py-16 md:px-12 md:py-24 ${dark ? "bg-brand" : "bg-cream"
-          }`}
+        className={`relative flex flex-col justify-center px-6 py-16 md:px-12 md:py-24 ${
+          dark ? "bg-lp-brand" : "bg-lp-cream"
+        }`}
       >
         <LogoMark
           office={office}
@@ -278,14 +281,15 @@ function HeroSplit({ content, office, tone }: HeroProps) {
           className="mb-8 self-start"
         />
         <p
-          className={`eyebrow mb-4 ${dark ? "text-accent-soft" : "text-accent"}`}
+          className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
         >
           {content.eyebrow}
           {office.city ? ` · ${office.city}` : ""}
         </p>
         <h1
-          className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${dark ? "text-white" : "text-brand"
-            }`}
+          className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${
+            dark ? "text-white" : "text-lp-brand"
+          }`}
         >
           <HeadlineText
             h={content.headline}
@@ -293,8 +297,9 @@ function HeroSplit({ content, office, tone }: HeroProps) {
           />
         </h1>
         <p
-          className={`mt-6 max-w-lg text-lg leading-relaxed ${dark ? "text-white/80" : "text-ink-soft"
-            }`}
+          className={`mt-6 max-w-lg text-lg leading-relaxed ${
+            dark ? "text-white/80" : "text-lp-ink-soft"
+          }`}
         >
           {content.sub}
         </p>
@@ -307,14 +312,14 @@ function HeroSplit({ content, office, tone }: HeroProps) {
       {/* Coluna direita — imagem do usuário, ou bloco da marca (oculta no mobile) */}
       <div
         aria-hidden
-        className="hidden min-h-[28rem] bg-brand-dark lg:block"
+        className="hidden min-h-[28rem] bg-lp-brand-dark lg:block"
         style={
           img
             ? {
-              backgroundImage: `url('${img}')`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
+                backgroundImage: `url('${img}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
             : undefined
         }
       />
@@ -341,7 +346,7 @@ function HeroVideo({
     ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
     : "";
   return (
-    <section className={dark ? "bg-brand-dark" : "bg-cream"}>
+    <section className={dark ? "bg-lp-brand-dark" : "bg-lp-cream"}>
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-16 md:px-10 lg:grid-cols-[56%_44%] lg:gap-12 lg:py-20">
         <div>
           <LogoMark
@@ -350,14 +355,15 @@ function HeroVideo({
             className="mb-7 self-start"
           />
           <p
-            className={`eyebrow mb-4 ${dark ? "text-accent-soft" : "text-accent"}`}
+            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
             {content.eyebrow}
             {office.city ? ` · ${office.city}` : ""}
           </p>
           <h1
-            className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${dark ? "text-white" : "text-brand"
-              }`}
+            className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${
+              dark ? "text-white" : "text-lp-brand"
+            }`}
           >
             <HeadlineText
               h={content.headline}
@@ -365,8 +371,9 @@ function HeroVideo({
             />
           </h1>
           <p
-            className={`mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/85" : "text-ink-soft"
-              }`}
+            className={`mt-5 max-w-xl text-lg leading-relaxed ${
+              dark ? "text-white/85" : "text-lp-ink-soft"
+            }`}
           >
             {content.sub}
           </p>
@@ -379,18 +386,18 @@ function HeroVideo({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Assistir ao vídeo de apresentação"
-            className="group relative mt-7 block aspect-video w-full max-w-xl overflow-hidden rounded-2xl bg-brand-dark shadow-lg"
+            className="group relative mt-7 block aspect-video w-full max-w-xl overflow-hidden rounded-2xl bg-lp-brand-dark shadow-lg"
             style={
               thumb
                 ? {
-                  backgroundImage: `${thumbImageOverlay(brandDarkRgb)}, url('${thumb}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
+                    backgroundImage: `${thumbImageOverlay(brandDarkRgb)}, url('${thumb}')`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
                 : undefined
             }
           >
-            <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-brand-dark shadow-xl transition group-hover:scale-110">
+            <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-lp-accent text-lp-brand-dark shadow-xl transition group-hover:scale-110">
               <PlayArrowFill size={26} className="ml-1" />
             </span>
           </a>
@@ -405,14 +412,14 @@ function HeroVideo({
         {/* Imagem da seção (oculta no mobile) */}
         <div className="hidden lg:block">
           <div
-            className="h-[34rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-brand"
+            className="h-[34rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand"
             style={
               img
                 ? {
-                  backgroundImage: `url('${img}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: imgPos,
-                }
+                    backgroundImage: `url('${img}')`,
+                    backgroundSize: "cover",
+                    backgroundPosition: imgPos,
+                  }
                 : undefined
             }
           />
@@ -463,7 +470,7 @@ function HeroStats({
 
   return (
     <section
-      className={`relative overflow-hidden ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`relative overflow-hidden ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
       style={sectionStyle}
     >
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-16 md:px-10 lg:grid-cols-[58%_42%] lg:py-24">
@@ -474,14 +481,15 @@ function HeroStats({
             className="mb-7 self-start"
           />
           <p
-            className={`eyebrow mb-4 ${dark ? "text-accent-soft" : "text-accent"}`}
+            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
             {content.eyebrow}
             {office.city ? ` · ${office.city}` : ""}
           </p>
           <h1
-            className={`font-display text-4xl font-semibold leading-[1.12] md:text-5xl ${dark ? "text-white" : "text-brand"
-              }`}
+            className={`font-display text-4xl font-semibold leading-[1.12] md:text-5xl ${
+              dark ? "text-white" : "text-lp-brand"
+            }`}
           >
             <HeadlineText
               h={content.headline}
@@ -489,8 +497,9 @@ function HeroStats({
             />
           </h1>
           <p
-            className={`mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/85" : "text-ink-soft"
-              }`}
+            className={`mt-5 max-w-xl text-lg leading-relaxed ${
+              dark ? "text-white/85" : "text-lp-ink-soft"
+            }`}
           >
             {content.sub}
           </p>
@@ -502,18 +511,24 @@ function HeroStats({
 
           {hasMetrics ? (
             <div
-              className={`mt-10 flex flex-wrap gap-8 border-t pt-7 ${dark ? "border-white/15" : "border-ink-soft/15"
-                }`}
+              className={`mt-10 flex flex-wrap gap-8 border-t pt-7 ${
+                dark ? "border-white/15" : "border-lp-ink-soft/15"
+              }`}
             >
               {office.metrics.slice(0, 3).map((m, i) => {
                 return (
                   <div key={i} className="flex items-center gap-3">
-                    <span className={dark ? "text-accent-soft" : "text-accent"}>
+                    <span
+                      className={
+                        dark ? "text-lp-accent-soft" : "text-lp-accent"
+                      }
+                    >
                       <IconForKey iconKey={m.icon} size={32} />
                     </span>
                     <p
-                      className={`max-w-[12rem] text-sm leading-snug ${dark ? "text-white/80" : "text-ink-soft"
-                        }`}
+                      className={`max-w-[12rem] text-sm leading-snug ${
+                        dark ? "text-white/80" : "text-lp-ink-soft"
+                      }`}
                     >
                       {m.label}
                     </p>
@@ -526,16 +541,16 @@ function HeroStats({
 
         {/* Card de imagem com borda dourada (oculto no mobile) */}
         <div className="hidden justify-self-end lg:block">
-          <div className="border-4 border-accent p-2">
+          <div className="border-4 border-lp-accent p-2">
             <div
-              className="h-[30rem] w-72 bg-brand"
+              className="h-[30rem] w-72 bg-lp-brand"
               style={
                 img
                   ? {
-                    backgroundImage: `url('${img}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: imgPos,
-                  }
+                      backgroundImage: `url('${img}')`,
+                      backgroundSize: "cover",
+                      backgroundPosition: imgPos,
+                    }
                   : undefined
               }
             />
@@ -555,12 +570,12 @@ function FeatureCards({
   belowTone?: Tone;
 }) {
   // Os cards descem por cima da seção seguinte. Em fundo claro, a sombra
-  // azul-marinho suave (shadow-brand/10) lê bem; em fundo escuro ela some, então
+  // azul-marinho suave (shadow-lp-brand/10) lê bem; em fundo escuro ela some, então
   // usa-se uma sombra preta mais forte + um leve halo branco para destacar.
   const cardShadow =
     belowTone === "dark"
       ? "shadow-2xl shadow-black/40 ring-1 ring-white/10"
-      : "shadow-xl shadow-brand/10 ring-1 ring-ink-soft/5";
+      : "shadow-xl shadow-lp-brand/10 ring-1 ring-lp-ink-soft/5";
   // A grade acompanha a quantidade de cards (1 a 3) para ficar sempre centrada.
   const widthCls =
     features.length >= 3
@@ -583,10 +598,10 @@ function FeatureCards({
               key={i}
               className={`flex items-center gap-4 rounded-2xl bg-white p-6 ${cardShadow}`}
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-accent-soft">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lp-brand text-lp-accent-soft">
                 <IconForKey iconKey={f.icon} size={26} />
               </span>
-              <p className="font-display text-base font-semibold leading-snug text-brand">
+              <p className="font-display text-base font-semibold leading-snug text-lp-brand">
                 {f.text}
               </p>
             </div>

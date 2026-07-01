@@ -16,22 +16,22 @@ export function PolicyPage({
   const texto = office.privacyPolicy?.trim() || defaultPrivacyPolicy(office);
   const nome = office.fullName || office.name || "Escritório";
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-lp-cream">
       <div className="mx-auto max-w-3xl px-6 py-16 md:px-10">
         {onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-brand transition hover:opacity-70"
+            className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-lp-brand transition hover:opacity-70"
           >
             <ArrowBack size={18} /> Voltar
           </button>
         ) : null}
-        <h1 className="font-display text-3xl font-bold text-brand md:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-lp-brand md:text-4xl">
           Política de Privacidade
         </h1>
-        <p className="mt-1 text-sm text-ink-soft">{nome}</p>
-        <div className="mt-8 whitespace-pre-line text-[1.02rem] leading-relaxed text-ink-soft">
+        <p className="mt-1 text-sm text-lp-ink-soft">{nome}</p>
+        <div className="mt-8 whitespace-pre-line text-[1.02rem] leading-relaxed text-lp-ink-soft">
           {texto}
         </div>
       </div>

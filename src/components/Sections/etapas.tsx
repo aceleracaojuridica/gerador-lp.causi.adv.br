@@ -1,5 +1,9 @@
 import { Reveal } from "@/components/ui/reveal";
-import type { EtapasContent, EtapasVariant, Tone } from "@/lib/landing-pages/schema";
+import type {
+  EtapasContent,
+  EtapasVariant,
+  Tone,
+} from "@/lib/landing-pages/schema";
 import { HeadlineText } from "./headline-text";
 
 type EtapasProps = {
@@ -29,11 +33,11 @@ function Header({
   return (
     <div className={centered ? "mx-auto max-w-2xl text-center" : ""}>
       <p
-        className={`eyebrow mb-3 ${dark ? "text-accent-soft" : "text-accent"}`}
+        className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
       >
         {content.eyebrow}
       </p>
-      <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+      <h2 className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}>
         <HeadlineText
           h={content.headline}
           accentVar={dark ? "accent-soft" : "accent"}
@@ -53,7 +57,7 @@ function Numerado({
 }) {
   return (
     <section
-      className={`py-20 md:py-28 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`py-20 md:py-28 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
     >
       <div className="mx-auto max-w-7xl px-6 md:px-10">
         <Reveal>
@@ -63,16 +67,16 @@ function Numerado({
           {content.steps.map((s, i) => (
             <Reveal key={`${s.title}-${s.text}`} delay={i * 80}>
               <div className="text-center sm:text-left">
-                <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent font-display text-xl font-bold text-[var(--color-accent-ink)] sm:mx-0">
+                <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-lp-accent font-display text-xl font-bold text-[var(--color-lp-accent-ink)] sm:mx-0">
                   {i + 1}
                 </span>
                 <h3
-                  className={`font-display text-xl font-bold ${dark ? "text-white" : "text-brand"}`}
+                  className={`font-display text-xl font-bold ${dark ? "text-white" : "text-lp-brand"}`}
                 >
                   {s.title}
                 </h3>
                 <p
-                  className={`mt-2 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-ink-soft"}`}
+                  className={`mt-2 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
                 >
                   {s.text}
                 </p>
@@ -95,19 +99,19 @@ function Timeline({
 }) {
   return (
     <section
-      className={`py-20 md:py-28 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`py-20 md:py-28 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
     >
       <div className="mx-auto max-w-6xl px-6 md:px-10">
         <div
           className={`relative overflow-hidden rounded-3xl p-8 md:p-12 ${
             dark
               ? "bg-white/[0.04] ring-1 ring-white/10"
-              : "bg-white shadow-sm ring-1 ring-ink-soft/10"
+              : "bg-white shadow-sm ring-1 ring-lp-ink-soft/10"
           }`}
         >
           <span
             aria-hidden
-            className="pointer-events-none absolute right-6 top-0 font-display text-[7rem] leading-none text-accent/10"
+            className="pointer-events-none absolute right-6 top-0 font-display text-[7rem] leading-none text-lp-accent/10"
           >
             &rdquo;
           </span>
@@ -116,20 +120,20 @@ function Timeline({
               <Header content={content} dark={dark} />
             </Reveal>
             <Reveal delay={120}>
-              <ol className="relative space-y-7 border-l-2 border-accent/30 pl-6">
+              <ol className="relative space-y-7 border-l-2 border-lp-accent/30 pl-6">
                 {content.steps.map((s, i) => (
                   <li key={`${s.title}-${s.text}`} className="relative">
-                    <span className="absolute -left-[1.72rem] top-1 h-3 w-3 rounded-full bg-accent" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+                    <span className="absolute -left-[1.72rem] top-1 h-3 w-3 rounded-full bg-lp-accent" />
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lp-accent">
                       Passo {i + 1}
                     </p>
                     <h3
-                      className={`mt-1 font-display text-xl font-bold ${dark ? "text-white" : "text-brand"}`}
+                      className={`mt-1 font-display text-xl font-bold ${dark ? "text-white" : "text-lp-brand"}`}
                     >
                       {s.title}
                     </h3>
                     <p
-                      className={`mt-1 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-ink-soft"}`}
+                      className={`mt-1 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
                     >
                       {s.text}
                     </p>

@@ -108,9 +108,9 @@ flowchart LR
 1. **Login** — E-mail e senha do Causi (Supabase Auth, Projeto A).
 2. **Dashboard** — Galeria de LPs do escritório; links para Contatos e Configurações.
 3. **Nova LP** — Formulário multi-step com dados obrigatórios do escritório.
-4. **Template** — Advogado escolhe um dos templates disponíveis na criação.
-5. **Geração** — IA gera copy jurídica; o template escolhido define as variações iniciais e a paleta de cores; LP salva com `templateId` + `schema`.
-6. **Editor** — Personalização de textos, variações por seção, tones (claro/escuro), cores, imagens, ordem das seções. Opção de trocar o template inteiro reaplica preset, mantém copy.
+4. **Preset (opcional)** — Advogado pode escolher um dos presets de layout na criação; default `classic-light`.
+5. **Geração** — IA gera copy jurídica; o preset define variantes iniciais; a logo define cores; LP salva apenas com `schema`.
+6. **Editor** — Personalização de textos, variações por seção, tones (claro/escuro), cores, imagens, ordem das seções. Trocar preset no editor reaplica layout (mantém cores da logo).
 7. **Publicação** — `status = published` + `slug` público; site em `slug.causi.adv.br`.
 8. **Leads** — Visitantes preenchem popup; dados em Contatos.
 

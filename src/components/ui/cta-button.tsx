@@ -10,18 +10,19 @@ const styles: Record<Variant, string> = {
   // Em fundo escuro/da marca: accent sólido. Texto contrasta com o accent
   // (branco se accent escuro, ex.: azul; escuro se accent claro, ex.: dourado).
   primary:
-    "bg-accent text-[var(--color-accent-ink)] shadow-lg shadow-black/15 hover:bg-accent-soft hover:-translate-y-0.5",
+    "bg-lp-accent text-[var(--color-lp-accent-ink)] shadow-lg shadow-black/15 hover:bg-lp-accent-soft hover:-translate-y-0.5",
   // Em fundo claro: navy sólido.
   accent:
-    "bg-brand text-white shadow-md shadow-brand/20 hover:bg-brand-dark hover:-translate-y-0.5",
+    "bg-lp-brand text-white shadow-md shadow-lp-brand/20 hover:bg-lp-brand-dark hover:-translate-y-0.5",
   // Em fundo escuro: branco, contraste máximo.
-  white: "bg-white text-brand shadow-lg shadow-black/15 hover:-translate-y-0.5",
+  white:
+    "bg-white text-lp-brand shadow-lg shadow-black/15 hover:-translate-y-0.5",
   // Secundário em fundo escuro, sempre ao lado de um primary.
   ghost:
     "border-2 border-white/40 text-white hover:border-white hover:bg-white/10",
   // Secundário em fundo claro, ao lado de um accent.
   outline:
-    "border-2 border-brand/25 text-brand hover:border-brand hover:bg-brand/5",
+    "border-2 border-lp-brand/25 text-lp-brand hover:border-lp-brand hover:bg-lp-brand/5",
 };
 
 // No preview do builder o CTA é apenas ilustrativo: sem popup de lead.

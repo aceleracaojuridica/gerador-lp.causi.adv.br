@@ -23,8 +23,8 @@ export function LogoMark({
     );
   }
 
-  const wordColor = tone === "dark" ? "text-brand" : "text-white";
-  const rule = tone === "dark" ? "bg-accent/50" : "bg-accent-soft/60";
+  const wordColor = tone === "dark" ? "text-lp-brand" : "text-white";
+  const rule = tone === "dark" ? "bg-lp-accent/50" : "bg-lp-accent-soft/60";
   const nome = office.name || "Seu Escritório";
 
   return (
@@ -34,7 +34,7 @@ export function LogoMark({
       >
         {nome}
       </span>
-      <span className="mt-2 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-accent">
+      <span className="mt-2 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-lp-accent">
         <span className={`h-px w-6 ${rule}`} />
         Advocacia
         <span className={`h-px w-6 ${rule}`} />

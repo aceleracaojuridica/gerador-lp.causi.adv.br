@@ -9,19 +9,18 @@ import {
   Delete,
   Movie,
   Palette,
-  ProgressActivity,
   Upload,
 } from "@material-symbols-svg/react";
-import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { AutoTextarea } from "@/components/auto-textarea";
 import { maskPhone } from "@/components/Builder/fields";
 import { EstadoCidade } from "@/components/Builder/estado-cidade";
-import { LayoutPickerStep } from "@/components/Builder/layout-picker-step";
 import { MelhorarTextoButton } from "@/components/Builder/melhorar-texto-button";
+import { TemplateCard } from "@/components/Builder/template-card";
+import CausiLogo from "@/components/icons/causi-logo";
 import { PalettePicker } from "@/components/Builder/palette-picker";
 import { SocialsInput } from "@/components/Builder/socials-input";
 import { Button } from "@/components/ui/button";
@@ -45,14 +44,12 @@ import {
 } from "@/lib/landing-pages/colors";
 import type { FocoCopy } from "@/lib/landing-pages/focos";
 import { matchPalette } from "@/lib/landing-pages/palettes";
+import { DEFAULT_THEME, type SocialNetwork, type Theme } from "@/lib/landing-pages/schema";
 import {
-  DEFAULT_THEME,
-  type Layout,
-  type Office,
-  type SocialNetwork,
-  type Theme,
-} from "@/lib/landing-pages/schema";
-import { TEMPLATES } from "@/lib/landing-pages/templates";
+  DEFAULT_TEMPLATE_ID,
+  getTemplate,
+  TEMPLATES,
+} from "@/lib/landing-pages/templates";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -64,12 +61,12 @@ import {
   validateWizardStep,
 } from "./schema";
 
-const STEPS = ["Escritório", "Contato", "Imagens", "Layout"] as const;
+const STEPS = ["Escritório", "Contato", "Imagens"] as const;
 const WIZARD_MAX_W = "mx-auto w-full max-w-2xl";
 
-export function LandingPageCreateForm({
-  onImmersiveChange,
-}: LandingPageCreateFormProps = {}) {
+export function LandingPageCreateForm(
+  _props: LandingPageCreateFormProps = {},
+) {
   const router = useRouter();
   const logoRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef<HTMLInputElement>(null);
@@ -118,28 +115,13 @@ export function LandingPageCreateForm({
   } = values;
 
   const [step, setStep] = useState(0);
-
-  // ── Layout picker state (step 3) ─────────────────────────────────────────
-  const [layout, setLayout] = useState<Layout>(TEMPLATES[0].layout);
-  const [generatedCopy, setGeneratedCopy] = useState<FocoCopy | null>(null);
-  const [generatedImages, setGeneratedImages] = useState<{
-    hero: string;
-    dor: string;
-    sobre: string;
-    solucao: string;
-  } | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] =
+    useState(DEFAULT_TEMPLATE_ID);
 
   // ── Loading / error state ─────────────────────────────────────────────────
-  const [gerandoCopy, setGerandoCopy] = useState(false); // step 2→3
-  const [gerando, setGerando] = useState(false); // step 3 → save
+  const [gerando, setGerando] = useState(false);
   const [gerandoMsg, setGerandoMsg] = useState("");
   const [erro, setErro] = useState("");
-
-  const immersive = step === 3 && generatedCopy !== null;
-  useEffect(() => {
-    onImmersiveChange?.(immersive);
-    return () => onImmersiveChange?.(false);
-  }, [immersive, onImmersiveChange]);
 
   // ── Address helpers ───────────────────────────────────────────────────────
   function setAddressCity(i: number, uf: string, cidade: string) {
@@ -227,57 +209,13 @@ export function LandingPageCreateForm({
     });
   }
 
-  // ── Monta o Office de preview para o LayoutPickerStep ────────────────────
-  function buildPreviewOffice(): Office {
-    const primaryAddress = addresses[0];
-    return {
-      name: name.trim(),
-      fullName: name.trim(),
-      product: tema.trim(),
-      area: tema.trim(),
-      city: showAddress
-        ? [primaryAddress?.cidade, primaryAddress?.uf].filter(Boolean).join("/")
-        : "",
-      whatsapp,
-      whatsappDisplay,
-      email: email.trim(),
-      address: showAddress ? (primaryAddress?.address.trim() ?? "") : "",
-      mapsUrl: showAddress ? (primaryAddress?.mapsUrl.trim() ?? "") : "",
-      extraAddresses: showAddress
-        ? addresses
-          .slice(1)
-          .map((a) => ({
-            address: a.address.trim(),
-            city: [a.cidade, a.uf].filter(Boolean).join("/"),
-            mapsUrl: a.mapsUrl.trim(),
-          }))
-          .filter((a) => a.address)
-        : [],
-      about: about.trim(),
-      diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
-      logoSrc,
-      logoBg,
-      lawyers,
-      socials: showSocials
-        ? socials.map((s) => ({ ...s, url: s.url.trim() })).filter((s) => s.url)
-        : [],
-      sectionImages: generatedImages ?? {
-        hero: "",
-        dor: "",
-        sobre: "",
-        solucao: "",
-      },
-      metrics: [],
-    };
-  }
-
-  // ── Step 2 → 3: chama a IA para gerar copy (sem salvar) ─────────────────
-  async function gerarCopy() {
+  // ── Gera copy + imagens e salva a LP (passo final) ───────────────────────
+  async function criarEEditar() {
     setErro("");
-    setGerandoCopy(true);
+    setGerando(true);
     setGerandoMsg("Escrevendo a copy sobre o tema e buscando as imagens…");
 
-    const payload = {
+    const copyPayload = {
       name: name.trim(),
       tema: tema.trim(),
       city: showAddress
@@ -287,46 +225,54 @@ export function LandingPageCreateForm({
       diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
     };
 
+    let generatedCopy: FocoCopy;
+    let generatedImages: {
+      hero: string;
+      dor: string;
+      sobre: string;
+      solucao: string;
+    };
+
     try {
-      const res = await fetch("/api/gerar-copy", {
+      const copyRes = await fetch("/api/gerar-copy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(copyPayload),
       });
-      const data = (await res.json().catch(() => ({}))) as {
+      const copyData = (await copyRes.json().catch(() => ({}))) as {
         error?: string;
         copy?: FocoCopy;
         images?: typeof generatedImages;
       };
-      if (res.status === 403 || data.error?.includes("acesso")) {
+      if (copyRes.status === 403 || copyData.error?.includes("acesso")) {
         showAccessDeniedToast();
-        setGerandoCopy(false);
+        setGerando(false);
         return;
       }
-      if (!res.ok || !data.copy) {
-        throw new Error(data.error || "Falha ao gerar a copy.");
+      if (!copyRes.ok || !copyData.copy) {
+        throw new Error(copyData.error || "Falha ao gerar a copy.");
       }
-      setGeneratedCopy(data.copy);
-      setGeneratedImages(data.images ?? null);
-      // Inicializa o layout com o template padrão
-      setLayout({ ...TEMPLATES[0].layout });
-      setStep(3);
+      generatedCopy = copyData.copy;
+      generatedImages = copyData.images ?? {
+        hero: "",
+        dor: "",
+        sobre: "",
+        solucao: "",
+      };
     } catch (e) {
       console.error(e);
       setErro(
         "Não foi possível gerar a copy agora. Verifique sua conexão e tente novamente.",
       );
-    } finally {
-      setGerandoCopy(false);
+      setGerando(false);
       setGerandoMsg("");
+      return;
     }
-  }
 
-  // ── Step 3: confirma e salva no banco ────────────────────────────────────
-  async function gerar() {
-    setErro("");
-    setGerando(true);
-    const payload = {
+    setGerandoMsg("Criando sua landing page…");
+
+    const templateLayout = getTemplate(selectedTemplateId).layout;
+    const savePayload = {
       name: name.trim(),
       tema: tema.trim(),
       city: showAddress
@@ -339,13 +285,13 @@ export function LandingPageCreateForm({
       mapsUrl: showAddress ? (addresses[0]?.mapsUrl.trim() ?? "") : "",
       extraAddresses: showAddress
         ? addresses
-          .slice(1)
-          .map((a) => ({
-            address: a.address.trim(),
-            city: [a.cidade, a.uf].filter(Boolean).join("/"),
-            mapsUrl: a.mapsUrl.trim(),
-          }))
-          .filter((a) => a.address)
+            .slice(1)
+            .map((a) => ({
+              address: a.address.trim(),
+              city: [a.cidade, a.uf].filter(Boolean).join("/"),
+              mapsUrl: a.mapsUrl.trim(),
+            }))
+            .filter((a) => a.address)
         : [],
       about: about.trim(),
       diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
@@ -357,17 +303,16 @@ export function LandingPageCreateForm({
       socials: showSocials
         ? socials.map((s) => ({ ...s, url: s.url.trim() })).filter((s) => s.url)
         : [],
-      // Pré-gerados pelo /api/gerar-copy
       copy: generatedCopy,
       images: generatedImages,
-      // Layout montado pelo advogado no picker
-      layout,
+      layout: templateLayout,
     };
+
     try {
       const res = await fetch("/api/gerar-lp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(savePayload),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -387,6 +332,7 @@ export function LandingPageCreateForm({
         "Não foi possível salvar a página agora. Verifique sua conexão e tente novamente.",
       );
       setGerando(false);
+      setGerandoMsg("");
     }
   }
 
@@ -402,64 +348,31 @@ export function LandingPageCreateForm({
       return;
     }
     if (step === 2) {
-      void gerarCopy();
+      void criarEEditar();
     } else {
       setStep((s) => s + 1);
     }
   }
 
-  // ── Telas de loading ──────────────────────────────────────────────────────
-  if (gerandoCopy) {
+  // ── Tela de loading ──────────────────────────────────────────────────────
+  if (gerando) {
     return (
       <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center overflow-hidden bg-muted/15 px-4 sm:px-6">
         <Card className="w-full max-w-md text-center">
           <CardContent className="pt-8">
-            <span className="relative mb-5 inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl">
-              <NextImage
-                src="/logo-causi.jpg"
-                alt="Causi"
-                width={56}
-                height={56}
-                className="h-full w-full object-cover"
-              />
-              <ProgressActivity
-                size={56}
-                className="absolute animate-spin text-primary/50"
-              />
-            </span>
+            <div className="relative mx-auto mb-5 flex size-16 items-center justify-center">
+              <CausiLogo className="relative size-10 animate-pulse" aria-hidden />
+              <span className="sr-only">Gerando copy da landing page</span>
+            </div>
             <h2 className="text-lg font-semibold text-foreground">
-              Gerando a copy de {name}
+              Criando a página de {name}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {gerandoMsg ||
-                "Escrevendo a copy sobre o tema e buscando as imagens. Leva alguns segundos."}
+                "Escrevendo a copy, buscando imagens e montando sua landing page. Leva alguns segundos."}
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // ── Step 3: Layout Picker (tela cheia, estilo editor) ─────────────────────
-  if (step === 3 && generatedCopy) {
-    return (
-      <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <LayoutPickerStep
-          office={buildPreviewOffice()}
-          copy={generatedCopy}
-          videoId={videoId}
-          layout={layout}
-          onLayoutChange={setLayout}
-          theme={theme}
-          onThemeChange={applyPalette}
-          onConfirm={gerar}
-          gerando={gerando}
-        />
-        {erro ? (
-          <p className="absolute bottom-4 left-1/2 z-30 max-w-md -translate-x-1/2 rounded-lg bg-destructive/10 px-3 py-2 text-center text-xs text-destructive shadow">
-            {erro}
-          </p>
-        ) : null}
       </div>
     );
   }
@@ -1133,6 +1046,29 @@ export function LandingPageCreateForm({
                     />
                   ) : null}
 
+                  <div>
+                    <p className="mb-1.5 text-sm font-medium text-gray-700">
+                      Estrutura inicial{" "}
+                      <span className="font-normal text-gray-400">
+                        (opcional)
+                      </span>
+                    </p>
+                    <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+                      Você pode escolher uma destas opções prontas para uso ou
+                      editar o seu depois no editor.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {TEMPLATES.map((template) => (
+                        <TemplateCard
+                          key={template.id}
+                          template={template}
+                          selected={selectedTemplateId === template.id}
+                          onSelect={() => setSelectedTemplateId(template.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
                   <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                     As imagens de cenário (fundo do hero, dor, escritório) o Claude
                     busca na Unsplash conforme o tema. Você só envia logo e fotos
@@ -1167,14 +1103,11 @@ export function LandingPageCreateForm({
                   type="button"
                   size="lg"
                   className="h-11 w-full sm:ml-auto sm:h-10 sm:w-auto sm:min-w-44"
-                  disabled={!temNome || !temTema || gerandoCopy}
+                  disabled={!temNome || !temTema || gerando}
                   onClick={avancar}
                 >
                   {step === 2 ? (
-                    <>
-                      Gerar preview
-                      <ChevronRight size={16} />
-                    </>
+                    <>Criar e editar</>
                   ) : (
                     <>
                       Próxima etapa

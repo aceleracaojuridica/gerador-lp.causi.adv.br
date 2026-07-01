@@ -55,7 +55,7 @@ export function Footer({
   }
 
   return (
-    <footer className="bg-brand-dark text-white">
+    <footer className="bg-lp-brand-dark text-white">
       <div className="mx-auto max-w-7xl px-6 py-16 md:px-10">
         <div className="grid grid-cols-1 gap-10 md:flex md:flex-row md:gap-10">
           {/* Endereços — coluna única (1 cidade) ou coluna por cidade (multi) */}
@@ -65,7 +65,7 @@ export function Footer({
                 <p className="mb-1 text-base font-bold text-white">
                   {fmtCity(g.city)}
                 </p>
-                <div className="mb-4 h-px w-8 bg-accent-soft" />
+                <div className="mb-4 h-px w-8 bg-lp-accent-soft" />
                 <div className="space-y-4">
                   {g.items.map((a, i) => (
                     <div key={i}>
@@ -77,7 +77,7 @@ export function Footer({
                           href={a.mapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-accent-soft transition hover:text-white"
+                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-lp-accent-soft transition hover:text-white"
                         >
                           Ver no mapa <span aria-hidden>↗</span>
                         </a>
@@ -89,7 +89,7 @@ export function Footer({
             ))
           ) : (
             <div className="min-w-0 md:flex-1">
-              <p className="eyebrow mb-4 text-accent-soft">
+              <p className="eyebrow mb-4 text-lp-accent-soft">
                 {allAddresses.length > 1 ? "Endereços" : "Endereço"}
               </p>
               {allAddresses.length > 0 ? (
@@ -104,7 +104,7 @@ export function Footer({
                           href={a.mapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-accent-soft underline-offset-2 transition hover:text-white hover:underline"
+                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-lp-accent-soft underline-offset-2 transition hover:text-white hover:underline"
                         >
                           Ver mais <span aria-hidden>→</span>
                         </a>
@@ -121,7 +121,7 @@ export function Footer({
           {/* Contato(s) — 1 coluna; a partir de 3, quebra em colunas de 2 */}
           {contactColumns.map((col, ci) => (
             <div key={ci} className="min-w-0 md:flex-1">
-              <p className="eyebrow mb-4 text-accent-soft">Contato</p>
+              <p className="eyebrow mb-4 text-lp-accent-soft">Contato</p>
               <div className="space-y-3 text-white/75">
                 {col.map((c, i) => (
                   <div key={i} className="space-y-1.5">
@@ -132,7 +132,7 @@ export function Footer({
                             c.whatsapp,
                             "Olá, vim pelo site e gostaria de tirar uma dúvida.",
                           )}
-                          className="transition hover:text-accent-soft"
+                          className="transition hover:text-lp-accent-soft"
                         >
                           {c.whatsappDisplay}
                         </a>
@@ -142,7 +142,7 @@ export function Footer({
                       <p>
                         <a
                           href={`mailto:${c.email}`}
-                          className="break-all transition hover:text-accent-soft"
+                          className="break-all transition hover:text-lp-accent-soft"
                         >
                           {c.email}
                         </a>
@@ -157,7 +157,7 @@ export function Footer({
           {/* Redes sociais */}
           {socials.length > 0 ? (
             <div className="min-w-0 md:flex-1 md:text-right">
-              <p className="eyebrow mb-4 text-accent-soft">Acompanhe</p>
+              <p className="eyebrow mb-4 text-lp-accent-soft">Acompanhe</p>
               <div className="flex gap-3 md:justify-end">
                 {socials.map((s, i) => (
                   <a
@@ -169,7 +169,7 @@ export function Footer({
                       SOCIALS_META.find((m) => m.id === s.network)?.label ??
                       s.network
                     }
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-accent-soft transition hover:border-white/30 hover:bg-white/15 hover:text-white"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-lp-accent-soft transition hover:border-white/30 hover:bg-white/15 hover:text-white"
                   >
                     <SocialIcon network={s.network} size={18} />
                   </a>
@@ -211,7 +211,7 @@ export function Footer({
               href="https://www.causi.com.br/advogado"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent-soft underline-offset-2 transition hover:text-white hover:underline"
+              className="text-lp-accent-soft underline-offset-2 transition hover:text-white hover:underline"
             >
               Causi
             </a>

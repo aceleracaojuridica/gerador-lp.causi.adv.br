@@ -21,6 +21,7 @@ import type {
   PopupQuestion,
   SectionImageKey,
   SectionTones,
+  SeoMeta,
   SocialNetwork,
   Theme,
   ToggleableSection,
@@ -404,6 +405,13 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     }));
   }
 
+  /* ----- SEO ----- */
+  function setSeoField<K extends keyof SeoMeta>(key: K, value: SeoMeta[K]) {
+    editCopy((c) => {
+      c.seo = { ...(c.seo ?? {}), [key]: value } as SeoMeta;
+    });
+  }
+
   /* ----- tipografia ----- */
   function setFont(part: "heading" | "body", id: string) {
     setOffice((o) => ({
@@ -615,14 +623,13 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     setAutoTheme(true);
   }
 
-  /** Aplica tema e layout de um template; preserva ordem e seções ocultas. */
+  /** Aplica layout de um preset; preserva ordem, seções ocultas e cores da logo. */
   function applyTemplate(template: LpTemplate) {
     setLayout((l) => ({
       ...template.layout,
       order: l.order,
       hidden: { ...template.layout.hidden, ...l.hidden },
     }));
-    applyPalette(template.theme);
   }
 
   // product/area: usa o que veio na LP gerada; se vazio, deriva do tema (foco
@@ -703,6 +710,7 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     setContactPhone,
     setContactEmail,
     removeContact,
+    setSeoField,
     setTag,
     setFont,
     setButtonField,

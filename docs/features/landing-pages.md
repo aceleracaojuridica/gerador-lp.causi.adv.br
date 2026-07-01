@@ -6,7 +6,7 @@ Documentação da feature de criação, edição e publicação de landing pages
 
 O advogado preenche um formulário, a IA gera a copy e o advogado escolhe **variações por seção** no passo Layout. O sistema salva um **snapshot JSON** (`LpSchema`). O editor e o site publicado usam o **mesmo renderer React** (`LandingPreview`). Não há HTML no banco.
 
-**Centro da feature:** a LP é composta por **seções com variações**. Cada seção (Hero, Dor, Solução, etc.) tem variantes de layout independentes. O template (`lib/templates.ts`) é apenas um preset que copia valores iniciais para `schema.layout` — ver [templates-vs-variants.md](templates-vs-variants.md).
+**Centro da feature:** a LP é composta por **seções com variações**. Cada seção (Hero, Dor, Solução, etc.) tem variantes de layout independentes. O template (`lib/templates.ts`) é apenas um preset que copia valores iniciais para `schema.layout` — ver [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
 
 Cada escritório pode criar **N landing pages** sem limite.
 
@@ -197,28 +197,27 @@ A verificação consulta `landing_pages.slug` **sem filtrar por usuário** (`isL
 
 ```mermaid
 flowchart TD
-  A[Galeria /] --> B[/nova — wizard 4 passos]
-  B --> C[Escritório Contato Imagens]
+  A[Galeria /] --> B[/nova — wizard 3 passos]
+  B --> C[Escritório Contato Imagens + preset opcional]
   C --> D[POST /api/gerar-copy]
-  D --> E[LayoutPickerStep — variantes por seção]
-  E --> F[POST /api/gerar-lp]
-  F --> G[Editor /lp/slug]
-  G --> H[VariantPicker + saveLpAction]
-  H --> I[Publicar — status=published]
-  I --> J[slug.causi.adv.br]
+  D --> E[POST /api/gerar-lp]
+  E --> F[Editor /lp/slug]
+  F --> G[VariantPicker + saveLpAction]
+  G --> H[Publicar — status=published]
+  H --> I[slug.causi.adv.br]
 ```
 
-Ver também [templates-vs-variants.md](templates-vs-variants.md).
+Ver também [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
 
 ---
 
 ## Geração por IA
 
-### Wizard: copy antes do layout
+### Wizard: copy e criação
 
 **Arquivo:** `app/api/gerar-copy/route.ts`
 
-Entre o passo Imagens e o passo Layout, o wizard chama `POST /api/gerar-copy` para obter copy + imagens **sem salvar** no banco. O advogado monta `schema.layout` no `LayoutPickerStep` e só então confirma.
+No passo final (Imagens), ao clicar em **Criar e editar**, o wizard chama `POST /api/gerar-copy` e em seguida `POST /api/gerar-lp`. O advogado pode escolher um preset opcional de layout; as cores vêm da logo.
 
 ### Persistência final
 
@@ -227,12 +226,12 @@ Entre o passo Imagens e o passo Layout, o wizard chama `POST /api/gerar-copy` pa
 ### Pipeline
 
 1. **Slug** — `slugFromOfficeName(name)` + `allocateUniqueLpSlug()` (`lib/slug.ts`); verifica unicidade global antes da IA.
-2. **Layout** — Usa `layout` explícito do wizard quando presente; senão fallback do `templateId` (`getTemplate().layout`). Sobrescreve `hero: "video"` se houver `videoId`.
-3. **Theme** — Paleta enviada pelo wizard ou do template.
+2. **Layout** — Usa `layout` explícito do wizard (copiado do preset escolhido ou default). Sobrescreve `hero: "video"` se houver `videoId`.
+3. **Theme** — Paleta enviada pelo wizard (extraída da logo ou padrão).
 4. **Copy** — Reutiliza copy pré-gerada (`/api/gerar-copy`) ou chama GPT-4o inline.
 5. **Imagens** — Reutiliza imagens do wizard ou Unsplash + `imageBank`.
 6. **Schema** — `buildSchema(office, theme, tema, layout, …)` monta o JSON completo.
-7. **Persistência** — `saveLp(userId, { slug, name, tema, templateId, schema })`.
+7. **Persistência** — `saveLp(userId, { slug, name, tema, schema })`.
 
 ---
 
@@ -318,7 +317,7 @@ type LpSchema = {
 };
 ```
 
-`schema.layout` é a **fonte da verdade** para as variações ativas. O `templateId` em `StoredLp` registra de qual template o layout partiu, mas a renderização usa exclusivamente `schema.layout`.
+`schema.layout` é a **fonte da verdade** para as variações ativas. Apenas o schema completo é persistido — nenhum id de preset.
 
 ---
 
@@ -335,7 +334,7 @@ type LpSchema = {
 
 ## Formulário multi-step (`/nova`)
 
-**Arquivos:** `app/(studio)/nova/page.tsx`, `components/Builder/create-landing-page-wizard.tsx`, `components/Builder/layout-picker-step.tsx`
+**Arquivos:** `app/(app)/nova/page.tsx`, `forms/LandingPageCreateForm/landing-page-create-form.tsx`, `components/Builder/template-card.tsx`
 
 ### Passos
 
@@ -343,14 +342,12 @@ type LpSchema = {
 |---|------|-------------------|
 | 1 | Escritório | Tema jurídico, nome, sobre, diferenciais |
 | 2 | Contato | WhatsApp, e-mail, endereço, redes sociais |
-| 3 | Imagens | Logo, fotos dos advogados, imagens de cenário, vídeo YouTube, paleta |
-| 4 | Layout | `LayoutPickerStep` — preview grande + carrossel de variantes por seção |
+| 3 | Imagens | Logo, fotos, vídeo YouTube, paleta, preset opcional de layout |
 
 ### Submissão
 
-1. Passo 3→4: `POST /api/gerar-copy` (copy + imagens, sem salvar).
-2. Passo 4: advogado confirma layout → `POST /api/gerar-lp` com `layout` explícito.
-3. Redirect → `/lp/{slug}?novo=1`.
+1. Passo 3: **Criar e editar** → `POST /api/gerar-copy` e `POST /api/gerar-lp` com `layout` do preset escolhido (default `classic-light`).
+2. Redirect → `/lp/{slug}?novo=1`.
 
 ---
 
@@ -381,7 +378,7 @@ sequenceDiagram
 
 1. **Middleware:** `escritorio.causi.adv.br` → `slug = escritorio` (rota pública, sem auth).
 2. **Query:** `lps WHERE slug = ? AND status = 'published'`.
-3. **Render:** Server Component + `LandingPreview` — não consulta `templateId`; `schema.layout` já tem as variações.
+3. **Render:** Server Component + `LandingPreview` — `schema.layout` define as variações.
 4. **Leads:** `POST /api/lead` na mesma origem do subdomínio.
 
 ---
@@ -392,7 +389,7 @@ sequenceDiagram
 
 | Função | Operação |
 |--------|----------|
-| `listLps` | slug, name, tema, templateId |
+| `listLps` | slug, name, tema |
 | `getLp` | LP completa + `migrate()` |
 | `saveLp` | upsert `(causi_user_id, slug)` |
 | `deleteLp` | remove por slug |
@@ -433,7 +430,7 @@ Mesmo padrão em `Dor`, `Solucao`, `Sobre`, `Areas`, `Etapas`, `Equipe`.
 
 ## Referências
 
-- [templates-vs-variants.md](templates-vs-variants.md) — template vs `schema.layout` (referência canônica)
+- [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md) — template vs `schema.layout` (referência canônica)
 - [prd.md](../prd.md) — requisitos RF-04, RF-06
 - [database.md](../database.md) — schema `lps`
 - [api.md](../api.md) — `POST /api/gerar-lp`

@@ -16,7 +16,7 @@ export function CtaFinal({
   const dark = tone === "dark";
   return (
     <section
-      className={`relative overflow-hidden py-20 md:py-24 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`relative overflow-hidden py-20 md:py-24 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
     >
       <div
         aria-hidden
@@ -31,17 +31,19 @@ export function CtaFinal({
 
       <div className="relative mx-auto max-w-2xl px-6 text-center">
         <Reveal>
-          <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-brand-dark">
+          <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-lp-accent text-lp-brand-dark">
             <Chat size={30} />
           </span>
-          <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+          <h2
+            className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
+          >
             <HeadlineText
               h={content.headline}
               accentVar={dark ? "accent-soft" : "accent"}
             />
           </h2>
           <p
-            className={`mx-auto mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/85" : "text-ink-soft"}`}
+            className={`mx-auto mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/85" : "text-lp-ink-soft"}`}
           >
             {content.sub}
           </p>

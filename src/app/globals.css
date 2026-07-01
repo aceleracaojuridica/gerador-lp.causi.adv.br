@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "./onboarding.css";
+@import "./lp-theme.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -66,18 +67,6 @@
   --color-ui-gray: var(--muted-foreground);
   --color-ui-gray-dark: color-mix(in oklch, var(--foreground) 70%, transparent);
   --color-ui-hover: color-mix(in oklch, var(--muted) 80%, var(--background));
-
-  /* LP: @theme inline faz bg-brand/text-brand usarem var(--lp-*) em runtime */
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
-  --color-brand: var(--lp-brand);
-  --color-brand-dark: var(--lp-brand-dark);
-  --color-accent: var(--lp-accent);
-  --color-accent-soft: var(--lp-accent-soft);
-  --color-cream: var(--lp-cream);
-  --color-cream-deep: var(--lp-cream-deep);
-  --color-ink: var(--lp-ink);
-  --color-ink-soft: var(--lp-ink-soft);
 }
 
 :root {
@@ -125,18 +114,6 @@
   --warning-foreground: oklch(0.985 0 0);
   --invert: var(--color-zinc-900);
   --invert-foreground: var(--color-zinc-50);
-  /* Tipografia da LP (sobrescrevível no wrapper .lp-root) */
-  --font-display: var(--font-fraunces);
-  --font-body: var(--font-inter);
-  /* Paleta da LP — sobrescritos em runtime por themeToCssVars() */
-  --lp-brand: #1b2a4a;
-  --lp-brand-dark: #111a30;
-  --lp-accent: #c79a3f;
-  --lp-accent-soft: #e6c87c;
-  --lp-cream: #faf7f1;
-  --lp-cream-deep: #efe6d6;
-  --lp-ink: #1b2536;
-  --lp-ink-soft: #59647b;
 }
 
 .dark {
@@ -209,37 +186,6 @@
   }
   h3 {
     @apply text-base md:text-lg font-semibold;
-  }
-}
-
-/* Tipografia e isolamento de tema da LP publicada/preview */
-@layer components {
-  .lp-root {
-    color: var(--lp-ink);
-    --font-display: var(--font-fraunces);
-    --font-body: var(--font-inter);
-  }
-
-  html.dark .lp-root {
-    color: var(--lp-ink);
-  }
-
-  .font-display {
-    font-family: var(--font-display), system-ui, -apple-system, sans-serif;
-  }
-
-  .section-title {
-    font-family: var(--font-display), system-ui, -apple-system, sans-serif;
-    font-size: clamp(1.875rem, 3.5vw, 3rem);
-    font-weight: 600;
-    line-height: 1.12;
-  }
-
-  .eyebrow {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
   }
 }
 

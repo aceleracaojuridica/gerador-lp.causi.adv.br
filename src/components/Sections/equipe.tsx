@@ -23,24 +23,22 @@ export function Equipe({ lawyers, brandRgb, tone, variant }: EquipeProps) {
 
   return (
     <section
-      className={`py-16 md:py-24 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`py-16 md:py-24 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
     >
       <div className="mx-auto max-w-7xl px-6 md:px-10">
         <Reveal>
           <p
-            className={`eyebrow mb-3 ${dark ? "text-accent-soft" : "text-accent"}`}
+            className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
             Nossa equipe
           </p>
           <h2
-            className={`section-title max-w-2xl ${dark ? "text-white" : "text-brand"}`}
+            className={`section-title max-w-2xl ${dark ? "text-white" : "text-lp-brand"}`}
           >
             Profissionais dedicados ao{" "}
             <span
               style={{
-                color: dark
-                  ? "var(--lp-accent-soft)"
-                  : "var(--lp-accent)",
+                color: dark ? "var(--lp-accent-soft)" : "var(--lp-accent)",
               }}
             >
               seu caso
@@ -76,28 +74,28 @@ function SplitAlternado({
               {/* Foto — altura contida para não inflar a seção */}
               <div className={fotoDireita ? "lg:order-2" : ""}>
                 <div
-                  className="h-56 w-full rounded-tl-[2rem] rounded-br-[2rem] bg-brand bg-cover shadow-md md:h-64 lg:h-72"
+                  className="h-56 w-full rounded-tl-[2rem] rounded-br-[2rem] bg-lp-brand bg-cover shadow-md md:h-64 lg:h-72"
                   style={
                     l.photo
                       ? {
-                        backgroundImage: `url('${l.photo}')`,
-                        backgroundPosition: focalPos(l.focal),
-                      }
+                          backgroundImage: `url('${l.photo}')`,
+                          backgroundPosition: focalPos(l.focal),
+                        }
                       : undefined
                   }
                 />
               </div>
               {/* Texto */}
               <div className={fotoDireita ? "lg:order-1" : ""}>
-                <span className="mb-3 block h-1 w-10 rounded-full bg-accent" />
+                <span className="mb-3 block h-1 w-10 rounded-full bg-lp-accent" />
                 <h3
-                  className={`font-display text-2xl font-semibold leading-tight md:text-3xl ${dark ? "text-white" : "text-brand"}`}
+                  className={`font-display text-2xl font-semibold leading-tight md:text-3xl ${dark ? "text-white" : "text-lp-brand"}`}
                 >
                   {l.name || "Advogado(a)"}
                 </h3>
                 {l.role ? (
                   <p
-                    className={`mt-2 text-lg font-medium ${dark ? "text-accent-soft" : "text-accent"}`}
+                    className={`mt-2 text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
                   >
                     {l.role}
                   </p>
@@ -133,7 +131,7 @@ function RetratoElegante({
     <div className={`mt-12 ${gridCls}`}>
       {lawyers.map((l, i) => (
         <Reveal key={`${l.name}-${l.role}`} delay={i * 70}>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-brand shadow-md">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-lp-brand shadow-md">
             {l.photo ? (
               <div
                 className="absolute inset-0 bg-cover"
@@ -150,7 +148,7 @@ function RetratoElegante({
               }}
             />
             <div className="absolute inset-x-0 bottom-0 p-5">
-              <span className="mb-2 block h-0.5 w-9 bg-accent" />
+              <span className="mb-2 block h-0.5 w-9 bg-lp-accent" />
               <p className="font-display text-lg font-semibold leading-tight text-white">
                 {l.name || "Advogado(a)"}
               </p>

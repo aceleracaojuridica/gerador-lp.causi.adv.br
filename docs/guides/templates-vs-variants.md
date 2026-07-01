@@ -1,21 +1,21 @@
 # Templates vs variações de seção
 
-Referência canônica sobre como o gerador decide **qual layout renderizar** e qual o papel dos templates.
+Referência canônica sobre como o gerador decide **qual layout renderizar** e qual o papel dos presets de criação.
 
 ## Dois conceitos diferentes
 
 | Conceito | O que é | Onde vive |
 |----------|---------|-----------|
-| **Template** | Pacote pronto: paleta + combinação inicial de variações | `lib/templates.ts` |
+| **Preset (template)** | Atalho no wizard: combinação inicial de variações por seção | `lib/landing-pages/templates.ts` — só em memória na criação |
 | **Variação de seção** | Escolha individual por seção (`"split"`, `"centered"`, etc.) | `schema.layout.hero`, `schema.layout.dor`, … |
 
-O produto **funciona por variações de seção**. O template é um **atalho** que copia valores para `schema.layout` na criação (ou quando o advogado troca o template no editor).
+O produto **funciona por variações de seção**. O preset copia valores para `schema.layout` na criação (ou quando o advogado troca preset no editor via `applyTemplate()`). **Nenhum id ou nome de template é persistido** — apenas o schema completo da landing page.
+
+Na criação: **preset define layout** (variantes + tons); **logo define cores** (`schema.theme`).
 
 ---
 
 ## Fonte da verdade em runtime
-
-**O renderer não lê `template_id` para decidir o layout de cada seção.**
 
 O que persiste e é usado na publicação:
 
@@ -29,13 +29,14 @@ O que persiste e é usado na publicação:
     "areas": "grid",
     "etapas": "numerado",
     "tones": { "hero": "light", "dor": "light", ... }
-  }
+  },
+  "theme": { "brand": "...", "accent": "...", ... }
 }
 ```
 
-Cada valor é uma **string de variação**, não uma posição (1ª, 2ª) nem um nome de template.
+Cada valor de variação é uma **string**, não um nome de preset.
 
-`schema.layout` vive em `landing_pages.schema` (JSONB) e é a **única fonte da verdade** para renderização.
+`schema` vive em `landing_pages.schema` (JSONB) e é a **única fonte da verdade** para renderização.
 
 ---
 
@@ -67,18 +68,15 @@ Mesmo padrão em `Dor`, `Solucao`, `Sobre`, `Areas`, `Etapas`, `Equipe`.
 
 ---
 
-## Para que serve `template_id`?
-
-Metadado/atalho — **não** controla render por seção após personalização:
+## Presets na criação
 
 | Momento | Uso |
 |---------|-----|
-| Criação (wizard) | Valor inicial de `layout` pode partir de `TEMPLATES[0]` antes do picker |
-| `POST /api/gerar-lp` | Grava `templateId` junto com o schema; fallback de layout se não vier `layout` explícito |
-| Galeria | Thumbnail/nome do preset (`buildLpListPreview`) |
-| Editor (futuro) | `applyTemplate()` reaplicaria `layout` + `theme` de um preset |
+| Wizard (passo Imagens) | Opcional: advogado escolhe um dos 3 presets (`TEMPLATES`); default `classic-light` |
+| `POST /api/gerar-lp` | Recebe `layout` explícito (copiado do preset); persiste só `schema` |
+| Editor | `VariantPicker` por seção; `applyTemplate()` reaplica layout de um preset (sem alterar cores) |
 
-Depois que o advogado altera a Hero no `VariantPicker` ou no wizard de layout, **`schema.layout.hero` passa a ser a fonte da verdade**. O `templateId` pode ficar desatualizado (ex.: ainda `"classic-light"` enquanto a Hero já é `"split"`).
+Depois que o advogado altera a Hero no `VariantPicker`, **`schema.layout.hero` passa a ser a fonte da verdade**.
 
 ---
 
@@ -87,14 +85,14 @@ Depois que o advogado altera a Hero no `VariantPicker` ou no wizard de layout, *
 ```mermaid
 flowchart TD
   subgraph wizard [Wizard /nova]
-    W1[Passos Escritório Contato Imagens]
-    W2["POST /api/gerar-copy"]
-    W3[LayoutPickerStep — escolhe variantes]
-    W4["POST /api/gerar-lp com layout explícito"]
+    W1[Escritório · Contato · Imagens]
+    W2[Preset opcional de layout]
+    W3["POST /api/gerar-copy"]
+    W4["POST /api/gerar-lp com layout do preset"]
   end
   subgraph editor [Editor /lp/slug]
-    E1[VariantPicker por seção]
-    E2[saveLpAction → schema.layout]
+    E1[VariantPicker + textos + imagens]
+    E2[saveLpAction → schema]
   end
   subgraph public [Site publicado]
     P1[getLpPublic → lp.schema]
@@ -107,8 +105,8 @@ flowchart TD
 
 Exemplo concreto:
 
-1. **Wizard:** advogado escolhe Hero `"split"` → `schema.layout.hero = "split"` (ainda não salvo).
-2. **Confirmar:** `POST /api/gerar-lp` monta o schema e persiste no banco.
+1. **Wizard:** advogado escolhe preset "Moderno" → `layout` com `hero: "split"` (ainda não salvo).
+2. **Criar e editar:** `POST /api/gerar-lp` monta o schema e persiste no banco.
 3. **Editor:** advogado troca para `"stats"` → `schema.layout.hero = "stats"` ao salvar.
 4. **Publicação:** `Hero` recebe `variant="stats"` → renderiza `HeroStats`.
 
@@ -134,30 +132,29 @@ Tom (`light` / `dark`) por seção: `schema.layout.tones.<seção>` — independ
 
 | Responsabilidade | Arquivo |
 |------------------|---------|
-| Tipos `Layout`, `LpSchema`, variantes | `lib/schema.ts` |
-| Presets (template → layout + theme) | `lib/templates.ts` |
+| Tipos `Layout`, `LpSchema`, variantes | `lib/landing-pages/schema.ts` |
+| Presets (layout inicial; theme só para prévias estáticas) | `lib/landing-pages/templates.ts` |
+| Seleção de preset no wizard | `components/Builder/template-card.tsx` |
 | Renderer completo | `components/Preview/landing-preview.tsx` |
 | Dispatch por variação (ex.: Hero) | `components/Sections/hero.tsx` |
-| Picker no wizard (preview grande) | `components/Builder/layout-picker-step.tsx` |
 | Picker no editor (wireframes) | `components/Builder/variant-picker.tsx` |
-| Copy sem salvar (wizard step 3) | `app/api/gerar-copy/route.ts` |
+| Copy + imagens (wizard) | `app/api/gerar-copy/route.ts` |
 | Persistência final | `app/api/gerar-lp/route.ts` |
 
 ---
 
 ## Checklist: adicionar nova variação
 
-1. **`lib/schema.ts`** — incluir o id no union type (`HeroVariant`, etc.) e em `DEFAULT_LAYOUT` se for padrão.
+1. **`lib/landing-pages/schema.ts`** — incluir o id no union type (`HeroVariant`, etc.) e em `DEFAULT_LAYOUT` se for padrão.
 2. **`components/Sections/<seção>.tsx`** — componente visual + `case` no `switch`.
 3. **`components/Builder/variant-picker.tsx`** — wireframe (thumb) para o editor.
-4. **`components/Builder/layout-picker-step.tsx`** — incluir na lista do wizard (se aplicável).
-5. **`lib/templates.ts`** — só se algum preset usar a nova variação.
-6. **Documentação** — atualizar tabela de variações em [landing-pages.md](landing-pages.md).
+4. **`lib/landing-pages/templates.ts`** — só se algum preset usar a nova variação.
+5. **Documentação** — atualizar tabela de variações em [landing-pages.md](../features/landing-pages.md).
 
 ---
 
 ## Referências
 
-- [landing-pages.md](landing-pages.md) — feature completa
+- [landing-pages.md](../features/landing-pages.md) — feature completa
 - [architecture.md](../architecture.md) — fluxos do sistema
 - [api.md](../api.md) — `POST /api/gerar-copy` e `POST /api/gerar-lp`

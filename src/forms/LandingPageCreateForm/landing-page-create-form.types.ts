@@ -1,4 +1,1 @@
-export interface LandingPageCreateFormProps {
-  initialTemplateId?: string;
-  onImmersiveChange?: (active: boolean) => void;
-}
+export type LandingPageCreateFormProps = Record<string, never>;

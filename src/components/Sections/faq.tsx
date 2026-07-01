@@ -12,16 +12,18 @@ export function FAQ({ content, tone }: { content: FaqContent; tone: Tone }) {
   const dark = tone === "dark";
   return (
     <section
-      className={`py-20 md:py-28 ${dark ? "bg-brand-dark" : "bg-white"}`}
+      className={`py-20 md:py-28 ${dark ? "bg-lp-brand-dark" : "bg-white"}`}
     >
       <div className="mx-auto max-w-3xl px-6 md:px-10">
         <Reveal className="text-center">
           <p
-            className={`eyebrow mb-3 ${dark ? "text-accent-soft" : "text-accent"}`}
+            className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
             {content.eyebrow}
           </p>
-          <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+          <h2
+            className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
+          >
             <HeadlineText
               h={content.headline}
               accentVar={dark ? "accent-soft" : "accent"}
@@ -56,7 +58,7 @@ function FaqAccordion({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div
-      className={`overflow-hidden rounded-2xl ${dark ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-cream"}`}
+      className={`overflow-hidden rounded-2xl ${dark ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-lp-cream"}`}
     >
       <button
         type="button"
@@ -65,20 +67,20 @@ function FaqAccordion({
         aria-expanded={open}
       >
         <span
-          className={`font-display text-lg font-bold ${dark ? "text-white" : "text-brand"}`}
+          className={`font-display text-lg font-bold ${dark ? "text-white" : "text-lp-brand"}`}
         >
           {item.q}
         </span>
         <KeyboardArrowDown
           size={20}
-          className={`shrink-0 transition-transform ${dark ? "text-accent-soft" : "text-accent"} ${
+          className={`shrink-0 transition-transform ${dark ? "text-lp-accent-soft" : "text-lp-accent"} ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
       {open ? (
         <p
-          className={`px-6 pb-6 leading-relaxed ${dark ? "text-white/75" : "text-ink-soft"}`}
+          className={`px-6 pb-6 leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
         >
           {item.a}
         </p>

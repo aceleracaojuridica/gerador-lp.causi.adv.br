@@ -120,7 +120,7 @@ export function Dor({
   image,
 }: DorProps) {
   const dark = tone === "dark";
-  const sectionBg = dark ? "bg-brand" : "bg-white";
+  const sectionBg = dark ? "bg-lp-brand" : "bg-white";
 
   return (
     <section className={`relative overflow-hidden py-20 md:py-28 ${sectionBg}`}>
@@ -135,7 +135,7 @@ export function Dor({
       ) : (
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-32 top-10 h-72 w-[34rem] rounded-full bg-cream-deep/50"
+          className="pointer-events-none absolute -right-32 top-10 h-72 w-[34rem] rounded-full bg-lp-cream-deep/50"
         />
       )}
 
@@ -147,14 +147,14 @@ export function Dor({
             </Reveal>
             <Reveal delay={120}>
               <div
-                className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-brand md:h-80"
+                className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
                 style={
                   image
                     ? {
-                      backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }
+                        backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
                     : undefined
                 }
               >
@@ -190,18 +190,18 @@ function Header({
   return (
     <>
       <p
-        className={`eyebrow mb-3 ${dark ? "text-accent-soft" : "text-accent"}`}
+        className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
       >
         {content.eyebrow}
       </p>
-      <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+      <h2 className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}>
         <HeadlineText
           h={content.headline}
           accentVar={dark ? "accent-soft" : "accent"}
         />
       </h2>
       <p
-        className={`mt-5 text-lg leading-relaxed ${centered ? "" : ""} ${dark ? "text-white/80" : "text-ink-soft"}`}
+        className={`mt-5 text-lg leading-relaxed ${centered ? "" : ""} ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
       >
         {content.intro}
       </p>
@@ -216,26 +216,28 @@ function CardGrid({ content, dark }: { content: DorContent; dark: boolean }) {
         return (
           <Reveal key={`${d.title}-${d.text}`} delay={i * 90}>
             <div
-              className={`h-full rounded-2xl p-7 transition hover:-translate-y-1 ${dark
+              className={`h-full rounded-2xl p-7 transition hover:-translate-y-1 ${
+                dark
                   ? "bg-white/[0.06] ring-1 ring-white/10 hover:bg-white/[0.09]"
-                  : "bg-cream hover:shadow-lg"
-                }`}
+                  : "bg-lp-cream hover:shadow-lg"
+              }`}
             >
               <span
-                className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${dark
-                    ? "bg-accent text-brand-dark"
-                    : "bg-brand text-accent-soft"
-                  }`}
+                className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${
+                  dark
+                    ? "bg-lp-accent text-lp-brand-dark"
+                    : "bg-lp-brand text-lp-accent-soft"
+                }`}
               >
                 <IconForKey iconKey={d.icon} size={28} />
               </span>
               <h3
-                className={`font-display text-2xl font-bold ${dark ? "text-white" : "text-brand"}`}
+                className={`font-display text-2xl font-bold ${dark ? "text-white" : "text-lp-brand"}`}
               >
                 {d.title}
               </h3>
               <p
-                className={`mt-2 text-[1.05rem] leading-relaxed ${dark ? "text-white/70" : "text-ink-soft"}`}
+                className={`mt-2 text-[1.05rem] leading-relaxed ${dark ? "text-white/70" : "text-lp-ink-soft"}`}
               >
                 {d.text}
               </p>

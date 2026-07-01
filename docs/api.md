@@ -80,9 +80,8 @@ Gera uma landing page completa: monta schema JSON a partir do payload (copy/layo
   // Pré-gerados pelo wizard (/api/gerar-copy)
   copy?: FocoCopy;
   images?: { hero: string; dor: string; sobre: string; solucao: string };
-  // Layout escolhido no LayoutPickerStep
+  // Layout inicial (variantes copiadas do preset no wizard)
   layout?: Layout;
-  templateId?: string;
 }
 ```
 

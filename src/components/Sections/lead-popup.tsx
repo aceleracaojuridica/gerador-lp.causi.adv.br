@@ -70,7 +70,7 @@ export function LeadPopup({
             <button
               type="button"
               onClick={back}
-              className="inline-flex items-center gap-1 rounded-[5px] px-2 py-1 text-xs font-semibold text-ink-soft transition hover:bg-black/5 hover:text-brand"
+              className="inline-flex items-center gap-1 rounded-[5px] px-2 py-1 text-xs font-semibold text-lp-ink-soft transition hover:bg-black/5 hover:text-lp-brand"
             >
               <ArrowBack size={16} /> Voltar
             </button>
@@ -81,7 +81,7 @@ export function LeadPopup({
             type="button"
             aria-label="Fechar"
             onClick={onClose}
-            className="rounded-full p-1 text-ink-soft transition hover:bg-black/5"
+            className="rounded-full p-1 text-lp-ink-soft transition hover:bg-black/5"
           >
             <Close size={18} />
           </button>
@@ -90,13 +90,13 @@ export function LeadPopup({
         {/* Barra de progresso */}
         {!sent ? (
           <div className="mb-5">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-cream-deep">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-lp-cream-deep">
               <div
-                className="h-full rounded-full bg-accent transition-all"
+                className="h-full rounded-full bg-lp-accent transition-all"
                 style={{ width: `${((step + 1) / total) * 100}%` }}
               />
             </div>
-            <p className="mt-2 text-xs font-medium text-ink-soft">
+            <p className="mt-2 text-xs font-medium text-lp-ink-soft">
               Etapa {step + 1} de {total}
             </p>
           </div>
@@ -104,19 +104,19 @@ export function LeadPopup({
 
         {sent ? (
           <div className="py-6 text-center">
-            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent/15 text-accent">
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-lp-accent/15 text-lp-accent">
               <Check size={28} />
             </span>
-            <h3 className="font-display text-xl font-bold text-brand">
+            <h3 className="font-display text-xl font-bold text-lp-brand">
               Recebemos seu contato!
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            <p className="mt-2 text-sm leading-relaxed text-lp-ink-soft">
               Em breve entraremos em contato. Obrigado!
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 w-full rounded-[5px] bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+              className="mt-6 w-full rounded-[5px] bg-lp-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-lp-brand-dark"
             >
               Fechar
             </button>
@@ -124,16 +124,16 @@ export function LeadPopup({
         ) : isFinal ? (
           // ----- Passo final fixo: nome + telefone -----
           <div>
-            <h3 className="font-display text-xl font-bold text-brand">
+            <h3 className="font-display text-xl font-bold text-lp-brand">
               Quase lá! Deixe seu contato
             </h3>
-            <p className="mt-1 text-sm text-ink-soft">
+            <p className="mt-1 text-sm text-lp-ink-soft">
               Preencha para falarmos com você.
             </p>
             <div className="mt-5 space-y-3">
               <input
                 aria-label="Nome"
-                className="w-full rounded-[5px] border border-ink-soft/20 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent"
+                className="w-full rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
                 value={lead.nome}
                 onChange={(e) =>
                   setLead((l) => ({ ...l, nome: e.target.value }))
@@ -143,7 +143,7 @@ export function LeadPopup({
               />
               <input
                 aria-label="Telefone"
-                className="w-full rounded-[5px] border border-ink-soft/20 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent"
+                className="w-full rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
                 value={lead.telefone}
                 onChange={(e) =>
                   setLead((l) => ({ ...l, telefone: e.target.value }))
@@ -155,7 +155,7 @@ export function LeadPopup({
               {emailConfig?.enabled ? (
                 <input
                   aria-label="E-mail"
-                  className="w-full rounded-[5px] border border-ink-soft/20 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent"
+                  className="w-full rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
                   value={lead.email}
                   onChange={(e) =>
                     setLead((l) => ({ ...l, email: e.target.value }))
@@ -173,7 +173,7 @@ export function LeadPopup({
             <button
               type="button"
               onClick={() => setSent(true)}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-accent px-5 py-3 text-sm font-bold text-[var(--color-accent-ink)] transition hover:bg-accent-soft"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-lp-accent px-5 py-3 text-sm font-bold text-[var(--color-lp-accent-ink)] transition hover:bg-lp-accent-soft"
             >
               Enviar
             </button>
@@ -181,7 +181,7 @@ export function LeadPopup({
         ) : (
           // ----- Pergunta personalizada -----
           <div>
-            <h3 className="font-display text-xl font-bold text-brand">
+            <h3 className="font-display text-xl font-bold text-lp-brand">
               {q.label.trim() || `Pergunta ${step + 1}`}
             </h3>
 
@@ -201,12 +201,12 @@ export function LeadPopup({
                         }}
                         className={`flex w-full items-center justify-between rounded-[5px] border px-4 py-3 text-left text-sm font-medium transition ${
                           selected
-                            ? "border-accent bg-accent/10 text-brand"
-                            : "border-ink-soft/20 text-ink hover:border-accent/60 hover:bg-accent/5"
+                            ? "border-lp-accent bg-lp-accent/10 text-lp-brand"
+                            : "border-lp-ink-soft/20 text-lp-ink hover:border-lp-accent/60 hover:bg-lp-accent/5"
                         }`}
                       >
                         {opt}
-                        <ArrowForward size={15} className="text-accent" />
+                        <ArrowForward size={15} className="text-lp-accent" />
                       </button>
                     );
                   })}
@@ -215,7 +215,7 @@ export function LeadPopup({
               <div className="mt-5">
                 <textarea
                   aria-label={q.label || "Resposta"}
-                  className="min-h-[110px] w-full resize-y rounded-[5px] border border-ink-soft/20 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent"
+                  className="min-h-[110px] w-full resize-y rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
                   value={answers[q.id] ?? ""}
                   onChange={(e) =>
                     setAnswers((a) => ({ ...a, [q.id]: e.target.value }))
@@ -229,7 +229,7 @@ export function LeadPopup({
               <button
                 type="button"
                 onClick={next}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-lp-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-lp-brand-dark"
               >
                 Avançar <ArrowForward size={16} />
               </button>

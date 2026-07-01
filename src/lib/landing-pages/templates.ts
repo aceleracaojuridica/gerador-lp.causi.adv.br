@@ -2,7 +2,7 @@ import { PALETTES } from "./palettes";
 import type { Layout, Theme } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 
-/** Presets que copiam layout + theme para schema.layout na criação; não usados em runtime de render. */
+/** Presets de layout (+ theme para prévias estáticas). Na criação só o `layout` é copiado para o schema; cores vêm da logo. */
 export type LpTemplate = {
   id: string;
   name: string;

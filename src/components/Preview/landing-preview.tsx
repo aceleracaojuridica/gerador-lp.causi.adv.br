@@ -23,8 +23,8 @@ import { effectiveOrder } from "@/lib/landing-pages/section-order";
 
 /**
  * Renderiza a LP inteira a partir do schema. O wrapper aplica as variáveis CSS
- * do tema (`--color-brand`, etc.), então todas as utilidades `bg-brand`,
- * `text-accent`... re-tematizam ao vivo conforme a logo/cores escolhidas.
+ * do tema (`--color-lp-brand`, etc.), então todas as utilidades `bg-lp-brand`,
+ * `text-lp-accent`... re-tematizam ao vivo conforme a logo/cores escolhidas.
  */
 export function LandingPreview({
   schema,
@@ -71,9 +71,9 @@ export function LandingPreview({
       ? (btn?.link ?? "").trim() || undefined
       : action === "whatsapp" && schema.office.whatsapp
         ? waLink(
-          schema.office.whatsapp,
-          "Olá, vim pelo site e gostaria de falar com vocês.",
-        )
+            schema.office.whatsapp,
+            "Olá, vim pelo site e gostaria de falar com vocês.",
+          )
         : undefined;
   const ctaConfig = {
     href: ctaHref,
@@ -166,7 +166,7 @@ export function LandingPreview({
           </div>
         );
       case "equipe":
-        return (
+        return hidden.equipe ? null : (
           <div key="equipe" id="sec-equipe" className={anchor}>
             <Equipe
               lawyers={schema.office.lawyers}
@@ -216,7 +216,7 @@ export function LandingPreview({
     <CtaConfigContext.Provider value={ctaConfig}>
       <div
         style={{ ...themeToCssVars(schema.theme), ...fontStyle }}
-        className="lp-root bg-white text-ink"
+        className="lp-root bg-white text-lp-ink"
       >
         {showPolicy ? (
           <PolicyPage

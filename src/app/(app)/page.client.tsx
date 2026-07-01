@@ -1,19 +1,26 @@
 "use client";
 
-import { Add } from "@material-symbols-svg/react/rounded";
+import { Add, Inbox } from "@material-symbols-svg/react";
 import Link from "next/link";
-import { LpCarousel } from "@/components/Builder/lp-carousel";
+import { LpCard } from "@/components/Builder/lp-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Container } from "@/components/ui-patterns/container";
 import {
   Header,
   HeaderActions,
   HeaderContent,
-  HeaderDescription,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
-import { PageContent } from "@/components/ui-patterns/page-content";
+import { useBreakpoints } from "@/hooks/use-breakpoints";
 import type { LpListItem } from "@/lib/landing-pages/lp-store";
 
 type HomePageClientProps = {
@@ -21,50 +28,69 @@ type HomePageClientProps = {
 };
 
 export function HomePageClient({ lps }: HomePageClientProps) {
+  const { isSm } = useBreakpoints();
+
   return (
-    <Container orientation="vertical" overflow="hidden" className="min-h-0 flex-1">
+    <Container orientation="vertical" overflow="hidden">
       <Header>
         <HeaderContent>
           <HeaderHeading>
-            <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-              Suas landing pages
-            </h1>
+            <h1>Suas landing pages</h1>
+            <Badge variant="secondary" size="sm" className="font-medium">
+              {lps.length}
+            </Badge>
           </HeaderHeading>
-          <HeaderDescription>
-            Cadastre uma página e ela é gerada na hora. Depois você ajusta e
-            aprova por aqui.
-          </HeaderDescription>
         </HeaderContent>
+
         <HeaderActions>
-          <Button asChild size="lg" className="w-full sm:w-auto">
+          <Button asChild size={isSm ? "lg" : "icon-lg"}>
             <Link href="/nova">
-              <Add size={16} /> Nova landing page
+              <Add />
+              <span className="max-sm:hidden">Nova landing page</span>
             </Link>
           </Button>
         </HeaderActions>
       </Header>
 
-      <PageContent>
-        {lps.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center py-8 text-center sm:py-12">
-              <p className="text-sm font-medium text-foreground">
-                Nenhuma página ainda
-              </p>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                Clique em &quot;Nova landing page&quot; para começar.
-              </p>
-              <Button asChild className="mt-5" size="lg">
+      {lps.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center animate-in fade-in duration-300">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Inbox />
+              </EmptyMedia>
+              <EmptyTitle>Nenhuma landing page ainda</EmptyTitle>
+              <EmptyDescription>
+                Crie sua primeira página e ela é gerada na hora. Depois você
+                ajusta e publica por aqui.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent className="flex-row justify-center gap-3">
+              <Button asChild>
                 <Link href="/nova">
-                  <Add size={16} /> Criar minha primeira página
+                  <Add />
+                  Criar minha primeira página
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <LpCarousel lps={lps} />
-        )}
-      </PageContent>
+            </EmptyContent>
+          </Empty>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="flex flex-wrap justify-center gap-3 sm:justify-start sm:gap-4">
+            {lps.map((lp) => (
+              <LpCard
+                key={lp.slug}
+                slug={lp.slug}
+                name={lp.name}
+                tema={lp.tema}
+                status={lp.status}
+                preview={lp.preview}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

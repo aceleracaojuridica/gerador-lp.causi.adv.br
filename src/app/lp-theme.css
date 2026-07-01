@@ -1,0 +1,58 @@
+/**
+ * Paleta e utilitários Tailwind exclusivos das landing pages.
+ * Isolados do design system do app (shadcn) para não colidir com accent/muted.
+ */
+
+@theme inline {
+  --color-lp-brand: var(--lp-brand);
+  --color-lp-brand-dark: var(--lp-brand-dark);
+  --color-lp-accent: var(--lp-accent);
+  --color-lp-accent-soft: var(--lp-accent-soft);
+  --color-lp-cream: var(--lp-cream);
+  --color-lp-cream-deep: var(--lp-cream-deep);
+  --color-lp-ink: var(--lp-ink);
+  --color-lp-ink-soft: var(--lp-ink-soft);
+}
+
+:root {
+  /* Defaults — sobrescritos em runtime por themeToCssVars() no .lp-root */
+  --lp-brand: #1b2a4a;
+  --lp-brand-dark: #111a30;
+  --lp-accent: #c79a3f;
+  --lp-accent-soft: #e6c87c;
+  --lp-cream: #faf7f1;
+  --lp-cream-deep: #efe6d6;
+  --lp-ink: #1b2536;
+  --lp-ink-soft: #59647b;
+  --color-lp-accent-ink: #111a1a;
+}
+
+@layer components {
+  .lp-root {
+    color: var(--lp-ink);
+    --font-display: var(--font-fraunces);
+    --font-body: var(--font-inter);
+  }
+
+  html.dark .lp-root {
+    color: var(--lp-ink);
+  }
+
+  .font-display {
+    font-family: var(--font-display), system-ui, -apple-system, sans-serif;
+  }
+
+  .section-title {
+    font-family: var(--font-display), system-ui, -apple-system, sans-serif;
+    font-size: clamp(1.875rem, 3.5vw, 3rem);
+    font-weight: 600;
+    line-height: 1.12;
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+}

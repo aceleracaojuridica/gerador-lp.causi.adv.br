@@ -88,15 +88,13 @@ export default async function PublicLpPage({ params }: Props) {
   const lp = await getLpPublic(slug);
   if (!lp) notFound();
 
+  const jsonLd = JSON.stringify(buildJsonLd(lp.schema, slug));
+
   return (
     <>
-      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD serializado do schema da LP */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildJsonLd(lp.schema, slug)),
-        }}
-      />
+      <script type="application/ld+json" suppressHydrationWarning>
+        {jsonLd}
+      </script>
       <LandingPreview schema={lp.schema} demo={false} />
     </>
   );

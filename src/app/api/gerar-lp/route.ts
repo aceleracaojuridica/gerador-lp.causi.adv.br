@@ -31,7 +31,7 @@ import { requireLpSession } from "@/lib/session";
 
   Aceita copy e images pré-gerados (vindos de /api/gerar-copy) para evitar
   chamadas duplas ao OpenAI/Unsplash quando o wizard já fez o preview.
-  Aceita layout explícito (escolhido pelo advogado no picker de variantes).
+  Aceita layout explícito (variantes iniciais copiadas de um preset no wizard).
 */
 export const runtime = "nodejs";
 
@@ -56,7 +56,7 @@ type Payload = {
   // Pré-gerados pelo /api/gerar-copy (evita segunda chamada à IA)
   copy?: FocoCopy;
   images?: { hero: string; dor: string; sobre: string; solucao: string };
-  // Layout escolhido pelo advogado no picker de variantes
+  // Layout com variantes iniciais (preset do wizard)
   layout?: Layout;
 };
 
@@ -183,8 +183,7 @@ export async function POST(request: Request) {
 
   const videoId = (p.videoId ?? "").trim();
 
-  // Layout: usa o escolhido pelo advogado no picker, ou deriva do template
-  // (com vídeo → força hero "video")
+  // Layout: preset escolhido no wizard (só variantes) ou DEFAULT_LAYOUT; vídeo força hero "video"
   const layout: Layout = p.layout
     ? { ...p.layout, hero: videoId ? "video" : p.layout.hero }
     : { ...DEFAULT_LAYOUT, hero: videoId ? "video" : DEFAULT_LAYOUT.hero };

@@ -31,7 +31,11 @@ import {
 } from "@material-symbols-svg/react";
 import { CTAButton } from "@/components/ui/cta-button";
 import { Reveal } from "@/components/ui/reveal";
-import type { AreasContent, AreasVariant, Tone } from "@/lib/landing-pages/schema";
+import type {
+  AreasContent,
+  AreasVariant,
+  Tone,
+} from "@/lib/landing-pages/schema";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -112,7 +116,7 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
   return (
     <section
       id="areas"
-      className={`relative overflow-hidden py-20 md:py-28 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+      className={`relative overflow-hidden py-20 md:py-28 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
     >
       <div
         aria-hidden
@@ -125,18 +129,20 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
       <div className="relative mx-auto max-w-7xl px-6 md:px-10">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p
-            className={`eyebrow mb-3 ${dark ? "text-accent-soft" : "text-accent"}`}
+            className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
             {content.eyebrow}
           </p>
-          <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+          <h2
+            className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
+          >
             <HeadlineText
               h={content.headline}
               accentVar={dark ? "accent-soft" : "accent"}
             />
           </h2>
           <p
-            className={`mt-5 text-lg leading-relaxed ${dark ? "text-white/80" : "text-ink-soft"}`}
+            className={`mt-5 text-lg leading-relaxed ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
           >
             {content.sub}
           </p>
@@ -153,14 +159,14 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
             return (
               <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
                 <div className="flex h-full items-start gap-5 rounded-2xl bg-white p-7 transition hover:-translate-y-1 hover:shadow-xl">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand text-accent-soft">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-lp-brand text-lp-accent-soft">
                     <IconForKey iconKey={a.icon} size={28} />
                   </span>
                   <div>
-                    <h3 className="font-display text-2xl font-bold text-brand">
+                    <h3 className="font-display text-2xl font-bold text-lp-brand">
                       {a.title}
                     </h3>
-                    <p className="mt-2 text-[1.05rem] leading-relaxed text-ink-soft">
+                    <p className="mt-2 text-[1.05rem] leading-relaxed text-lp-ink-soft">
                       {a.text}
                     </p>
                   </div>

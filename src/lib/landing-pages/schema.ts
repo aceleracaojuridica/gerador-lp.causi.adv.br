@@ -245,11 +245,11 @@ export type SectionTones = {
 };
 
 /** Seções não obrigatórias que podem ser ligadas/desligadas pela chave. */
-export type ToggleableSection = "areas" | "etapas" | "faq" | "ctaFinal";
+export type ToggleableSection = "areas" | "etapas" | "faq" | "ctaFinal" | "equipe";
 
 /**
  * Variações ativas por seção — fonte da verdade para render (editor e site publicado).
- * Ver docs/features/templates-vs-variants.md (template_id não controla runtime).
+ * Ver docs/guides/templates-vs-variants.md
  */
 export type Layout = {
   hero: HeroVariant;
@@ -389,7 +389,7 @@ export function themeToCssVars(t: Theme): React.CSSProperties {
     "--lp-cream-deep": t.creamDeep,
     "--lp-ink": t.ink,
     "--lp-ink-soft": t.inkSoft,
-    "--color-accent-ink": accentInk(t.accent),
+    "--color-lp-accent-ink": accentInk(t.accent),
   } as React.CSSProperties;
 }
 

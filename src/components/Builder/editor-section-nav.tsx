@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * Navegação rápida entre seções do editor: setas ← → para ciclar e pills
- * horizontais para saltar direto — mesmo padrão do layout-picker do wizard.
+ * horizontais para saltar direto entre seções no painel de edição.
  */
 export function EditorSectionNav({
   sections,

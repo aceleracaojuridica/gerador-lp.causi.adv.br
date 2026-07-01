@@ -138,19 +138,16 @@ Ver [features/authentication.md](features/authentication.md).
 ```mermaid
 flowchart LR
   A["/nova — wizard"] --> B["Escritório · Contato · Imagens"]
-  B --> C["POST /api/gerar-copy"]
-  C --> D["LayoutPickerStep — schema.layout"]
-  D --> E["POST /api/gerar-lp"]
-  E --> F["saveLp → tabela lps"]
-  F --> G["/lp/slug?novo=1 — LpStudio"]
-  G --> H["Editor + VariantPicker por seção"]
-  H --> I["saveLpAction"]
+  B --> C["POST /api/gerar-copy + /api/gerar-lp"]
+  C --> D["saveLp → tabela lps"]
+  D --> E["/lp/slug?novo=1 — LpStudio"]
+  E --> F["Editor + VariantPicker por seção"]
+  F --> G["saveLpAction"]
 ```
 
-1. Wizard 4 passos: Escritório → Contato → Imagens → Layout.
-2. IA gera copy/imagens via `/api/gerar-copy`; advogado escolhe variantes por seção no picker.
-3. `POST /api/gerar-lp` persiste `schema.layout` (fonte da verdade para render).
-4. No editor, `VariantPicker` altera variações individuais; preview via `DevicePreview`.
+1. Wizard 3 passos: Escritório → Contato → Imagens (preset opcional de layout).
+2. **Criar e editar** chama `/api/gerar-copy` e `/api/gerar-lp`; persiste `schema` completo.
+3. No editor, `VariantPicker` altera variações individuais; preview via `DevicePreview`.
 
 Ver [features/landing-pages.md](features/landing-pages.md) e [features/templates-vs-variants.md](features/templates-vs-variants.md).
 
@@ -182,8 +179,8 @@ Ver [features/leads.md](features/leads.md).
 |------------|---------|-------|
 | `AppShell` | `components/ui/AppShell.tsx` | Layout com sidebar |
 | `AppSidebar` | `components/ui/AppSidebar.tsx` | Navegação lateral (LPs, config, Causi) |
-| `NovaLpForm` | `components/Builder/create-landing-page-wizard.tsx` | Wizard de criação (4 passos incl. layout picker) |
-| `LayoutPickerStep` | `components/Builder/layout-picker-step.tsx` | Escolha de variantes no wizard (preview grande) |
+| `LandingPageCreateForm` | `forms/LandingPageCreateForm/` | Wizard de criação (3 passos + preset opcional) |
+| `TemplateCard` | `components/Builder/template-card.tsx` | Seleção de preset de layout no wizard |
 | `LpStudio` | `components/Builder/lp-studio.tsx` | Ponte LP salva → Editor |
 | `Editor` | `components/Builder/` | Editor principal com `VariantPicker` por seção |
 | `VariantPicker` | `components/Builder/variant-picker.tsx` | Seleção de variação por seção (com wireframes) |
