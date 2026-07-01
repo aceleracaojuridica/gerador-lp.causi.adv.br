@@ -7,14 +7,17 @@ import { resolveSeo } from "@/lib/landing-pages/seo";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ escritorio: string; slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const lp = await getLpPublic(slug);
+  const { escritorio, slug } = await params;
+  const lp = await getLpPublic(escritorio, slug);
   if (!lp) return {};
 
-  const seo = resolveSeo(lp.schema, slug);
+  const seo = resolveSeo(lp.schema, {
+    officeSubdomain: lp.officeSubdomain,
+    lpSlug: lp.slug,
+  });
 
   return {
     title: seo.title,
@@ -57,8 +60,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function buildJsonLd(schema: LpSchema, slug: string) {
-  const seo = resolveSeo(schema, slug);
+function buildJsonLd(
+  schema: LpSchema,
+  publicUrl: { officeSubdomain: string; lpSlug: string },
+) {
+  const seo = resolveSeo(schema, publicUrl);
   return {
     "@context": "https://schema.org",
     "@type": "LegalService",
@@ -84,11 +90,15 @@ function buildJsonLd(schema: LpSchema, slug: string) {
 }
 
 export default async function PublicLpPage({ params }: Props) {
-  const { slug } = await params;
-  const lp = await getLpPublic(slug);
+  const { escritorio, slug } = await params;
+  const lp = await getLpPublic(escritorio, slug);
   if (!lp) notFound();
 
-  const jsonLd = JSON.stringify(buildJsonLd(lp.schema, slug));
+  const publicUrl = {
+    officeSubdomain: lp.officeSubdomain,
+    lpSlug: lp.slug,
+  };
+  const jsonLd = JSON.stringify(buildJsonLd(lp.schema, publicUrl));
 
   return (
     <>

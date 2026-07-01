@@ -72,6 +72,7 @@ export function HomePageClient({ lps }: HomePageClientProps) {
               <LpCard
                 key={lp.slug}
                 slug={lp.slug}
+                officeSubdomain={lp.officeSubdomain}
                 name={lp.name}
                 tema={lp.tema}
                 status={lp.status}

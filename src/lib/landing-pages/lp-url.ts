@@ -1,11 +1,21 @@
-/** URL pública da LP publicada: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}`. */
-export function publicLpUrl(slug: string): string {
+/** URL pública da LP: `{officeSubdomain}.{domain}/{lpSlug}`. */
+export function publicLpUrl(officeSubdomain: string, lpSlug: string): string {
   const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "causi.adv.br";
   const protocol = domain.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${slug}.${domain}`;
+  const host = publicLpHost(officeSubdomain);
+  return `${protocol}://${host}/${lpSlug}`;
 }
 
-export function publicLpHost(slug: string): string {
+/** Host público do escritório: `{officeSubdomain}.{domain}`. */
+export function publicLpHost(officeSubdomain: string): string {
   const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "causi.adv.br";
-  return `${slug}.${domain}`;
+  return `${officeSubdomain}.${domain.replace(/:\d+$/, "")}`;
+}
+
+/** Exibição amigável: `escritorio.causi.adv.br/slug`. */
+export function publicLpDisplayHost(
+  officeSubdomain: string,
+  lpSlug: string,
+): string {
+  return `${publicLpHost(officeSubdomain)}/${lpSlug}`;
 }

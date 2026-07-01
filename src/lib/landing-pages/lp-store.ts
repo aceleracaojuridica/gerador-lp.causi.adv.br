@@ -14,6 +14,7 @@ import { persistLpSchemaMedia } from "./media-storage";
 import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
+import { allocateUniqueLpSlug, slugFromOfficeName } from "./slug";
 
 const safeSlug = (s: string) =>
   (s || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
@@ -21,9 +22,12 @@ const safeSlug = (s: string) =>
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const OFFICE_SUBDOMAIN_BACKFILL_PREFIX = "acct-";
+
 type LandingPageRow = {
   id: string;
   slug: string;
+  office_subdomain: string;
   name: string;
   tema: string;
   status: "draft" | "published";
@@ -36,20 +40,86 @@ function throwDbError(error: { message: string; code?: string }): never {
   throw Object.assign(new Error(error.message), { code: error.code });
 }
 
-/** Verifica se um slug já está em uso (qualquer usuário). */
+function isBackfillOfficeSubdomain(value: string): boolean {
+  return value.startsWith(OFFICE_SUBDOMAIN_BACKFILL_PREFIX);
+}
+
+/** Verifica se um slug de LP já está em uso na conta. */
 export async function isLpSlugTaken(
   session: Session,
   slug: string,
 ): Promise<boolean> {
   const safe = safeSlug(slug);
   if (!safe) return true;
+  const ctx = sessionToLpContext(session);
   const db = createLpUserClient(session);
   const { data } = await db
     .from("landing_pages")
     .select("id")
     .eq("slug", safe)
+    .eq("account_id", ctx.accountId)
     .maybeSingle();
   return !!data;
+}
+
+async function isOfficeSubdomainTakenByOtherAccount(
+  subdomain: string,
+  accountId: number,
+): Promise<boolean> {
+  const db = createLpServiceClient();
+  const { data } = await db
+    .from("landing_pages")
+    .select("account_id")
+    .eq("office_subdomain", subdomain)
+    .neq("account_id", accountId)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
+/**
+ * Subdomínio fixo do escritório (derivado do nome da conta).
+ * Persistido em todas as LPs da conta; único globalmente entre contas.
+ */
+export async function resolveOfficeSubdomain(
+  session: Session,
+): Promise<string> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
+
+  const { data: existing } = await db
+    .from("landing_pages")
+    .select("office_subdomain")
+    .eq("account_id", ctx.accountId)
+    .limit(1)
+    .maybeSingle();
+
+  const current = existing?.office_subdomain as string | undefined;
+  if (current && !isBackfillOfficeSubdomain(current)) {
+    return current;
+  }
+
+  const base = slugFromOfficeName(session.account.name);
+  if (!base) {
+    throw new Error("Nome da conta inválido para subdomínio do escritório.");
+  }
+
+  const subdomain = await allocateUniqueLpSlug(base, (candidate) =>
+    isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
+  );
+  if (!subdomain) {
+    throw new Error("subdomain-conflict");
+  }
+
+  if (current && isBackfillOfficeSubdomain(current)) {
+    const { error } = await db
+      .from("landing_pages")
+      .update({ office_subdomain: subdomain })
+      .eq("account_id", ctx.accountId);
+    if (error) throwDbError(error);
+  }
+
+  return subdomain;
 }
 
 async function resolveProfileId(
@@ -68,6 +138,7 @@ async function resolveProfileId(
 /** Item resumido da galeria de LPs. */
 export type LpListItem = {
   slug: string;
+  officeSubdomain: string;
   name: string;
   tema: string;
   status: "draft" | "published";
@@ -82,7 +153,9 @@ export async function listLps(session: Session): Promise<LpListItem[]> {
   const db = createLpUserClient(session);
   const { data, error } = await db
     .from("landing_pages")
-    .select("slug,name,tema,status,schema,updated_at,created_by_user_id")
+    .select(
+      "slug,office_subdomain,name,tema,status,schema,updated_at,created_by_user_id",
+    )
     .eq("account_id", ctx.accountId)
     .order("updated_at", { ascending: false });
   if (error) throwDbError(error);
@@ -91,20 +164,34 @@ export async function listLps(session: Session): Promise<LpListItem[]> {
   return (
     data as Pick<
       LandingPageRow,
-      "slug" | "name" | "tema" | "status" | "schema" | "created_by_user_id"
+      | "slug"
+      | "office_subdomain"
+      | "name"
+      | "tema"
+      | "status"
+      | "schema"
+      | "created_by_user_id"
     >[]
   ).map((r) => {
     const slug = r.slug;
+    const officeSubdomain = r.office_subdomain;
     const name = r.name || slug;
     const tema = r.tema || "";
     const schema = r.schema as LpSchema | null;
 
     return {
       slug,
+      officeSubdomain,
       name,
       tema,
       status: r.status ?? "draft",
-      preview: buildLpListPreview({ schema, slug, tema, name }),
+      preview: buildLpListPreview({
+        schema,
+        officeSubdomain,
+        slug,
+        tema,
+        name,
+      }),
       updatedAt: (r as { updated_at?: string | null }).updated_at ?? null,
       createdByUserId: r.created_by_user_id,
     };
@@ -145,7 +232,7 @@ export async function getLp(
   const db = createLpUserClient(session);
   const { data, error } = await db
     .from("landing_pages")
-    .select("slug,name,tema,status,schema")
+    .select("slug,office_subdomain,name,tema,status,schema")
     .eq("slug", safe)
     .maybeSingle();
   if (error) throwDbError(error);
@@ -153,6 +240,7 @@ export async function getLp(
   const row = data as LandingPageRow;
   return migrate({
     slug: row.slug,
+    officeSubdomain: row.office_subdomain,
     name: row.name,
     tema: row.tema ?? "",
     status: row.status ?? "draft",
@@ -171,16 +259,15 @@ export async function saveLp(session: Session, lp: StoredLp): Promise<void> {
     .from("landing_pages")
     .select("id,account_id,created_by_user_id")
     .eq("slug", safe)
+    .eq("account_id", ctx.accountId)
     .maybeSingle();
 
-  if (conflict && Number(conflict.account_id) !== ctx.accountId) {
-    throw new Error(`slug-conflict:${safe}`);
-  }
+  const officeSubdomain =
+    lp.officeSubdomain?.trim() || (await resolveOfficeSubdomain(session));
 
-  const subdomain = await getUserSubdomain(session);
   const schema = await persistLpSchemaMedia(lp.schema, {
     session,
-    subdomain,
+    officeSubdomain,
     userId: ctx.userId,
     accountId: ctx.accountId,
     slug: safe,
@@ -194,6 +281,7 @@ export async function saveLp(session: Session, lp: StoredLp): Promise<void> {
       ? (conflict.created_by_user_id as string)
       : ctx.userId,
     profile_id: profileId,
+    office_subdomain: officeSubdomain,
     slug: safe,
     name: lp.name ?? "",
     tema: lp.tema ?? "",
@@ -204,7 +292,7 @@ export async function saveLp(session: Session, lp: StoredLp): Promise<void> {
 
   const { data: saved, error } = await db
     .from("landing_pages")
-    .upsert(row, { onConflict: "slug" })
+    .upsert(row, { onConflict: "account_id,slug" })
     .select("id")
     .single();
   if (error) throwDbError(error);
@@ -238,21 +326,27 @@ export async function unpublishLp(
 }
 
 /** LP publicada — sem autenticação (cliente anônimo + policy pública). */
-export async function getLpPublic(slug: string): Promise<StoredLp | null> {
-  const safe = safeSlug(slug);
-  if (!safe) return null;
+export async function getLpPublic(
+  officeSubdomain: string,
+  lpSlug: string,
+): Promise<StoredLp | null> {
+  const office = safeSlug(officeSubdomain);
+  const slug = safeSlug(lpSlug);
+  if (!office || !slug) return null;
 
   const db = createLpAnonClient();
   const { data, error } = await db
     .from("landing_pages")
-    .select("slug,name,tema,status,schema")
-    .eq("slug", safe)
+    .select("slug,office_subdomain,name,tema,status,schema")
+    .eq("office_subdomain", office)
+    .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
   if (error || !data) return null;
   const row = data as LandingPageRow;
   return migrate({
     slug: row.slug,
+    officeSubdomain: row.office_subdomain,
     name: row.name,
     tema: row.tema ?? "",
     status: "published",
@@ -267,20 +361,6 @@ export async function deleteLp(session: Session, slug: string): Promise<void> {
   const db = createLpUserClient(session);
   const { error } = await db.from("landing_pages").delete().eq("slug", safe);
   if (error) throwDbError(error);
-}
-
-export async function getUserSubdomain(
-  session: Session,
-): Promise<string | null> {
-  const userId = session.user.id;
-  if (!UUID_RE.test(userId)) return null;
-  const db = createLpServiceClient();
-  const { data } = await db
-    .from("profiles")
-    .select("subdomain")
-    .eq("id", userId)
-    .maybeSingle();
-  return (data?.subdomain as string | undefined) ?? null;
 }
 
 function migrate(lp: StoredLp): StoredLp {
@@ -348,7 +428,10 @@ function migrate(lp: StoredLp): StoredLp {
   if (schema && !schema.etapas) schema.etapas = GENERIC_ETAPAS;
 
   if (lp.schema) {
-    lp.schema.seo = normalizeSeo(lp.schema.seo, lp.schema, lp.tema);
+    lp.schema.seo = normalizeSeo(lp.schema.seo, lp.schema, lp.tema, {
+      officeSubdomain: lp.officeSubdomain,
+      lpSlug: lp.slug,
+    });
   }
 
   return lp;

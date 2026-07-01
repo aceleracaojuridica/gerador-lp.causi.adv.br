@@ -40,7 +40,7 @@ function hostWithoutPort(host: string): string {
   return host;
 }
 
-/** Domínio base das LPs publicadas (`NEXT_PUBLIC_APP_DOMAIN`). */
+/** Domínio base do app e subdomínios (`NEXT_PUBLIC_APP_DOMAIN`). */
 export function getLpPublicDomain(): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim();
   if (fromEnv) return fromEnv.replace(/:\d+$/, "");
@@ -53,22 +53,49 @@ export function getLpPublicDomain(): string {
     .replace(/:\d+$/, "");
 }
 
-/** Slug da LP quando o host é `{slug}.{LP_DOMAIN}`. */
-export function lpSubdomainSlug(host: string): string | null {
+/** URL absoluta do app principal (redirect da raiz do subdomínio do escritório). */
+export function getMainAppUrl(): string {
+  const raw = process.env.APP_URL?.trim();
+  if (raw) {
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      return raw.replace(/\/$/, "");
+    }
+    const domain = raw.replace(/:\d+$/, "");
+    const protocol = domain.startsWith("localhost") ? "http" : "https";
+    return `${protocol}://${raw.replace(/\/$/, "")}`;
+  }
+
+  const domain = getLpPublicDomain() || "causi.adv.br";
+  const protocol = domain.startsWith("localhost") ? "http" : "https";
+  return `${protocol}://${domain}`;
+}
+
+/** Subdomínio do escritório quando o host é `{escritorio}.{APP_DOMAIN}`. */
+export function officeSubdomainFromHost(host: string): string | null {
   const lpDomain = getLpPublicDomain();
   if (!lpDomain) return null;
 
   const hostname = hostWithoutPort(host);
   if (!hostname.endsWith(`.${lpDomain}`)) return null;
 
-  const slug = hostname.slice(0, hostname.length - lpDomain.length - 1);
-  if (!slug || slug.includes(".")) return null;
-  return slug;
+  const office = hostname.slice(0, hostname.length - lpDomain.length - 1);
+  if (!office || office.includes(".")) return null;
+  return office;
 }
 
-/** `/{slug}` — rota da LP publicada (acessível via subdomínio). */
-export function isPublicLpSlugPath(pathname: string): boolean {
+/** Slug da LP em `/{lpSlug}` no host do escritório (um segmento, não reservado). */
+export function parsePublicLpPath(pathname: string): string | null {
   const match = /^\/([^/]+)\/?$/.exec(pathname);
-  if (!match) return false;
-  return !RESERVED_SEGMENTS.has(match[1]);
+  if (!match) return null;
+  const segment = match[1];
+  if (RESERVED_SEGMENTS.has(segment)) return null;
+  return segment;
 }
+
+/** `/{slug}` no domínio principal — não serve LP pública (404). */
+export function isPublicLpSlugPath(pathname: string): boolean {
+  return parsePublicLpPath(pathname) !== null;
+}
+
+/** @deprecated Use officeSubdomainFromHost */
+export const lpSubdomainSlug = officeSubdomainFromHost;

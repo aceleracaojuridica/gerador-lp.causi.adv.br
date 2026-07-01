@@ -167,11 +167,14 @@ Ver [features/landing-pages.md](features/landing-pages.md) e [features/templates
 
 Ver [features/leads.md](features/leads.md).
 
-### 5. Publicação (futuro)
+### 5. Publicação
 
-- `custom_domain` e `client_slug` existem no schema mas sem runtime.
-- Middleware prepara prefixo `/p/` como rota pública — rota inexistente.
-- Subdomínio `[subdomain].localhost` não implementado.
+- App do gerador em `causi.adv.br` (autenticação, galeria, editor).
+- Subdomínio fixo por conta: `{office_subdomain}.causi.adv.br` — raiz redireciona para `causi.adv.br`.
+- LP publicada em `{office_subdomain}.causi.adv.br/{slug}` — rota `(subdomains)/[escritorio]/[slug]`.
+- Proxy (`src/proxy.ts` + `src/lib/supabase/proxy.ts`): detecta host do escritório, reescreve path para a rota pública sem auth; bloqueia `/{slug}` no domínio principal.
+- `getLpPublic(office_subdomain, slug)` consulta `landing_pages` com `status = published`.
+- Domínio customizado (`schema.office.domain`, `user_settings.custom_domain`): pós-MVP.
 
 ## Componentes-chave
 
@@ -223,14 +226,13 @@ Ver [features/leads.md](features/leads.md).
 | Middleware não valida plano | Mover checagem de plano para middleware (evita flash) |
 | APIs sem guard | Proteger `melhorar-texto`, `melhorar-imagem`, `imagem` com `requireLpSession` |
 | `/sem-acesso` órfã | Unificar destino: `/sem-acesso` ou `CAUSI_APP_URL` (decisão de produto) |
-| Prefixo `/p/` sem rota | Implementar rota pública para LPs publicadas |
+| Prefixo `/p/` legado | Publicação usa `(subdomains)/[escritorio]/[slug]` via proxy |
 
 ### Funcionalidades
 
 | Problema | Recomendação |
 |----------|--------------|
 | Trocar template no editor ainda não reaplica layout | Implementar ação que carrega `getTemplate(id).layout` + `.theme` e salva mantendo copy |
-| Sem publicação/subdomínio | Middleware por host + campo `status` em `lps` |
 | Sem `POST /api/lead` | Implementar captura real no `LeadPopup` |
 | Marketing inexistente | Rota placeholder "Em breve" em `/dashboard/marketing` |
 
@@ -244,7 +246,8 @@ Ver [features/leads.md](features/leads.md).
 | `LP_SUPABASE_SERVICE_ROLE_KEY` | Sim | Service role do Gerador LP |
 | `OPENAI_API_KEY` | Sim* | Geração e melhoria de texto |
 | `UNSPLASH_ACCESS_KEY` | Não | Imagens de cenário (fallback local) |
-| `NEXT_PUBLIC_CAUSI_APP_URL` | Não | Redirect sem plano (default: `https://app.causi.com.br`) |
+| `APP_URL` | Sim | URL do app (`https://causi.adv.br`) — redirect da raiz do subdomínio |
+| `NEXT_PUBLIC_APP_DOMAIN` | Sim | Domínio base (`causi.adv.br`) — subdomínios de escritório e URLs públicas |
 
 \* Sem OpenAI, geração de LP e melhoria de texto falham com 503.
 

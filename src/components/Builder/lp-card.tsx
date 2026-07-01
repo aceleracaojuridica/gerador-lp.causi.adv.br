@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 type LpCardProps = {
   slug: string;
+  officeSubdomain: string;
   name: string;
   tema: string;
   status: "draft" | "published";
@@ -28,6 +29,7 @@ type LpCardProps = {
 
 export function LpCard({
   slug,
+  officeSubdomain,
   name,
   tema,
   status,
@@ -172,7 +174,7 @@ export function LpCard({
           {status === "published" ? (
             <Button asChild variant="ghost" size="icon-sm" className="h-8 w-8">
               <a
-                href={publicLpUrl(slug)}
+                href={publicLpUrl(officeSubdomain, slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`Abrir ${preview.host}`}

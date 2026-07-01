@@ -36,7 +36,8 @@ CREATE TABLE public.landing_pages (
   account_id bigint NOT NULL,
   created_by_user_id uuid NOT NULL,
   profile_id uuid,
-  slug text NOT NULL UNIQUE,
+  office_subdomain text NOT NULL,
+  slug text NOT NULL,
   name text NOT NULL DEFAULT ''::text,
   tema text NOT NULL DEFAULT ''::text,
   schema jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -45,6 +46,7 @@ CREATE TABLE public.landing_pages (
   status text NOT NULL DEFAULT 'draft'::text,
   published_at timestamp with time zone,
   CONSTRAINT landing_pages_pkey PRIMARY KEY (id),
+  CONSTRAINT landing_pages_account_slug_uk UNIQUE (account_id, slug),
   CONSTRAINT landing_pages_profile_fk FOREIGN KEY (profile_id) REFERENCES public.profiles(id)
 );
 

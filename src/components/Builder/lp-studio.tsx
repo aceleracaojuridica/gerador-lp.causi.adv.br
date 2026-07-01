@@ -55,6 +55,7 @@ export function LpStudio({
     <Editor
       form={form}
       slug={initial.slug}
+      officeSubdomain={initial.officeSubdomain}
       name={initial.name}
       status={initial.status ?? "draft"}
       startTour={startTour}

@@ -344,7 +344,8 @@ export type LpSchema = {
  * Uma LP gerada e salva. O frontend exibe e edita; o banco persiste.
  */
 export type StoredLp = {
-  slug: string; // identificador global (kebab-case) — subdomínio público; definido em POST /api/gerar-lp
+  slug: string; // identificador da LP por conta (kebab-case do tema)
+  officeSubdomain: string; // subdomínio fixo do escritório (nome da conta)
   name: string; // nome do escritório/cliente (exibido na galeria)
   tema: string; // tema da LP (referência; não regera nada)
   status?: "draft" | "published"; // draft = só no editor; published = acessível publicamente

@@ -98,7 +98,7 @@ flowchart LR
   E --> F[Editor /lp/slug]
   F --> G[Personaliza variações por seção]
   G --> H[Publicar]
-  H --> I[subdomain.causi.adv.br]
+  H --> I[escritorio.causi.adv.br/slug]
   I --> J[Lead capturado]
   J --> K[Dashboard Contatos]
 ```
@@ -111,7 +111,7 @@ flowchart LR
 4. **Preset (opcional)** — Advogado pode escolher um dos presets de layout na criação; default `classic-light`.
 5. **Geração** — IA gera copy jurídica; o preset define variantes iniciais; a logo define cores; LP salva apenas com `schema`.
 6. **Editor** — Personalização de textos, variações por seção, tones (claro/escuro), cores, imagens, ordem das seções. Trocar preset no editor reaplica layout (mantém cores da logo).
-7. **Publicação** — `status = published` + `slug` público; site em `slug.causi.adv.br`.
+7. **Publicação** — `status = published`; site em `{office_subdomain}.causi.adv.br/{slug}`; raiz do subdomínio redireciona para `causi.adv.br`.
 8. **Leads** — Visitantes preenchem popup; dados em Contatos.
 
 ## Escopo por feature
@@ -130,13 +130,12 @@ flowchart LR
 | Salvamento | `saveLpAction` | Implementado |
 | Dashboard de contatos | `/dashboard` | Implementado (leitura) |
 | Configurações globais | `GlobalSettings` | Implementado |
-| Página pública SSR com metadata + JSON-LD | `/p/[slug]` | Implementado |
+| Página pública SSR com metadata + JSON-LD | `(subdomains)/[escritorio]/[slug]` | Implementado |
 
 ### MVP restante (prioridade alta)
 
 | Feature | Descrição | Complexidade |
 |---------|-----------|--------------|
-| Publicação + subdomínio | `status`, `slug` público, middleware por host | Média |
 | Captura de leads | `POST /api/lead` + integração no `LeadPopup` | Média |
 
 ### Pós-MVP
@@ -171,7 +170,8 @@ flowchart LR
 - Advogado escolhe um template (grupo pré-definido de variações + paleta).
 - IA gera copy jurídica a partir dos dados do formulário.
 - As variações iniciais de cada seção vêm do template escolhido.
-- Slug derivado do nome do escritório, único globalmente.
+- Slug da LP derivado do **tema**, único por conta (`account_id`).
+- `office_subdomain` derivado do **nome da conta**, fixo por escritório, persistido em `landing_pages`.
 
 ### RF-04 — Seções com Variações
 
@@ -205,9 +205,12 @@ flowchart LR
 
 ### RF-06 — Publicação (MVP multi-tenant)
 
-- Uma LP publicada = uma linha em `lps` com `status = published` e `slug` único.
-- Subdomínio `[slug].causi.adv.br` resolve a LP via middleware (host → slug).
-- Página pública: Server Component carrega `schema` e renderiza `LandingPreview` — sem pipeline HTML separado.
+- Uma LP publicada = uma linha em `landing_pages` com `status = published`, `slug` (LP) e `office_subdomain` (escritório).
+- URL pública: `https://{office_subdomain}.causi.adv.br/{slug}` — ex.: `darlley-dev.causi.adv.br/previdenciario`.
+- Raiz do subdomínio (`{office_subdomain}.causi.adv.br/`) redireciona para `https://causi.adv.br` (app do gerador).
+- O proxy (`src/proxy.ts`) detecta o host do escritório, reescreve `/{slug}` para `(subdomains)/[escritorio]/[slug]` e **não exige autenticação**.
+- No domínio principal, `/{slug}` retorna 404 — LPs não são servidas em path no app.
+- Página pública: Server Component + `getLpPublic(office_subdomain, slug)` + `LandingPreview`.
 - Domínio customizado: pós-MVP via `user_settings.custom_domain`.
 
 ### RF-07 — Leads
@@ -238,7 +241,7 @@ O único propósito das LPs é ser vinculada em campanhas de anúncios pagos (Go
 
 **Robots:** `noindex, follow` por padrão (não indexar organicamente; permitir rastreamento para Quality Score).
 
-**Rota pública:** `/p/[slug]` — acessível sem autenticação; o middleware já libera o prefixo `/p/`. Renderiza o mesmo `LandingPreview` do editor com `generateMetadata` (Next.js Metadata API) e JSON-LD injetado.
+**Rota pública:** `(subdomains)/[escritorio]/[slug]` — acessível sem autenticação via rewrite do proxy no subdomínio do escritório. Renderiza o mesmo `LandingPreview` do editor com `generateMetadata` (Next.js Metadata API) e JSON-LD injetado.
 
 ## Requisitos não-funcionais
 
@@ -277,10 +280,10 @@ O único propósito das LPs é ser vinculada em campanhas de anúncios pagos (Go
 - [x] Editor customiza textos, variações por seção, tones, cores, imagens, ordem
 - [x] `VariantPicker` disponível por seção no editor
 - [x] Salvamento persiste alterações no `schema`
-- [x] LP acessível em `/p/[slug]` com metadata e JSON-LD
+- [x] LP acessível em `{office_subdomain}.causi.adv.br/{slug}` com metadata e JSON-LD
 - [ ] Trocar template no editor reaplica layout sem perder copy
-- [ ] Botão Publicar define `status = published`
-- [ ] LP acessível em `[slug].causi.adv.br` com mesmo visual do preview
+- [x] Botão Publicar define `status = published`
+- [x] LP publicada com mesmo visual do preview no subdomínio do escritório
 
 ### Leads
 

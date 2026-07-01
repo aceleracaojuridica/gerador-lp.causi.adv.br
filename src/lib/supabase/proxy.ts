@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import {
+  getMainAppUrl,
   isPublicLpSlugPath,
-  lpSubdomainSlug,
+  officeSubdomainFromHost,
+  parsePublicLpPath,
 } from "@/lib/landing-pages/public-routing";
 import { getSafeRedirectPath } from "../auth/auth";
 import { createClient } from "./server";
@@ -25,11 +27,20 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get("host") ?? "";
 
-  const subdomainSlug = lpSubdomainSlug(host);
-  if (subdomainSlug) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${subdomainSlug}`;
-    return NextResponse.rewrite(url);
+  const office = officeSubdomainFromHost(host);
+  if (office) {
+    if (pathname === "/" || pathname === "") {
+      return NextResponse.redirect(getMainAppUrl());
+    }
+
+    const lpSlug = parsePublicLpPath(pathname);
+    if (lpSlug) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${office}/${lpSlug}`;
+      return NextResponse.rewrite(url);
+    }
+
+    return new NextResponse(null, { status: 404 });
   }
 
   if (isPublicLpSlugPath(pathname)) {

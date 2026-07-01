@@ -5,7 +5,11 @@ import {
 } from "@/lib/landing-pages/focos";
 import { imagensDoTema } from "@/lib/landing-pages/image-bank";
 import { callOpenAiForCopy } from "@/lib/landing-pages/lp-generate-copy";
-import { isLpSlugTaken, saveLp } from "@/lib/landing-pages/lp-store";
+import {
+  isLpSlugTaken,
+  resolveOfficeSubdomain,
+  saveLp,
+} from "@/lib/landing-pages/lp-store";
 import {
   DEFAULT_LAYOUT,
   DEFAULT_THEME,
@@ -96,10 +100,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const slugBase = slugFromOfficeName(name);
+  const slugBase = slugFromOfficeName(tema);
   if (!slugBase) {
     return Response.json(
-      { error: "Nome inválido para gerar o identificador." },
+      { error: "Tema inválido para gerar o identificador." },
       { status: 400 },
     );
   }
@@ -210,8 +214,10 @@ export async function POST(request: Request) {
 
   // 4. Salva e devolve o slug
   try {
+    const officeSubdomain = await resolveOfficeSubdomain(user);
     await saveLp(user, {
       slug,
+      officeSubdomain,
       name,
       tema,
       status: "draft",

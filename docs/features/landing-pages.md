@@ -163,33 +163,47 @@ Grupos pré-definidos de variações + paleta de cores. O advogado escolhe um te
 
 ---
 
-## Identificador e URL pública (slug)
+## Identificador e URL pública
 
-O **slug** é o endereço da LP na internet. Cada landing page publicada fica em:
+Cada escritório tem um **subdomínio fixo**; cada landing page tem um **slug** (path). A URL pública é:
 
-`https://{slug}.{NEXT_PUBLIC_APP_DOMAIN}` — ex.: `escritorio-silva.causi.adv.br`
+`https://{office_subdomain}.{NEXT_PUBLIC_APP_DOMAIN}/{slug}` — ex.: `darlley-dev.causi.adv.br/previdenciario`
+
+| Campo | Origem | Escopo | Exemplo |
+|-------|--------|--------|---------|
+| `office_subdomain` | Nome da conta Causi (`session.account.name` → kebab-case) | Fixo por conta, persistido em `landing_pages` | `darlley-dev` |
+| `slug` | Tema da LP na criação (`slugFromOfficeName(tema)`) | Único por `account_id` | `previdenciario` |
+
+A raiz do subdomínio (`darlley-dev.causi.adv.br/`) redireciona para `https://causi.adv.br`. O app do gerador **não** serve LPs em `causi.adv.br/{slug}` (404).
 
 ### Quando é definido
 
 | Momento | O que acontece |
 |---------|----------------|
-| **Wizard `/nova`** | Advogado informa o nome do escritório — ainda **não** há slug |
-| **`POST /api/gerar-lp`** | Servidor deriva o slug do nome, resolve colisões e **grava** na primeira persistência |
-| **Editor `/lp/[slug]`** | Slug já existe; usado na URL do editor e no botão "Ver site" |
-| **Publicação** | Mesmo slug; apenas muda `status` para `published` |
+| **Wizard `/nova`** | Advogado informa escritório e tema — ainda **não** há slug de LP |
+| **`POST /api/gerar-lp`** | Servidor deriva `slug` do tema e `office_subdomain` do nome da conta; grava na primeira persistência |
+| **Editor `/lp/[slug]`** | Slug de LP já existe; botão "Ver site" usa `{office_subdomain}.{domain}/{slug}` |
+| **Publicação** | Mesmos identificadores; apenas muda `status` para `published` |
 
-O slug **não é editável** pelo advogado. Nasce uma vez na geração e permanece fixo.
+O slug da LP **não é editável** pelo advogado. Nasce uma vez na geração e permanece fixo.
 
-### Estratégia de unicidade global
+### Estratégia de unicidade
+
+**Slug da LP (por conta):**
 
 | Passo | Regra |
 |-------|-------|
-| 1. Base | Nome do escritório → kebab-case, sem acentos (`slugFromOfficeName` em `lib/slug.ts`) |
-| 2. Primeira tentativa | Slug base puro — ex.: `escritorio-silva` |
-| 3. Colisão | Sufixo numérico incremental: `escritorio-silva-2`, `escritorio-silva-3`, … |
-| 4. Limite | Até `LP_SLUG_MAX_SUFFIX` (9999) tentativas; senão erro 409 |
+| 1. Base | Tema → kebab-case (`slugFromOfficeName`) |
+| 2. Colisão na conta | Sufixo `-2`, `-3`, … até `LP_SLUG_MAX_SUFFIX` |
+| 3. Banco | `UNIQUE (account_id, slug)` |
 
-A verificação consulta `landing_pages.slug` **sem filtrar por usuário** (`isLpSlugTaken` em `lib/lpStore.ts`). Constraint no banco: `UNIQUE (slug)`.
+**Subdomínio do escritório (global entre contas):**
+
+| Passo | Regra |
+|-------|-------|
+| 1. Base | Nome da conta → kebab-case |
+| 2. Colisão entre contas | Sufixo numérico incremental |
+| 3. Persistência | Mesmo valor em todas as LPs da conta (`landing_pages.office_subdomain`) |
 
 ---
 
@@ -204,7 +218,7 @@ flowchart TD
   E --> F[Editor /lp/slug]
   F --> G[VariantPicker + saveLpAction]
   G --> H[Publicar — status=published]
-  H --> I[slug.causi.adv.br]
+  H --> I[escritorio.causi.adv.br/slug]
 ```
 
 Ver também [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
@@ -225,13 +239,14 @@ No passo final (Imagens), ao clicar em **Criar e editar**, o wizard chama `POST 
 
 ### Pipeline
 
-1. **Slug** — `slugFromOfficeName(name)` + `allocateUniqueLpSlug()` (`lib/slug.ts`); verifica unicidade global antes da IA.
-2. **Layout** — Usa `layout` explícito do wizard (copiado do preset escolhido ou default). Sobrescreve `hero: "video"` se houver `videoId`.
-3. **Theme** — Paleta enviada pelo wizard (extraída da logo ou padrão).
-4. **Copy** — Reutiliza copy pré-gerada (`/api/gerar-copy`) ou chama GPT-4o inline.
-5. **Imagens** — Reutiliza imagens do wizard ou Unsplash + `imageBank`.
-6. **Schema** — `buildSchema(office, theme, tema, layout, …)` monta o JSON completo.
-7. **Persistência** — `saveLp(userId, { slug, name, tema, schema })`.
+1. **Slug da LP** — `slugFromOfficeName(tema)` + `allocateUniqueLpSlug()` escopado à conta.
+2. **office_subdomain** — `resolveOfficeSubdomain(session)` a partir do nome da conta.
+3. **Layout** — Usa `layout` explícito do wizard (copiado do preset escolhido ou default). Sobrescreve `hero: "video"` se houver `videoId`.
+4. **Theme** — Paleta enviada pelo wizard (extraída da logo ou padrão).
+5. **Copy** — Reutiliza copy pré-gerada (`/api/gerar-copy`) ou chama GPT-4o inline.
+6. **Imagens** — Reutiliza imagens do wizard ou Unsplash + `imageBank`.
+7. **Schema** — `buildSchema(office, theme, tema, layout, …)` monta o JSON completo.
+8. **Persistência** — `saveLp(session, { slug, officeSubdomain, name, tema, schema })`.
 
 ---
 
@@ -363,21 +378,22 @@ Uma LP publicada = uma linha em `lps`. Multi-tenancy por **`slug`**, não por de
 sequenceDiagram
   participant Advogado
   participant Editor
-  participant DB as lps
-  participant MW as Middleware
-  participant Page as Rota pública SSR
+  participant DB as landing_pages
+  participant Proxy as src/proxy.ts
+  participant Page as subdomains/escritorio/slug
 
   Advogado->>Editor: Publicar
   Editor->>DB: status=published
-  Note over MW,Page: Visitante acessa escritorio.causi.adv.br
-  MW->>MW: host → slug
-  MW->>DB: SELECT schema WHERE slug AND status=published
+  Note over Proxy,Page: Visitante acessa escritorio.causi.adv.br/previdenciario
+  Proxy->>Proxy: host → office_subdomain; path → slug
+  Proxy->>Page: rewrite /escritorio/previdenciario
+  Page->>DB: getLpPublic(office_subdomain, slug)
   DB-->>Page: LpSchema
   Page->>Page: LandingPreview(schema)
 ```
 
-1. **Middleware:** `escritorio.causi.adv.br` → `slug = escritorio` (rota pública, sem auth).
-2. **Query:** `lps WHERE slug = ? AND status = 'published'`.
+1. **Proxy:** `{office}.causi.adv.br/{slug}` → rewrite interno `/{office}/{slug}` (sem auth). Raiz do subdomínio → redirect `causi.adv.br`.
+2. **Query:** `landing_pages WHERE office_subdomain = ? AND slug = ? AND status = 'published'`.
 3. **Render:** Server Component + `LandingPreview` — `schema.layout` define as variações.
 4. **Leads:** `POST /api/lead` na mesma origem do subdomínio.
 
@@ -389,11 +405,12 @@ sequenceDiagram
 
 | Função | Operação |
 |--------|----------|
-| `listLps` | slug, name, tema |
+| `listLps` | slug, officeSubdomain, name, tema |
 | `getLp` | LP completa + `migrate()` |
-| `saveLp` | upsert `(causi_user_id, slug)` |
-| `deleteLp` | remove por slug |
-| `getLpPublic` | LP por slug sem autenticação (rota pública) |
+| `saveLp` | upsert `(account_id, slug)` com `office_subdomain` |
+| `deleteLp` | remove por slug (RLS por conta) |
+| `getLpPublic` | LP por `office_subdomain` + `slug` sem autenticação |
+| `resolveOfficeSubdomain` | subdomínio fixo do escritório a partir do nome da conta |
 
 ---
 
@@ -422,7 +439,6 @@ Mesmo padrão em `Dor`, `Solucao`, `Sobre`, `Areas`, `Etapas`, `Equipe`.
 | Gap | Nota |
 |-----|------|
 | "Trocar template" no editor | `TemplatePicker` compacto existe; ação de re-aplicar layout ainda não implementada |
-| Sem publicação/subdomínio | Bloqueia leads reais; `status` e middleware ainda não implementados |
 | `Editor.tsx` grande | Refatorar após MVP |
 | `POST /api/lead` | Popup demo funciona; captura real não implementada |
 

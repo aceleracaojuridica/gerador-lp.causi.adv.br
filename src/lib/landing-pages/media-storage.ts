@@ -94,7 +94,7 @@ export async function persistLpSchemaMedia(
   schema: LpSchema,
   ctx: {
     session: Session;
-    subdomain: string | null;
+    officeSubdomain: string;
     userId: string;
     accountId: number;
     slug: string;

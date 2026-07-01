@@ -1,4 +1,4 @@
-import { publicLpHost } from "./lp-url";
+import { publicLpDisplayHost } from "./lp-url";
 import type { LpSchema } from "./schema";
 import { resolveSeo } from "./seo";
 
@@ -17,12 +17,13 @@ export type LpListPreview = {
  */
 export function buildLpListPreview(input: {
   schema: LpSchema | null;
+  officeSubdomain: string;
   slug: string;
   tema: string;
   name: string;
 }): LpListPreview {
-  const { schema, slug, tema, name } = input;
-  const host = publicLpHost(slug);
+  const { schema, officeSubdomain, slug, tema, name } = input;
+  const host = publicLpDisplayHost(officeSubdomain, slug);
 
   if (!schema?.hero || !schema?.office) {
     return {
@@ -34,7 +35,7 @@ export function buildLpListPreview(input: {
     };
   }
 
-  const seo = resolveSeo(schema, slug);
+  const seo = resolveSeo(schema, { officeSubdomain, lpSlug: slug });
 
   return {
     title: seo.ogTitle,

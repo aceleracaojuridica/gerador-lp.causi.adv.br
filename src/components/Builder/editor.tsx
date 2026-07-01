@@ -105,7 +105,7 @@ import {
   GENERIC_ETAPAS,
 } from "@/lib/landing-pages/focos";
 import { ICON_KEYS } from "@/lib/landing-pages/icons";
-import { publicLpHost, publicLpUrl } from "@/lib/landing-pages/lp-url";
+import { publicLpDisplayHost, publicLpUrl } from "@/lib/landing-pages/lp-url";
 import {
   type ImagemMelhorada,
   melhorarImagem,
@@ -313,12 +313,14 @@ const TOUR: { id: string; target: string; title: string; hint: string }[] = [
 export function Editor({
   form,
   slug,
+  officeSubdomain,
   name,
   status: initialStatus,
   startTour,
 }: {
   form: LpForm;
   slug: string;
+  officeSubdomain: string;
   name: string;
   status?: "draft" | "published";
   startTour?: boolean;
@@ -533,6 +535,7 @@ export function Editor({
     setSaveState("saving");
     const stored: StoredLp = {
       slug,
+      officeSubdomain,
       name: office.name || name,
       tema: form.tema,
       status,
@@ -1665,12 +1668,12 @@ export function Editor({
               <CheckCircle size={13} />
               Publicado em{" "}
               <a
-                href={publicLpUrl(slug)}
+                href={publicLpUrl(officeSubdomain, slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium underline underline-offset-2"
               >
-                {publicLpHost(slug)}
+                {publicLpDisplayHost(officeSubdomain, slug)}
               </a>
             </p>
           ) : (

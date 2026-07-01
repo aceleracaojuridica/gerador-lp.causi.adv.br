@@ -11,6 +11,11 @@ type OfficeSeoInput = Pick<
   "name" | "area" | "product" | "city" | "logoSrc" | "sectionImages"
 >;
 
+export type PublicUrlContext = {
+  officeSubdomain: string;
+  lpSlug: string;
+};
+
 export type ResolvedSeo = {
   title: string;
   description: string;
@@ -69,6 +74,7 @@ export function normalizeSeo(
   seo: Partial<SeoMeta> | undefined,
   schema: Pick<LpSchema, "office" | "hero">,
   tema: string,
+  _publicUrl?: PublicUrlContext,
 ): SeoMeta {
   const defaults = buildDefaultSeo({
     office: schema.office,
@@ -92,9 +98,12 @@ export function normalizeSeo(
 }
 
 /** Valores efetivos usados na rota pública e no preview de compartilhamento. */
-export function resolveSeo(schema: LpSchema, slug?: string): ResolvedSeo {
+export function resolveSeo(
+  schema: LpSchema,
+  publicUrl?: PublicUrlContext,
+): ResolvedSeo {
   const tema = schema.office.product || schema.office.area || "";
-  const seo = normalizeSeo(schema.seo, schema, tema);
+  const seo = normalizeSeo(schema.seo, schema, tema, publicUrl);
 
   const title = seo.title;
   const description = seo.description;
@@ -110,7 +119,10 @@ export function resolveSeo(schema: LpSchema, slug?: string): ResolvedSeo {
   const indexable = seo.indexable ?? false;
   const siteName = seo.siteName?.trim() || schema.office.name || undefined;
   const canonicalUrl =
-    seo.canonicalUrl?.trim() || (slug ? publicLpUrl(slug) : undefined);
+    seo.canonicalUrl?.trim() ||
+    (publicUrl
+      ? publicLpUrl(publicUrl.officeSubdomain, publicUrl.lpSlug)
+      : undefined);
 
   return {
     title,
