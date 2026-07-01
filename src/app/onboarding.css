@@ -1,0 +1,1020 @@
+/* ─────────────────────────────────────────────
+   Onboarding overlay — all animation & component
+   styles live here so globals.css stays lean.
+   ───────────────────────────────────────────── */
+
+/* ── Keyframes ── */
+
+@keyframes onboarding-welcome-haze {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(44px);
+  }
+  22% {
+    opacity: 1;
+  }
+  58% {
+    transform: scale(1.04);
+    filter: blur(16px);
+  }
+  100% {
+    opacity: 0.94;
+    transform: scale(1);
+    filter: blur(24px);
+  }
+}
+
+@keyframes onboarding-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes onboarding-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes onboarding-glow-line {
+  from {
+    opacity: 0;
+    width: 10%;
+  }
+  to {
+    opacity: 1;
+    width: 55%;
+  }
+}
+
+@keyframes onboarding-orb-drift-1 {
+  from {
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    transform: translateX(-50%) translateY(40px);
+  }
+}
+
+@keyframes onboarding-orb-drift-2 {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-30px, -50px);
+  }
+}
+
+@keyframes onboarding-orb-drift-3 {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(20px, 30px);
+  }
+}
+
+@keyframes onboarding-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes onboarding-slide-left {
+  from {
+    opacity: 0;
+    transform: translate(-32px, -16px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes onboarding-slide-right {
+  from {
+    opacity: 0;
+    transform: translate(32px, 16px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes onboarding-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes onboarding-card-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes onboarding-ring-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Components ── */
+
+@layer components {
+  /* Chromatic orb layer */
+  .onboarding-orb-layer {
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .onboarding-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+  }
+
+  .onboarding-orb-1 {
+    width: 680px;
+    height: 680px;
+    top: -180px;
+    left: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--primary) 38%, transparent) 0%,
+      transparent 65%
+    );
+    animation: onboarding-orb-drift-1 8s ease-in-out infinite alternate;
+  }
+
+  .onboarding-orb-2 {
+    width: 500px;
+    height: 500px;
+    bottom: -100px;
+    right: -80px;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--background-primary) 25%, transparent) 0%,
+      transparent 60%
+    );
+    animation: onboarding-orb-drift-2 10s ease-in-out infinite alternate;
+  }
+
+  .onboarding-orb-3 {
+    width: 380px;
+    height: 380px;
+    top: 40%;
+    left: -60px;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--chart-3) 18%, transparent) 0%,
+      transparent 60%
+    );
+    animation: onboarding-orb-drift-3 12s ease-in-out infinite alternate;
+  }
+
+  /* Noise grain overlay */
+  .onboarding-grain {
+    pointer-events: none;
+    opacity: 0.35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* Radial vignette backdrop — uses --background so it's dark in dark mode, light in light mode */
+  .onboarding-backdrop {
+    background: radial-gradient(
+      ellipse 80% 80% at 50% 50%,
+      color-mix(in srgb, var(--background) 97%, transparent) 0%,
+      color-mix(in srgb, var(--background) 92%, transparent) 30%,
+      color-mix(in srgb, var(--background) 72%, transparent) 58%,
+      color-mix(in srgb, var(--background) 28%, transparent) 78%,
+      transparent 100%
+    );
+    animation: onboarding-backdrop-in 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Legacy overlay gradient */
+  .onboarding-welcome-overlay {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--background-primary) 40%, transparent) 18%,
+      color-mix(in srgb, var(--primary) 70%, transparent) 36%,
+      color-mix(in srgb, var(--chart-3) 95%, transparent) 50%,
+      color-mix(in srgb, var(--chart-5) 90%, transparent) 64%,
+      color-mix(in srgb, var(--background-primary) 38%, transparent) 82%,
+      transparent 100%
+    );
+    animation: onboarding-welcome-haze 2800ms cubic-bezier(0.22, 1, 0.36, 1)
+      forwards;
+  }
+
+  /* Soft vignette (legacy) */
+  .onboarding-soft-vignette {
+    background: radial-gradient(
+      circle at center,
+      transparent 0%,
+      transparent 26%,
+      color-mix(in srgb, var(--foreground) 8%, transparent) 100%
+    );
+  }
+
+  /* Glassmorphism card */
+  .onboarding-card {
+    position: relative;
+    scrollbar-width: none;
+  }
+
+  .onboarding-card::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Radial glass fill — uses --card so it adapts light/dark automatically */
+  .onboarding-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse 78% 82% at 50% 48%,
+      color-mix(in srgb, var(--card) 82%, transparent) 0%,
+      color-mix(in srgb, var(--card) 70%, transparent) 28%,
+      color-mix(in srgb, var(--card) 42%, transparent) 56%,
+      color-mix(in srgb, var(--card) 12%, transparent) 78%,
+      transparent 100%
+    );
+    backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-mask-image: radial-gradient(
+      ellipse 82% 86% at 50% 48%,
+      black 30%,
+      transparent 85%
+    );
+    mask-image: radial-gradient(
+      ellipse 82% 86% at 50% 48%,
+      black 30%,
+      transparent 85%
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Top edge glow line */
+  .onboarding-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 55%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--primary) 55%, transparent),
+      transparent
+    );
+    border-radius: 1px;
+    animation: onboarding-glow-line 900ms ease 400ms both;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Card entrance animation — welcome card has no background/border */
+  .onboarding-welcome-card {
+    animation: onboarding-card-in 640ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+  }
+
+  .onboarding-welcome-card::after,
+  .onboarding-welcome-card::before {
+    content: none;
+  }
+
+  /* Kicker / badge */
+  .onboarding-kicker {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+    animation: onboarding-fade-up 500ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+  }
+
+  /* Pulsing live dot inside kicker */
+  .onboarding-kicker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--primary);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 70%, transparent);
+    flex-shrink: 0;
+    animation: onboarding-pulse-dot 2.5s ease-in-out infinite;
+  }
+
+  /* Muted overlay text */
+  .onboarding-muted {
+    color: var(--muted-foreground);
+  }
+
+  /* Serif headline */
+  .onboarding-headline {
+    font-family: var(--font-serif-display, "Georgia"), serif;
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    animation: onboarding-slide-left 640ms cubic-bezier(0.16, 1, 0.3, 1) 260ms
+      both;
+    will-change: transform, opacity, filter;
+  }
+
+  .onboarding-headline em {
+    font-style: italic;
+    color: var(--primary);
+  }
+
+  /* Subline paragraph */
+  .onboarding-subline {
+    animation: onboarding-slide-right 640ms cubic-bezier(0.16, 1, 0.3, 1) 320ms
+      both;
+    will-change: transform, opacity, filter;
+  }
+
+  /* Feature card */
+  .onboarding-feat-card {
+    background: color-mix(in srgb, var(--foreground) 4%, transparent);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      border-color 300ms,
+      background 300ms,
+      transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: onboarding-card-item-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .onboarding-feat-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+    transform: translateY(-3px);
+  }
+
+  .onboarding-feat-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--foreground) 4%, transparent) 0%,
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 300ms;
+    pointer-events: none;
+  }
+
+  .onboarding-feat-card:hover::after {
+    opacity: 1;
+  }
+
+  .onboarding-feat-card:nth-child(1) {
+    animation-delay: 440ms;
+  }
+
+  .onboarding-feat-card:nth-child(2) {
+    animation-delay: 560ms;
+  }
+
+  .onboarding-feat-card:nth-child(3) {
+    animation-delay: 680ms;
+  }
+
+  /* Card icon container — solid primary bg ensures icon contrast in both themes */
+  .onboarding-card-icon {
+    border: 0.5px solid var(--primary);
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary-foreground);
+  }
+
+  /* Ensure SVG icons inside card-icon pick up the text color */
+  .onboarding-card-icon svg {
+    fill: currentColor;
+    color: var(--primary);
+  }
+
+  /* Step number */
+  .onboarding-card-step {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Ghost button */
+  .onboarding-btn-ghost {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .onboarding-btn-ghost:hover {
+    background: color-mix(in srgb, var(--secondary) 80%, var(--foreground) 20%);
+    color: var(--foreground);
+    border-color: var(--border-interactive);
+  }
+
+  .onboarding-btn-ghost:active {
+    transform: scale(0.97);
+  }
+
+  /* Primary gradient button */
+  .onboarding-btn-primary {
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      var(--background-primary) 100%
+    );
+    color: var(--primary-foreground);
+    box-shadow:
+      0 4px 20px color-mix(in srgb, var(--primary) 40%, transparent),
+      0 1px 0 color-mix(in srgb, var(--primary-foreground) 15%, transparent)
+      inset;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .onboarding-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 28px color-mix(in srgb, var(--primary) 50%, transparent),
+      0 1px 0 color-mix(in srgb, var(--primary-foreground) 15%, transparent)
+      inset;
+  }
+
+  .onboarding-btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary-foreground) 10%, transparent) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+
+  .onboarding-btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  /* Completion check ring */
+  .onboarding-check-ring {
+    width: 68px;
+    height: 68px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: onboarding-ring-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms
+      both;
+  }
+
+  /* Legacy aliases kept for backwards compatibility */
+  .onboarding-text-corner-left {
+    animation: onboarding-slide-left 620ms cubic-bezier(0.16, 1, 0.3, 1) 220ms
+      both;
+    will-change: transform, opacity, filter;
+  }
+
+  .onboarding-text-corner-right {
+    animation: onboarding-slide-right 620ms cubic-bezier(0.16, 1, 0.3, 1) 300ms
+      both;
+    will-change: transform, opacity, filter;
+  }
+
+  .onboarding-feature-card {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  }
+
+  .onboarding-cards-sequence .onboarding-feature-card {
+    opacity: 0;
+    animation: onboarding-card-item-in 500ms linear both;
+    will-change: transform, opacity, filter;
+  }
+
+  .onboarding-cards-sequence .onboarding-feature-card:nth-child(1) {
+    animation-delay: 420ms;
+  }
+
+  .onboarding-cards-sequence .onboarding-feature-card:nth-child(2) {
+    animation-delay: 680ms;
+  }
+
+  .onboarding-cards-sequence .onboarding-feature-card:nth-child(3) {
+    animation-delay: 940ms;
+  }
+
+  @media (max-width: 640px) {
+    .onboarding-welcome-card {
+      border-radius: 1.25rem;
+    }
+  }
+
+  /* ── Light mode: grain blends better with multiply ── */
+  :root:not(.dark) {
+    .onboarding-grain {
+      opacity: 0.18;
+      mix-blend-mode: multiply;
+    }
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-orb-1,
+  .onboarding-orb-2,
+  .onboarding-orb-3,
+  .onboarding-backdrop,
+  .onboarding-kicker,
+  .onboarding-kicker-dot,
+  .onboarding-headline,
+  .onboarding-subline,
+  .onboarding-feat-card,
+  .onboarding-check-ring,
+  .onboarding-welcome-card,
+  .onboarding-welcome-overlay,
+  .onboarding-text-corner-left,
+  .onboarding-text-corner-right,
+  .onboarding-cards-sequence .onboarding-feature-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .onboarding-card::before {
+    animation: none;
+    opacity: 1;
+    width: 55%;
+  }
+}
+
+/* ── WhatsApp Mockup Component ── */
+
+.wa-mockup-scene {
+  background: #0c3326;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  padding: 44px 28px;
+}
+
+.wa-mockup-deco {
+  position: absolute;
+  border-radius: 10px;
+  background: #154835;
+}
+
+.wa-mockup-spark {
+  position: absolute;
+  color: #c8960c;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.wa-mockup-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  /* Default scale for mobile containers */
+  transform: scale(0.65);
+  transform-origin: center;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .wa-mockup-container {
+    transform: scale(0.75);
+  }
+}
+
+@media (min-width: 1140px) {
+  .wa-mockup-container {
+    transform: scale(0.75);
+  }
+}
+
+@media (min-width: 1280px) {
+  .wa-mockup-container {
+    transform: scale(0.85);
+  }
+}
+
+@media (min-width: 1440px) {
+  .wa-mockup-container {
+    transform: scale(0.95);
+  }
+}
+
+/* Browser Mockup - Restoring original proportions */
+.wa-browser {
+  background: #f5efe3;
+  border-radius: 18px;
+  width: 390px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.wa-browser-bar {
+  background: #ede7da;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #d9d2c5;
+}
+
+.wa-browser-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.wa-browser-url-bar {
+  flex: 1;
+  background: #fff;
+  border-radius: 6px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 5px;
+}
+
+.wa-browser-url-text {
+  font-size: 11px;
+  color: #666;
+}
+
+.wa-browser-body {
+  padding: 22px 24px 18px;
+}
+
+.wa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.wa-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.wa-wordmark {
+  font-size: 20px;
+  font-weight: 700;
+  color: #25d366;
+  letter-spacing: -0.3px;
+}
+
+.wa-dl-btn {
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 7px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.wa-login-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e8e2d8;
+  padding: 22px 20px 18px;
+}
+
+.wa-login-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 18px;
+  letter-spacing: -0.2px;
+}
+
+.wa-card-inner {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.wa-text-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 4px;
+}
+
+.wa-shimmer {
+  height: 9px;
+  background: #ede8e0;
+  border-radius: 5px;
+}
+
+.wa-progress-track {
+  height: 3px;
+  background: #e8e2d8;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.wa-progress-fill {
+  height: 100%;
+  width: 55%;
+  background: #25d366;
+  border-radius: 3px;
+}
+
+.wa-card-footer {
+  margin-top: 12px;
+  font-size: 10.5px;
+  color: #999;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Phone Mockup - Restoring original proportions */
+.wa-phone-outer {
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.wa-phone-shell {
+  width: 200px;
+  height: 420px;
+  background: #0f1f17;
+  border-radius: 44px;
+  padding: 5px;
+  position: relative;
+  border: 1.5px solid #2a4a38;
+  box-shadow:
+    inset 0 0 0 1px #3a6a50,
+    15px 30px 60px rgba(0, 0, 0, 0.6),
+    3px 6px 0 0 #071410,
+    -1px 2px 0 0 #1a3628;
+}
+
+.wa-phone-btn {
+  position: absolute;
+  background: #162b22;
+  border-radius: 3px;
+  border-top: 1px solid #2a4a38;
+  border-bottom: 1px solid #071410;
+}
+
+.wa-phone-btn-power {
+  width: 3.5px;
+  height: 62px;
+  right: -5px;
+  top: 110px;
+}
+.wa-phone-btn-vol-up {
+  width: 3.5px;
+  height: 40px;
+  left: -5px;
+  top: 96px;
+}
+.wa-phone-btn-vol-dn {
+  width: 3.5px;
+  height: 40px;
+  left: -5px;
+  top: 144px;
+}
+.wa-phone-btn-mute {
+  width: 3.5px;
+  height: 24px;
+  left: -5px;
+  top: 68px;
+}
+
+.wa-phone-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 39px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-status-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 0;
+  height: 44px;
+  position: relative;
+}
+
+.wa-status-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.wa-dynamic-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 24px;
+  background: #0a1710;
+  border-radius: 14px;
+  border: 1px solid #1a3020;
+}
+
+.wa-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wa-screen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+}
+
+.wa-ph-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: -0.2px;
+}
+
+.wa-ph-sub {
+  font-size: 9px;
+  color: #7aab92;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.wa-qr-outer {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  position: relative;
+}
+
+.wa-qr-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+}
+
+.wa-qr-tl {
+  top: -3px;
+  left: -3px;
+  border-top: 3px solid #25d366;
+  border-left: 3px solid #25d366;
+  border-radius: 5px 0 0 0;
+}
+.wa-qr-tr {
+  top: -3px;
+  right: -3px;
+  border-top: 3px solid #25d366;
+  border-right: 3px solid #25d366;
+  border-radius: 0 5px 0 0;
+}
+.wa-qr-bl {
+  bottom: -3px;
+  left: -3px;
+  border-bottom: 3px solid #25d366;
+  border-left: 3px solid #25d366;
+  border-radius: 0 0 0 5px;
+}
+.wa-qr-br {
+  bottom: -3px;
+  right: -3px;
+  border-bottom: 3px solid #25d366;
+  border-right: 3px solid #25d366;
+  border-radius: 0 0 5px 0;
+}
+
+.wa-scan-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #25d366;
+  opacity: 0.75;
+  border-radius: 1px;
+  animation: wa-scan 2.6s ease-in-out infinite;
+}
+
+@keyframes wa-scan {
+  0% {
+    top: 10px;
+    opacity: 0.9;
+  }
+  50% {
+    top: calc(100% - 10px);
+    opacity: 0.4;
+  }
+  100% {
+    top: 10px;
+    opacity: 0.9;
+  }
+}
+
+.wa-home-bar {
+  flex-shrink: 0;
+  width: 70px;
+  height: 4px;
+  background: #3a6050;
+  border-radius: 3px;
+  margin: 10px auto 14px;
+}

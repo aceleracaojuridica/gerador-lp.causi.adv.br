@@ -1,0 +1,55 @@
+import { Chat } from "@material-symbols-svg/react";
+import { CTAButton } from "@/components/ui/cta-button";
+import { Reveal } from "@/components/ui/reveal";
+import type { CtaFinalContent, Tone } from "@/lib/landing-pages/schema";
+import { HeadlineText } from "./headline-text";
+
+export function CtaFinal({
+  content,
+  accentRgb,
+  tone,
+}: {
+  content: CtaFinalContent;
+  accentRgb: string;
+  tone: Tone;
+}) {
+  const dark = tone === "dark";
+  return (
+    <section
+      className={`relative overflow-hidden py-20 md:py-24 ${dark ? "bg-brand-dark" : "bg-cream"}`}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full border-2"
+        style={{ borderColor: `rgba(${accentRgb},0.18)` }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-28 right-0 h-80 w-80 rounded-full"
+        style={{ background: `rgba(${accentRgb},0.10)` }}
+      />
+
+      <div className="relative mx-auto max-w-2xl px-6 text-center">
+        <Reveal>
+          <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-brand-dark">
+            <Chat size={30} />
+          </span>
+          <h2 className={`section-title ${dark ? "text-white" : "text-brand"}`}>
+            <HeadlineText
+              h={content.headline}
+              accentVar={dark ? "accent-soft" : "accent"}
+            />
+          </h2>
+          <p
+            className={`mx-auto mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/85" : "text-ink-soft"}`}
+          >
+            {content.sub}
+          </p>
+          <div className="mt-8">
+            <CTAButton variant="primary">{content.cta}</CTAButton>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}

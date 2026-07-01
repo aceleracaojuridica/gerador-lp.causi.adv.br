@@ -1,0 +1,224 @@
+import {
+  buildSchema,
+  type FocoCopy,
+  matchFoco,
+} from "@/lib/landing-pages/focos";
+import { imagensDoTema } from "@/lib/landing-pages/image-bank";
+import { callOpenAiForCopy } from "@/lib/landing-pages/lp-generate-copy";
+import { isLpSlugTaken, saveLp } from "@/lib/landing-pages/lp-store";
+import {
+  DEFAULT_LAYOUT,
+  DEFAULT_THEME,
+  type Lawyer,
+  type Layout,
+  type Office,
+  type Social,
+  type Theme,
+} from "@/lib/landing-pages/schema";
+import { normalizeSeo } from "@/lib/landing-pages/seo";
+import {
+  allocateUniqueLpSlug,
+  slugFromOfficeName,
+} from "@/lib/landing-pages/slug";
+import { buscarImagensUnsplash } from "@/lib/landing-pages/unsplash";
+import type { Session } from "@/lib/session";
+import { requireLpSession } from "@/lib/session";
+
+/*
+  Gera a LP COMPLETA a partir do cadastro do front (self-service): escreve a
+  copy (OpenAI), busca as imagens de cenário (Unsplash), monta o LpSchema e
+  salva no banco. Devolve o slug para o front abrir a LP.
+
+  Aceita copy e images pré-gerados (vindos de /api/gerar-copy) para evitar
+  chamadas duplas ao OpenAI/Unsplash quando o wizard já fez o preview.
+  Aceita layout explícito (escolhido pelo advogado no picker de variantes).
+*/
+export const runtime = "nodejs";
+
+type Payload = {
+  name?: string;
+  tema?: string;
+  city?: string;
+  whatsapp?: string;
+  whatsappDisplay?: string;
+  email?: string;
+  address?: string;
+  mapsUrl?: string;
+  about?: string;
+  diferenciais?: string[];
+  videoId?: string;
+  logoSrc?: string;
+  logoBg?: Office["logoBg"];
+  theme?: Theme;
+  lawyers?: Lawyer[];
+  socials?: Social[];
+  extraAddresses?: Office["extraAddresses"];
+  // Pré-gerados pelo /api/gerar-copy (evita segunda chamada à IA)
+  copy?: FocoCopy;
+  images?: { hero: string; dor: string; sobre: string; solucao: string };
+  // Layout escolhido pelo advogado no picker de variantes
+  layout?: Layout;
+};
+
+export async function POST(request: Request) {
+  let user: Session;
+  try {
+    user = await requireLpSession();
+  } catch (err) {
+    const forbidden = err instanceof Error && err.message === "FORBIDDEN";
+    return Response.json(
+      { error: forbidden ? "Sem acesso ao gerador." : "Não autenticado." },
+      { status: forbidden ? 403 : 401 },
+    );
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return Response.json(
+      { error: "OPENAI_API_KEY não configurada no servidor (.env.local)." },
+      { status: 503 },
+    );
+  }
+
+  let p: Payload;
+  try {
+    p = (await request.json()) as Payload;
+  } catch {
+    return Response.json({ error: "Corpo inválido." }, { status: 400 });
+  }
+
+  const name = (p.name ?? "").trim();
+  const tema = (p.tema ?? "").trim();
+  if (!name || !tema) {
+    return Response.json(
+      { error: "Informe ao menos o nome do escritório e o tema." },
+      { status: 400 },
+    );
+  }
+
+  const slugBase = slugFromOfficeName(name);
+  if (!slugBase) {
+    return Response.json(
+      { error: "Nome inválido para gerar o identificador." },
+      { status: 400 },
+    );
+  }
+
+  const slug = await allocateUniqueLpSlug(slugBase, isLpSlugTaken);
+  if (!slug) {
+    return Response.json(
+      {
+        error:
+          "Não foi possível gerar um identificador único. Tente um nome diferente.",
+      },
+      { status: 409 },
+    );
+  }
+
+  // 1. Copy: usa pré-gerada (do /api/gerar-copy) ou chama a IA agora
+  let copy: FocoCopy;
+  let imageQueries: Record<string, string> = {};
+  if (p.copy) {
+    copy = p.copy;
+  } else {
+    try {
+      const result = await callOpenAiForCopy(apiKey, {
+        name,
+        tema,
+        city: (p.city ?? "").trim() || undefined,
+        about: (p.about ?? "").trim() || undefined,
+        diferenciais: p.diferenciais?.filter(Boolean),
+      });
+      copy = result.copy;
+      imageQueries = result.imageQueries;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao gerar a copy.";
+      return Response.json({ error: msg }, { status: 502 });
+    }
+  }
+
+  // 2. Imagens: usa pré-geradas ou busca agora
+  let images: { hero: string; dor: string; sobre: string; solucao: string };
+  if (p.images) {
+    images = p.images;
+  } else {
+    const live = await buscarImagensUnsplash(imageQueries);
+    const bank = imagensDoTema(tema);
+    images = {
+      hero: live.hero || bank.hero,
+      dor: live.dor || bank.dor,
+      sobre: live.sobre || bank.sobre,
+      solucao: live.solucao || bank.solucao,
+    };
+  }
+
+  // 3. Monta office + schema
+  const foco = matchFoco(tema);
+  const theme: Theme = p.theme ?? DEFAULT_THEME;
+  const office: Office = {
+    name,
+    fullName: name,
+    product: foco?.product ?? tema,
+    area: foco?.area ?? tema,
+    city: (p.city ?? "").trim(),
+    whatsapp: p.whatsapp ?? "",
+    whatsappDisplay: p.whatsappDisplay ?? "",
+    email: (p.email ?? "").trim(),
+    address: (p.address ?? "").trim(),
+    mapsUrl: (p.mapsUrl ?? "").trim(),
+    extraAddresses: p.extraAddresses ?? [],
+    about: (p.about ?? "").trim(),
+    diferenciais: (p.diferenciais ?? []).map((d) => d.trim()).filter(Boolean),
+    logoSrc: p.logoSrc ?? "",
+    logoBg: p.logoBg ?? { type: "transparent", color: theme.brand },
+    lawyers: p.lawyers ?? [],
+    socials: Array.isArray(p.socials)
+      ? p.socials
+          .map((s) => ({ ...s, url: (s.url ?? "").trim() }))
+          .filter((s) => s.url)
+      : [],
+    sectionImages: images,
+    metrics: [],
+  };
+
+  const videoId = (p.videoId ?? "").trim();
+
+  // Layout: usa o escolhido pelo advogado no picker, ou deriva do template
+  // (com vídeo → força hero "video")
+  const layout: Layout = p.layout
+    ? { ...p.layout, hero: videoId ? "video" : p.layout.hero }
+    : { ...DEFAULT_LAYOUT, hero: videoId ? "video" : DEFAULT_LAYOUT.hero };
+
+  const schema = buildSchema(
+    office,
+    theme,
+    tema,
+    layout,
+    videoId || undefined,
+    copy,
+  );
+  schema.seo = normalizeSeo(
+    {
+      ...copy.seo,
+      ogImage: images.hero,
+      favicon: p.logoSrc ?? "",
+    },
+    schema,
+    tema,
+  );
+
+  // 4. Salva e devolve o slug
+  try {
+    await saveLp(user.user.id, {
+      slug,
+      name,
+      tema,
+      status: "draft",
+      schema,
+    });
+    return Response.json({ ok: true, slug });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Erro ao salvar a LP.";
+    return Response.json({ error: msg }, { status: 500 });
+  }
+}
