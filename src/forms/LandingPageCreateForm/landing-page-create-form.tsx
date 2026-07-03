@@ -16,13 +16,13 @@ import { useRouter } from "next/navigation";
 import { Fragment, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { AutoTextarea } from "@/components/auto-textarea";
-import { maskPhone } from "@/components/Builder/fields";
 import { EstadoCidade } from "@/components/Builder/estado-cidade";
+import { maskPhone } from "@/components/Builder/fields";
 import { MelhorarTextoButton } from "@/components/Builder/melhorar-texto-button";
-import { TemplateCard } from "@/components/Builder/template-card";
-import CausiLogo from "@/components/icons/causi-logo";
 import { PalettePicker } from "@/components/Builder/palette-picker";
 import { SocialsInput } from "@/components/Builder/socials-input";
+import { TemplateCard } from "@/components/Builder/template-card";
+import CausiLogo from "@/components/icons/causi-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -186,7 +186,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
         form.setValue(
           "autoTheme",
           pal.brand !== DEFAULT_THEME.brand ||
-            pal.accent !== DEFAULT_THEME.accent,
+          pal.accent !== DEFAULT_THEME.accent,
         );
       };
       img.src = dataUrl;
@@ -287,13 +287,13 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
       mapsUrl: showAddress ? (addresses[0]?.mapsUrl.trim() ?? "") : "",
       extraAddresses: showAddress
         ? addresses
-            .slice(1)
-            .map((a) => ({
-              address: a.address.trim(),
-              city: [a.cidade, a.uf].filter(Boolean).join("/"),
-              mapsUrl: a.mapsUrl.trim(),
-            }))
-            .filter((a) => a.address)
+          .slice(1)
+          .map((a) => ({
+            address: a.address.trim(),
+            city: [a.cidade, a.uf].filter(Boolean).join("/"),
+            mapsUrl: a.mapsUrl.trim(),
+          }))
+          .filter((a) => a.address)
         : [],
       about: about.trim(),
       diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
@@ -444,11 +444,11 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                       "inline-flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium transition",
                       active && "bg-primary/10 text-primary",
                       done &&
-                        !active &&
-                        "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      !active &&
+                      "text-muted-foreground hover:bg-muted hover:text-foreground",
                       !done &&
-                        !active &&
-                        "cursor-default text-muted-foreground/50",
+                      !active &&
+                      "cursor-default text-muted-foreground/50",
                     )}
                   >
                     <span
@@ -456,11 +456,11 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                         "flex size-5 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-semibold",
                         active && "bg-primary text-primary-foreground",
                         done &&
-                          !active &&
-                          "border border-primary/30 bg-primary/5 text-primary",
+                        !active &&
+                        "border border-primary/30 bg-primary/5 text-primary",
                         !done &&
-                          !active &&
-                          "border border-border/70 text-muted-foreground/60",
+                        !active &&
+                        "border border-border/70 text-muted-foreground/60",
                       )}
                     >
                       {done && !active ? <Check size={12} /> : i + 1}
