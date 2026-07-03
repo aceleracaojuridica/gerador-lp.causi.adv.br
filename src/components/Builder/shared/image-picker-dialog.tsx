@@ -2,11 +2,11 @@
 
 import { AddPhotoAlternate, Close, Upload } from "@material-symbols-svg/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { GalleryImageDto } from "@/app/actions/gallery";
 import {
   listGalleryImagesAction,
   uploadGalleryImageAction,
 } from "@/app/actions/gallery";
-import type { GalleryImageDto } from "@/app/actions/gallery";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

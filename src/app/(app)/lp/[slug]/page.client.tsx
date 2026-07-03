@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { getConfigAction } from "@/app/actions/config";
-import { Editor } from "@/components/Builder/editor";
-import { type LpSeed, useLpForm } from "@/components/Builder/use-lp-form";
+import { Editor } from "@/components/builder/editor";
 import { Container } from "@/components/ui-patterns/container";
+import { type LpSeed, useLpEditorForm } from "@/forms/LpEditorForm";
 import type { StoredLp } from "@/lib/landing-pages/schema";
 
 type LpEditorPageClientProps = {
@@ -34,19 +34,19 @@ export function LpEditorPageClient({
     },
     customSections: s.customSections ?? [],
   };
-  const form = useLpForm(seed, initial.slug);
+  const lpForm = useLpEditorForm(seed, initial.slug);
 
   useEffect(() => {
     let alive = true;
     getConfigAction()
       .then((c) => {
-        if (alive && c?.fonts) form.set("fonts", c.fonts);
+        if (alive && c?.fonts) lpForm.set("fonts", c.fonts);
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [form.set]);
+  }, [lpForm.set]);
 
   return (
     <Container
@@ -56,7 +56,7 @@ export function LpEditorPageClient({
     >
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Editor
-          form={form}
+          form={lpForm}
           slug={initial.slug}
           officeSubdomain={initial.officeSubdomain}
           name={initial.name}

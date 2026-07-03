@@ -18,3 +18,17 @@ description: Resumo das convenções de componentes — documento completo em co
 - **Props callbacks**: `onSave`, `onEdit`, `onClose`, `onAbort`, `onDelete`
 - **Estado de URL**: Biblioteca `nuqs` para modais, filtros e abas
 - **UI**: Shadcn UI com tokens semânticos — evitar classes Tailwind genéricas
+
+## Builder (landing pages)
+
+```
+src/components/builder/
+├── shared/       # campos e pickers (create + edit)
+├── create/       # wizard /nova
+├── gallery/      # cards na home
+└── editor/       # shell, panels, widgets
+```
+
+Renderer público: `src/components/Preview/landing-preview.tsx` (fora de `builder/`).
+
+Detalhes: [features/lp-editor-architecture.md](../features/lp-editor-architecture.md)

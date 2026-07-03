@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
+import { SectionVariantControls } from "@/components/builder/shared/section-variant-carousel";
 import { Areas } from "@/components/Sections/areas";
 import { CtaFinal } from "@/components/Sections/cta-final";
 import { CustomSection } from "@/components/Sections/custom-section";
@@ -20,6 +22,38 @@ import { bodyFontVar, headingFontVar } from "@/lib/landing-pages/fonts";
 import type { LpSchema } from "@/lib/landing-pages/schema";
 import { themeToCssVars, waLink } from "@/lib/landing-pages/schema";
 import { effectiveOrder } from "@/lib/landing-pages/section-order";
+import { cn } from "@/lib/utils";
+
+export type PreviewEditableSectionId =
+  | "hero"
+  | "dor"
+  | "solucao"
+  | "sobre"
+  | "equipe"
+  | "areas"
+  | "etapas"
+  | "faq"
+  | "ctaFinal"
+  | "footer";
+
+export type PreviewVariantControl = {
+  label: string;
+  options: Array<{
+    id: string;
+    label: string;
+    thumb?: ReactNode;
+  }>;
+  value: string;
+  onChange: (id: string) => void;
+};
+
+type PreviewEditorConfig = {
+  selectedSection?: PreviewEditableSectionId;
+  onSectionSelect?: (sectionId: PreviewEditableSectionId) => void;
+  variantControls?: Partial<
+    Record<PreviewEditableSectionId, PreviewVariantControl | undefined>
+  >;
+};
 
 /**
  * Renderiza a LP inteira a partir do schema. O wrapper aplica as variáveis CSS
@@ -29,10 +63,12 @@ import { effectiveOrder } from "@/lib/landing-pages/section-order";
 export function LandingPreview({
   schema,
   demo = true,
+  editor,
 }: {
   schema: LpSchema;
   /** true no editor/preview interno; false na LP publicada */
   demo?: boolean;
+  editor?: PreviewEditorConfig;
 }) {
   const accentRgb = hexToRgbString(schema.theme.accent);
   const brandRgb = hexToRgbString(schema.theme.brand);
@@ -114,6 +150,72 @@ export function LandingPreview({
       ? (schema.layout.tones.faq ?? "light")
       : "light";
 
+  function renderEditableFrame(
+    sectionId: PreviewEditableSectionId,
+    anchorId: string,
+    label: string,
+    children: ReactNode,
+  ) {
+    if (!editor) {
+      return (
+        <div id={anchorId} className={anchor}>
+          {children}
+        </div>
+      );
+    }
+
+    const selected = editor.selectedSection === sectionId;
+    const control = editor.variantControls?.[sectionId];
+    const variantLabels = control
+      ? Object.fromEntries(
+          control.options.map((option) => [option.id, option.label]),
+        )
+      : {};
+
+    return (
+      <div id={anchorId} className={cn(anchor, "group/section relative")}>
+        {children}
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-2 rounded-[28px] ring-1 transition",
+            selected
+              ? "ring-primary shadow-lg shadow-slate-900/10"
+              : "ring-black/5 group-hover/section:ring-primary/20",
+          )}
+        />
+        <div className="absolute left-4 top-4 z-20">
+          <button
+            type="button"
+            onClick={() => editor.onSectionSelect?.(sectionId)}
+            className={cn(
+              "pointer-events-auto inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur transition",
+              selected
+                ? "border-primary/30 bg-primary text-primary-foreground"
+                : "border-white/80 bg-white/90 text-slate-700 hover:border-primary/20 hover:text-primary",
+            )}
+          >
+            <span>{label}</span>
+            <span className="opacity-70">
+              {selected ? "Editando" : "Selecionar"}
+            </span>
+          </button>
+        </div>
+        {control ? (
+          <div className="absolute right-4 top-4 z-20 w-[min(320px,calc(100%-2rem))]">
+            <SectionVariantControls
+              label={control.label}
+              variants={control.options.map((option) => option.id)}
+              variantLabels={variantLabels}
+              current={control.value}
+              onChange={control.onChange}
+              className="border-white/80 bg-white/92 shadow-lg backdrop-blur"
+            />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   // Renderiza uma seção do meio a partir do seu item de ordem.
   function renderItem(item: string) {
     if (item.startsWith("custom:")) {
@@ -129,82 +231,117 @@ export function LandingPreview({
     switch (item) {
       case "dor":
         return (
-          <div key="dor" id="sec-dor" className={anchor}>
-            <Dor
-              content={schema.dor}
-              variant={schema.layout.dor}
-              tone={schema.layout.tones.dor}
-              accentRgb={accentRgb}
-              brandRgb={brandRgb}
-              brandDarkRgb={brandDarkRgb}
-              image={schema.office.sectionImages.dor}
-            />
+          <div key="dor">
+            {renderEditableFrame(
+              "dor",
+              "sec-dor",
+              "Dores",
+              <Dor
+                content={schema.dor}
+                variant={schema.layout.dor}
+                tone={schema.layout.tones.dor}
+                accentRgb={accentRgb}
+                brandRgb={brandRgb}
+                brandDarkRgb={brandDarkRgb}
+                image={schema.office.sectionImages.dor}
+              />,
+            )}
           </div>
         );
       case "solucao":
         return (
-          <div key="solucao" id="sec-solucao" className={anchor}>
-            <Solucao
-              content={schema.solucao}
-              variant={schema.layout.solucao}
-              accentRgb={accentRgb}
-              brandRgb={brandRgb}
-              brandDarkRgb={brandDarkRgb}
-              tone={schema.layout.tones.solucao}
-              image={schema.office.sectionImages.solucao}
-            />
+          <div key="solucao">
+            {renderEditableFrame(
+              "solucao",
+              "sec-solucao",
+              "Solução",
+              <Solucao
+                content={schema.solucao}
+                variant={schema.layout.solucao}
+                accentRgb={accentRgb}
+                brandRgb={brandRgb}
+                brandDarkRgb={brandDarkRgb}
+                tone={schema.layout.tones.solucao}
+                image={schema.office.sectionImages.solucao}
+              />,
+            )}
           </div>
         );
       case "sobre":
         return (
-          <div key="sobre" id="sec-sobre" className={anchor}>
-            <Sobre
-              office={schema.office}
-              variant={schema.layout.sobre}
-              tone={schema.layout.tones.sobre}
-            />
+          <div key="sobre">
+            {renderEditableFrame(
+              "sobre",
+              "sec-sobre",
+              "Sobre",
+              <Sobre
+                office={schema.office}
+                variant={schema.layout.sobre}
+                tone={schema.layout.tones.sobre}
+              />,
+            )}
           </div>
         );
       case "equipe":
         return hidden.equipe ? null : (
-          <div key="equipe" id="sec-equipe" className={anchor}>
-            <Equipe
-              lawyers={schema.office.lawyers}
-              brandRgb={brandRgb}
-              tone={schema.layout.tones.equipe}
-              variant={schema.layout.equipe}
-            />
+          <div key="equipe">
+            {renderEditableFrame(
+              "equipe",
+              "sec-equipe",
+              "Equipe",
+              <Equipe
+                lawyers={schema.office.lawyers}
+                brandRgb={brandRgb}
+                tone={schema.layout.tones.equipe}
+                variant={schema.layout.equipe}
+              />,
+            )}
           </div>
         );
       case "areas":
         return hidden.areas ? null : (
-          <div key="areas" id="sec-areas" className={anchor}>
-            <Areas
-              content={schema.areas}
-              variant={schema.layout.areas}
-              accentRgb={accentRgb}
-              tone={schema.layout.tones.areas}
-            />
+          <div key="areas">
+            {renderEditableFrame(
+              "areas",
+              "sec-areas",
+              "Áreas",
+              <Areas
+                content={schema.areas}
+                variant={schema.layout.areas}
+                accentRgb={accentRgb}
+                tone={schema.layout.tones.areas}
+              />,
+            )}
           </div>
         );
       case "etapas":
         return hidden.etapas ? null : (
-          <div key="etapas" id="sec-etapas" className={anchor}>
-            <Etapas
-              content={schema.etapas}
-              variant={schema.layout.etapas}
-              tone={schema.layout.tones.etapas}
-            />
+          <div key="etapas">
+            {renderEditableFrame(
+              "etapas",
+              "sec-etapas",
+              "Etapas",
+              <Etapas
+                content={schema.etapas}
+                variant={schema.layout.etapas}
+                tone={schema.layout.tones.etapas}
+              />,
+            )}
           </div>
         );
       case "ctaFinal":
         return hidden.ctaFinal ? null : (
-          <div key="ctaFinal" id="sec-ctaFinal" className={anchor}>
-            <CtaFinal
-              content={schema.ctaFinal}
-              accentRgb={accentRgb}
-              tone={schema.layout.tones.ctaFinal}
-            />
+          <div key="ctaFinal">
+            {renderEditableFrame(
+              "ctaFinal",
+              "sec-ctaFinal",
+              "CTA final",
+              <CtaFinal
+                content={schema.ctaFinal}
+                accentRgb={accentRgb}
+                tone={schema.layout.tones.ctaFinal}
+              />,
+            )}
           </div>
         );
       default:
@@ -225,7 +362,10 @@ export function LandingPreview({
           />
         ) : (
           <>
-            <div id="sec-hero" className={anchor}>
+            {renderEditableFrame(
+              "hero",
+              "sec-hero",
+              "Topo",
               <Hero
                 content={schema.hero}
                 office={schema.office}
@@ -238,21 +378,27 @@ export function LandingPreview({
                 creamDeepRgb={creamDeepRgb}
                 tone={schema.layout.tones.hero ?? "light"}
                 belowTone={belowTone}
-              />
-            </div>
+              />,
+            )}
             {/* Seções do meio na ordem definida (Hero acima, FAQ/Rodapé abaixo). */}
             {order.map(renderItem)}
-            {!hidden.faq ? (
-              <div id="sec-faq" className={anchor}>
-                <FAQ content={schema.faq} tone={schema.layout.tones.faq} />
-              </div>
-            ) : null}
-            <div id="sec-footer" className={anchor}>
+            {!hidden.faq
+              ? renderEditableFrame(
+                  "faq",
+                  "sec-faq",
+                  "FAQ",
+                  <FAQ content={schema.faq} tone={schema.layout.tones.faq} />,
+                )
+              : null}
+            {renderEditableFrame(
+              "footer",
+              "sec-footer",
+              "Rodapé",
               <Footer
                 office={schema.office}
                 onPrivacyClick={() => setShowPolicy(true)}
-              />
-            </div>
+              />,
+            )}
             <LeadPopup
               demo={demo}
               open={popupOpen}

@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { LpDbClient } from "@/lib/supabase/lp-client";
 import {
   createLpAnonClient,

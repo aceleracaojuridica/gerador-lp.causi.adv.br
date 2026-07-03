@@ -16,12 +16,11 @@ import { useRouter } from "next/navigation";
 import { Fragment, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { AutoTextarea } from "@/components/auto-textarea";
-import { EstadoCidade } from "@/components/Builder/estado-cidade";
-import { maskPhone } from "@/components/Builder/fields";
-import { MelhorarTextoButton } from "@/components/Builder/melhorar-texto-button";
-import { PalettePicker } from "@/components/Builder/palette-picker";
-import { SocialsInput } from "@/components/Builder/socials-input";
-import { TemplateCard } from "@/components/Builder/template-card";
+import { MelhorarTextoButton } from "@/components/builder/create/melhorar-texto-button";
+import { TemplateCard } from "@/components/builder/create/template-card";
+import { EstadoCidade } from "@/components/builder/shared/estado-cidade";
+import { PalettePicker } from "@/components/builder/shared/palette-picker";
+import { SocialsInput } from "@/components/builder/shared/socials-input";
 import CausiLogo from "@/components/icons/causi-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +43,7 @@ import {
 } from "@/lib/landing-pages/colors";
 import type { FocoCopy } from "@/lib/landing-pages/focos";
 import { matchPalette } from "@/lib/landing-pages/palettes";
+import { maskPhone } from "@/lib/landing-pages/phone";
 import {
   DEFAULT_THEME,
   type SocialNetwork,
@@ -54,6 +54,7 @@ import {
   getTemplate,
   TEMPLATES,
 } from "@/lib/landing-pages/templates";
+import { createGerarLpPayloadFromWizard } from "@/lib/landing-pages/shared/create-seed";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -186,7 +187,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
         form.setValue(
           "autoTheme",
           pal.brand !== DEFAULT_THEME.brand ||
-          pal.accent !== DEFAULT_THEME.accent,
+            pal.accent !== DEFAULT_THEME.accent,
         );
       };
       img.src = dataUrl;
@@ -274,41 +275,12 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
     setGerandoMsg("Criando sua landing page…");
 
     const templateLayout = getTemplate(selectedTemplateId).layout;
-    const savePayload = {
-      name: name.trim(),
-      tema: tema.trim(),
-      city: showAddress
-        ? [addresses[0]?.cidade, addresses[0]?.uf].filter(Boolean).join("/")
-        : "",
-      whatsapp,
-      whatsappDisplay,
-      email: email.trim(),
-      address: showAddress ? (addresses[0]?.address.trim() ?? "") : "",
-      mapsUrl: showAddress ? (addresses[0]?.mapsUrl.trim() ?? "") : "",
-      extraAddresses: showAddress
-        ? addresses
-          .slice(1)
-          .map((a) => ({
-            address: a.address.trim(),
-            city: [a.cidade, a.uf].filter(Boolean).join("/"),
-            mapsUrl: a.mapsUrl.trim(),
-          }))
-          .filter((a) => a.address)
-        : [],
-      about: about.trim(),
-      diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
-      videoId: videoId.trim(),
-      logoSrc,
-      logoBg,
-      theme,
-      lawyers,
-      socials: showSocials
-        ? socials.map((s) => ({ ...s, url: s.url.trim() })).filter((s) => s.url)
-        : [],
+    const savePayload = createGerarLpPayloadFromWizard(form.getValues(), {
       copy: generatedCopy,
       images: generatedImages,
       layout: templateLayout,
-    };
+      logoSrc,
+    });
 
     try {
       const res = await fetch("/api/gerar-lp", {
@@ -444,11 +416,11 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                       "inline-flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium transition",
                       active && "bg-primary/10 text-primary",
                       done &&
-                      !active &&
-                      "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        !active &&
+                        "text-muted-foreground hover:bg-muted hover:text-foreground",
                       !done &&
-                      !active &&
-                      "cursor-default text-muted-foreground/50",
+                        !active &&
+                        "cursor-default text-muted-foreground/50",
                     )}
                   >
                     <span
@@ -456,11 +428,11 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                         "flex size-5 shrink-0 items-center justify-center rounded-full text-[0.65rem] font-semibold",
                         active && "bg-primary text-primary-foreground",
                         done &&
-                        !active &&
-                        "border border-primary/30 bg-primary/5 text-primary",
+                          !active &&
+                          "border border-primary/30 bg-primary/5 text-primary",
                         !done &&
-                        !active &&
-                        "border border-border/70 text-muted-foreground/60",
+                          !active &&
+                          "border border-border/70 text-muted-foreground/60",
                       )}
                     >
                       {done && !active ? <Check size={12} /> : i + 1}
