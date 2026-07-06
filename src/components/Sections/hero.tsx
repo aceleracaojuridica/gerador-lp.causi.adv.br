@@ -137,6 +137,8 @@ export function Hero(props: HeroProps) {
       return <HeroVideo {...props} />;
     case "stats":
       return <HeroStats {...props} />;
+    case "recorte":
+      return <HeroRecorte {...props} />;
     default:
       return <HeroCentered {...props} />;
   }
@@ -149,7 +151,7 @@ function HeroCentered({
   content,
   office,
   accentRgb,
-  brandDarkRgb,
+  brandRgb,
   creamRgb,
   creamDeepRgb,
   tone,
@@ -163,12 +165,7 @@ function HeroCentered({
 
   let sectionStyle: React.CSSProperties | undefined;
   if (img) {
-    const overlay = heroImageOverlay(
-      dark,
-      brandDarkRgb,
-      creamRgb,
-      creamDeepRgb,
-    );
+    const overlay = heroImageOverlay(dark, brandRgb, creamRgb, creamDeepRgb);
     sectionStyle = {
       backgroundImage: `${overlay}, url('${img}')`,
       backgroundSize: "cover",
@@ -555,6 +552,115 @@ function HeroStats({
               }
             />
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ===== Tema 5 — Recorte =====
+   Fundo = cena da seção (sectionImages.hero) em object-cover + degradê escuro
+   forte da esquerda p/ direita (texto legível à esquerda, cena visível à direita).
+   Foto do advogado (idealmente PNG sem fundo) recortada à direita, ancorada na
+   base, com máscara de fade + "fumaça" que a dissolve no fundo. Premium/autoridade. */
+function HeroRecorte({ content, office, brandDarkRgb }: HeroProps) {
+  const lawyer = office.lawyers[0]?.photo;
+  const bgImg = office.sectionImages.hero;
+  const hasMetrics = office.metrics.length > 0;
+
+  return (
+    <section className="relative flex min-h-[42rem] overflow-hidden bg-lp-brand-dark text-white lg:min-h-[46rem]">
+      {/* Cena de fundo cobrindo a seção (sem blur) */}
+      {bgImg ? (
+        // biome-ignore lint/performance/noImgElement: fundo precisa cobrir a seção com object-position custom
+        <img
+          src={bgImg}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:scale-110"
+        />
+      ) : null}
+      {/* Overlay escuro: sólido à esquerda (texto), leve à direita (mostra a cena atrás da foto) */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(${brandDarkRgb},1) 0%, rgba(${brandDarkRgb},0.92) 45%, rgba(${brandDarkRgb},0.6) 100%)`,
+        }}
+      />
+      {/* Transição suave para a próxima seção */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-56"
+        style={{
+          backgroundImage: `linear-gradient(to top, rgba(${brandDarkRgb},1), rgba(${brandDarkRgb},0.8) 40%, transparent)`,
+        }}
+      />
+
+      <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-stretch gap-10 px-6 md:px-10 lg:grid-cols-2">
+        <div className="flex flex-col justify-center py-16 lg:py-20">
+          <LogoMark office={office} tone="light" className="mb-6 self-start" />
+          <p className="eyebrow mb-4 text-lp-accent-soft">
+            {content.eyebrow}
+            {office.city ? ` · ${office.city}` : ""}
+          </p>
+          <h1 className="font-display text-4xl font-semibold leading-[1.08] text-white md:text-5xl">
+            <HeadlineText h={content.headline} accentVar="accent-soft" />
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
+            {content.sub}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <CTAButton variant="white">{content.ctaPrimary}</CTAButton>
+            {content.ctaSecondary ? (
+              <CTAButton variant="ghost" withArrow={false}>
+                {content.ctaSecondary}
+              </CTAButton>
+            ) : null}
+          </div>
+
+          {hasMetrics ? (
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-7">
+              {office.metrics.slice(0, 4).map((m) => (
+                <div key={m.label} className="flex items-center gap-3">
+                  <span className="text-lp-accent-soft">
+                    <IconForKey iconKey={m.icon} size={28} />
+                  </span>
+                  <p className="max-w-[11rem] text-sm leading-snug text-white/75">
+                    {m.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Foto recortada, ancorada na base, dissolvendo no fundo (máscara + fumaça) */}
+        <div className="relative hidden items-end justify-end lg:flex">
+          {lawyer ? (
+            <div className="relative flex h-full items-end justify-end self-stretch">
+              {/* biome-ignore lint/performance/noImgElement: recorte precisa de object-contain + máscara */}
+              <img
+                src={lawyer}
+                alt={office.lawyers[0]?.name || office.name}
+                className="relative z-10 h-full w-auto self-end object-contain object-bottom"
+                style={{
+                  maskImage:
+                    "linear-gradient(to bottom, #000 68%, transparent 95%)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, #000 68%, transparent 95%)",
+                }}
+              />
+              {/* Fumaça na base que dissolve a foto no fundo */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-[-20%] bottom-0 h-3/5 blur-3xl"
+                style={{
+                  backgroundImage: `radial-gradient(120% 95% at 50% 100%, rgba(${brandDarkRgb},0.95), rgba(${brandDarkRgb},0.6) 55%, transparent 82%)`,
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

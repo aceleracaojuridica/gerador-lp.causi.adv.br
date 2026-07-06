@@ -13,7 +13,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
         <CausiLogotipo className="h-10" />
       </header>
       <main className="flex flex-1 justify-center overflow-y-auto">
-        <div className="flex w-full max-w-160 min-h-full flex-col items-center justify-center px-4 py-8 sm:px-8 md:px-12 md:py-12">
+        <div className="mx-auto flex w-full max-w-6xl min-h-full flex-col justify-center px-4 py-8 sm:px-6 md:py-12">
           {children}
         </div>
       </main>

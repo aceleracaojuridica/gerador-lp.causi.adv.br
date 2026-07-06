@@ -37,7 +37,7 @@ export default async function SignInPage({
   }
 
   return (
-    <AuthFormShell title="Login" description="Entre com sua conta Causi">
+    <AuthFormShell bare title="Login" description="Entre com sua conta Causi">
       <SigninForm nextPath={nextPath} />
     </AuthFormShell>
   );

@@ -88,6 +88,7 @@ import {
   unpublishLpAction,
 } from "@/app/actions/lps";
 import { AutoTextarea } from "@/components/auto-textarea";
+import { LazyImageSlot } from "@/components/Builder/image-picker-dialog";
 import {
   DevicePreview,
   type Viewport,
@@ -97,13 +98,13 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { useIsLgUp } from "@/hooks/use-media-query";
 import { isAccessDeniedError } from "@/lib/errors";
-import { LazyImageSlot } from "@/components/Builder/image-picker-dialog";
 import {
   AREAS_CTA_FALLBACK,
   CTA_PRIMARY,
   CTA_SECONDARY,
   GENERIC_ETAPAS,
 } from "@/lib/landing-pages/focos";
+import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import { ICON_KEYS } from "@/lib/landing-pages/icons";
 import { publicLpDisplayHost, publicLpUrl } from "@/lib/landing-pages/lp-url";
 import {
@@ -122,6 +123,7 @@ import type {
   StoredLp,
   Tone,
 } from "@/lib/landing-pages/schema";
+import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
 import {
   SEO_DESC_IDEAL,
   SEO_DESC_MAX,
@@ -129,13 +131,11 @@ import {
   SEO_TITLE_MAX,
   seoCharStatus,
 } from "@/lib/landing-pages/seo";
-import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import {
+  type LpTemplate,
   TEMPLATES,
   templatePreviewSrc,
-  type LpTemplate,
 } from "@/lib/landing-pages/templates";
-import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -160,6 +160,7 @@ const HERO_OPTIONS = [
   { id: "split", label: "Split 50/50", thumb: HERO_THUMBS.split },
   { id: "video", label: "Vídeo + Foto", thumb: HERO_THUMBS.video },
   { id: "stats", label: "Com métricas", thumb: HERO_THUMBS.stats },
+  { id: "recorte", label: "Recorte", thumb: HERO_THUMBS.recorte },
 ];
 const DOR_OPTIONS = [
   { id: "comImagem", label: "Com imagem", thumb: DOR_THUMBS.comImagem },
@@ -201,6 +202,7 @@ const HERO_VARIANT_LABELS: Record<string, string> = {
   split: "Split 50/50",
   video: "Vídeo + Foto",
   stats: "Com métricas",
+  recorte: "Recorte",
 };
 const DOR_VARIANT_LABELS: Record<string, string> = {
   comImagem: "Com imagem",
@@ -581,7 +583,8 @@ export function Editor({
     try {
       const res = await unpublishLpAction(slug);
       if (!res.ok) {
-        if (res.error && isAccessDeniedError(res.error)) showAccessDeniedToast();
+        if (res.error && isAccessDeniedError(res.error))
+          showAccessDeniedToast();
         else if (res.error) showLpMessageError(res.error);
         setPublishState("error");
         return;
@@ -1258,7 +1261,7 @@ export function Editor({
                     >
                       <SocialsInput
                         socials={office.socials}
-                        onChange={form.setSocialField}
+                        onChange={form.setSocialUrl}
                         onAdd={form.addSocial}
                         onRemove={form.removeSocial}
                       />

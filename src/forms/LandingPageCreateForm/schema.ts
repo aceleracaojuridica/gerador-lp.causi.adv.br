@@ -99,7 +99,7 @@ export function landingPageCreateDefaultValues(): LandingPageCreateFormValues {
     logoBg: DEFAULT_LOGO_BG,
     theme: DEFAULT_THEME,
     autoTheme: false,
-    lawyers: [],
+    lawyers: [{ photo: "", name: "", role: "" }],
   };
 }
 
@@ -151,28 +151,27 @@ export const step1Schema = z
       });
     }
 
-    if (data.showAddress) {
-      const primary = data.addresses[0];
-      const hasAddress =
-        (primary?.address.trim().length ?? 0) > 0 ||
-        (primary?.cidade.trim().length ?? 0) > 0;
-      if (!hasAddress) {
+    data.addresses.forEach((a, i) => {
+      const maps = a.mapsUrl.trim();
+      if (maps && !maps.toLowerCase().startsWith("https://")) {
         ctx.addIssue({
           code: "custom",
-          path: ["addresses"],
-          message: "Preencha ao menos o endereço ou a cidade",
+          path: ["addresses", i, "mapsUrl"],
+          message: "O link deve começar com https://",
         });
       }
-    }
+    });
 
     if (
-      data.showSocials &&
-      !data.socials.some((s) => s.url.trim().length > 0)
+      data.socials.some((s) => {
+        const url = s.url.trim();
+        return url.length > 0 && !url.toLowerCase().startsWith("https://");
+      })
     ) {
       ctx.addIssue({
         code: "custom",
         path: ["socials"],
-        message: "Adicione ao menos uma rede social com link",
+        message: "Os links das redes sociais devem começar com https://",
       });
     }
   });

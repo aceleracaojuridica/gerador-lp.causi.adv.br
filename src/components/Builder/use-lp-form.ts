@@ -20,12 +20,12 @@ import type {
   SectionImageKey,
   SectionTones,
   SeoMeta,
-  SocialNetwork,
   Theme,
   ToggleableSection,
   Tone,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_LAYOUT, DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { detectNetwork } from "@/lib/landing-pages/socials";
 import type { LpTemplate } from "@/lib/landing-pages/templates";
 import { maskPhone } from "./fields";
 
@@ -256,16 +256,11 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
       socials: [...o.socials, { network: "instagram", url: "" }],
     }));
   }
-  function setSocialField(i: number, key: "network" | "url", value: string) {
+  function setSocialUrl(i: number, url: string) {
     setOffice((o) => ({
       ...o,
       socials: o.socials.map((s, idx) =>
-        idx === i
-          ? {
-              ...s,
-              [key]: key === "network" ? (value as SocialNetwork) : value,
-            }
-          : s,
+        idx === i ? { network: detectNetwork(url), url } : s,
       ),
     }));
   }
@@ -674,7 +669,7 @@ export function useLpForm(seed?: LpSeed, slug?: string) {
     setSectionHidden,
     setSectionOrder,
     addSocial,
-    setSocialField,
+    setSocialUrl,
     removeSocial,
     addAddress,
     setAddressField,

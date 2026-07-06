@@ -32,3 +32,17 @@ export const SOCIALS_META: {
     placeholder: "https://linkedin.com/company/voce",
   },
 ];
+
+/**
+ * Detecta a rede social a partir da URL, para escolher o ícone automaticamente.
+ * Sem match reconhecido, assume Instagram (rede mais comum).
+ */
+export function detectNetwork(url: string): SocialNetwork {
+  const u = url.toLowerCase();
+  if (u.includes("tiktok.com")) return "tiktok";
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
+  if (u.includes("linkedin.com")) return "linkedin";
+  if (u.includes("facebook.com") || u.includes("fb.com") || u.includes("fb.me"))
+    return "facebook";
+  return "instagram";
+}

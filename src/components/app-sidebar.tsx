@@ -6,7 +6,7 @@ import {
   EventAvailable,
   GridView,
   Help,
-  Home,
+  FileCopy,
   IdCard,
   Image,
   Inbox,
@@ -107,7 +107,7 @@ export function AppSidebar({
   const lpNavItems: NavItem[] = [
     {
       href: "/",
-      icon: Home,
+      icon: FileCopy,
       label: "Página inicial",
     },
     {

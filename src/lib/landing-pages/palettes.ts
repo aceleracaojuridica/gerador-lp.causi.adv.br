@@ -144,6 +144,23 @@ export const PALETTES: Palette[] = [
       inkSoft: "#59647b",
     },
   },
+  {
+    // Monocromática (preto & branco). Fundo escuro cinza-grafite; destaque em
+    // cinza-claro; fundo claro branco. Sem cor de acento — visual sóbrio.
+    id: "preto-branco",
+    name: "Preto & Branco",
+    theme: {
+      brand: "#222222",
+      brandDark: "#1a1a1a",
+      // Destaque: grafite (#222) em fundo claro, prata (#C0BEBE) em fundo escuro.
+      accent: "#222222",
+      accentSoft: "#c0bebe",
+      cream: "#ffffff",
+      creamDeep: "#f2f1f1",
+      ink: "#222222",
+      inkSoft: "#6e6e6e",
+    },
+  },
 ];
 
 /** Id da paleta que casa com o theme atual (por brand+accent), ou null. */

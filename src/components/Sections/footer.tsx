@@ -113,7 +113,7 @@ export function Footer({
                   ))}
                 </div>
               ) : (
-                <p className="text-white/75">{office.city || "Sua cidade"}</p>
+                <p className="text-white/75">Atendimento Online</p>
               )}
             </div>
           )}

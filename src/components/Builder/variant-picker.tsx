@@ -87,6 +87,23 @@ export const HERO_THUMBS: Record<string, ReactNode> = {
       <div className="w-2/5 rounded border border-amber-400 bg-slate-500" />
     </div>
   ),
+  recorte: (
+    // Fundo escuro (cena borrada), texto à esquerda e foto recortada saindo da base à direita.
+    <div
+      className="relative flex h-full overflow-hidden"
+      style={{ background: "#2b3242" }}
+    >
+      <div className="flex w-3/5 flex-col justify-center gap-1 p-2">
+        <div className="h-1 w-5 rounded-sm bg-emerald-300" />
+        <div className="h-1.5 w-10 rounded-sm bg-white/80" />
+        <div className="h-1.5 w-7 rounded-sm bg-white/40" />
+        <div className="mt-1 h-2 w-6 rounded-sm bg-emerald-400" />
+      </div>
+      <div className="relative w-2/5">
+        <div className="absolute bottom-0 left-1/2 h-3/4 w-3/5 -translate-x-1/2 rounded-t-[999px] bg-slate-300" />
+      </div>
+    </div>
+  ),
 };
 
 // thumbs neutros (só estrutura/layout; a cor vem do toggle de tom, à parte)

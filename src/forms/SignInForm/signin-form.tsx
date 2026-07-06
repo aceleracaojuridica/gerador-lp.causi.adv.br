@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { FormErrorBanner } from "@/components/auth/form-error-banner";
+import EyeIcon from "@/components/icons/eye-icon";
+import EyeSlashIcon from "@/components/icons/eye-slash-icon";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -46,6 +48,7 @@ export default function SigninForm({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (values: SignInFormValues) => {
     setIsSubmitting(true);
@@ -126,7 +129,7 @@ export default function SigninForm({
                   type="email"
                   placeholder="nome@email.com"
                   autoComplete="email"
-                  className="placeholder:text-muted-foreground/40"
+                  className="h-10 px-3 text-base placeholder:text-muted-foreground/40"
                   disabled={isSubmitting}
                 />
               </FormControl>
@@ -142,13 +145,33 @@ export default function SigninForm({
             <FormItem>
               <FormLabel>Senha</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <Input
+                    {...field}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    disabled={isSubmitting}
+                    className="h-10 px-3 pr-10 text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={isSubmitting}
+                    tabIndex={-1}
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

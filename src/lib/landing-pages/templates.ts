@@ -73,6 +73,37 @@ export const TEMPLATES: LpTemplate[] = [
     },
   },
   {
+    id: "autoridade",
+    name: "Autoridade",
+    description:
+      "Foto do advogado em destaque sobre fundo escuro. Ar premium e de alta autoridade.",
+    theme: palette("preto-branco"),
+    layout: {
+      ...DEFAULT_LAYOUT,
+      hero: "recorte",
+      dor: "comImagem",
+      solucao: "soCards",
+      sobre: "overlay",
+      areas: "grid",
+      etapas: "numerado",
+      // Alternância da referência: escuro (hero) → claro (dor) → escuro (áreas) →
+      // escuro (sobre, card escuro) → escuro (etapas) → claro (faq) → escuro (rodapé).
+      tones: {
+        hero: "dark",
+        dor: "light",
+        solucao: "light",
+        sobre: "dark",
+        equipe: "dark",
+        areas: "dark",
+        etapas: "dark",
+        faq: "light",
+        ctaFinal: "dark",
+      },
+      // A referência vai do FAQ direto ao rodapé (sem seção de CTA final).
+      hidden: { ctaFinal: true },
+    },
+  },
+  {
     id: "warm-neutral",
     name: "Acolhedor",
     description: "Próximo e humano. Tons de caramelo e bege.",

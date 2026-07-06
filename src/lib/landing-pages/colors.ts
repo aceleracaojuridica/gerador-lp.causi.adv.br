@@ -19,12 +19,12 @@ export function hexToRgbString(hex: string): string {
 /** Overlay vertical sobre foto de fundo do Hero centralizado. */
 export function heroImageOverlay(
   dark: boolean,
-  brandDarkRgb: string,
+  brandRgb: string,
   creamRgb: string,
   creamDeepRgb: string,
 ): string {
   return dark
-    ? `linear-gradient(180deg, rgba(${brandDarkRgb},0.78), rgba(${brandDarkRgb},0.9))`
+    ? `linear-gradient(180deg, rgba(${brandRgb},0.78), rgba(${brandRgb},0.9))`
     : `linear-gradient(180deg, rgba(${creamRgb},0.86), rgba(${creamDeepRgb},0.92))`;
 }
 

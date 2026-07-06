@@ -9,6 +9,8 @@ interface AuthFormShellProps {
   footerLabel?: string;
   footerHref?: string;
   footerText?: string;
+  /** Renderiza o formulário sem o card (visual limpo/centralizado). */
+  bare?: boolean;
 }
 
 /**
@@ -25,9 +27,13 @@ export function AuthFormShell({
   footerLabel,
   footerHref,
   footerText,
+  bare = false,
 }: AuthFormShellProps) {
   return (
-    <div className="w-full">
+    <div
+      className={`mx-auto w-full ${bare ? "" : "max-w-[440px]"}`}
+      style={bare ? { maxWidth: 480 } : undefined}
+    >
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
@@ -37,9 +43,13 @@ export function AuthFormShell({
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        {children}
-      </div>
+      {bare ? (
+        children
+      ) : (
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+          {children}
+        </div>
+      )}
 
       {footerLabel && footerHref && footerText ? (
         <div className="mt-6 flex items-center justify-center gap-2">
