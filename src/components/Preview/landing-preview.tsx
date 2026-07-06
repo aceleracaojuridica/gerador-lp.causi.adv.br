@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { SectionVariantControls } from "@/components/Builder/shared/section-variant-controls";
 import { Areas } from "@/components/Sections/areas";
 import { CtaFinal } from "@/components/Sections/cta-final";
 import { CustomSection } from "@/components/Sections/custom-section";
@@ -21,6 +22,29 @@ import { bodyFontVar, headingFontVar } from "@/lib/landing-pages/fonts";
 import type { LpSchema } from "@/lib/landing-pages/schema";
 import { themeToCssVars, waLink } from "@/lib/landing-pages/schema";
 import { effectiveOrder } from "@/lib/landing-pages/section-order";
+import { cn } from "@/lib/utils";
+
+export type PreviewEditableSectionId =
+  | "hero"
+  | "dor"
+  | "solucao"
+  | "sobre"
+  | "equipe"
+  | "areas"
+  | "etapas";
+
+export type PreviewVariantControl = {
+  label: string;
+  options: Array<{ id: string; label: string }>;
+  value: string;
+  onChange: (id: string) => void;
+};
+
+type PreviewEditorConfig = {
+  variantControls?: Partial<
+    Record<PreviewEditableSectionId, PreviewVariantControl | undefined>
+  >;
+};
 
 /**
  * Renderiza a LP inteira a partir do schema. O wrapper aplica as variáveis CSS
@@ -30,10 +54,13 @@ import { effectiveOrder } from "@/lib/landing-pages/section-order";
 export function LandingPreview({
   schema,
   demo = true,
+  editor,
 }: {
   schema: LpSchema;
   /** true no editor/preview interno; false na LP publicada */
   demo?: boolean;
+  /** Habilita os seletores de variante flutuantes sobre cada seção (editor). */
+  editor?: PreviewEditorConfig;
 }) {
   const accentRgb = hexToRgbString(schema.theme.accent);
   const brandRgb = hexToRgbString(schema.theme.brand);
@@ -115,10 +142,32 @@ export function LandingPreview({
       ? (schema.layout.tones.faq ?? "light")
       : "light";
 
-  function renderSectionFrame(anchorId: string, children: ReactNode) {
+  function renderSectionFrame(
+    sectionId: PreviewEditableSectionId | null,
+    anchorId: string,
+    children: ReactNode,
+  ) {
+    const control = sectionId
+      ? editor?.variantControls?.[sectionId]
+      : undefined;
     return (
-      <div id={anchorId} className={anchor}>
+      <div
+        id={anchorId}
+        className={cn(anchor, control ? "relative" : undefined)}
+      >
         {children}
+        {control ? (
+          <div className="pointer-events-none absolute right-3 top-3 z-20">
+            <div className="pointer-events-auto">
+              <SectionVariantControls
+                label={control.label}
+                variants={control.options.map((option) => option.id)}
+                current={control.value}
+                onChange={control.onChange}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -140,6 +189,7 @@ export function LandingPreview({
         return (
           <div key="dor">
             {renderSectionFrame(
+              "dor",
               "sec-dor",
               <Dor
                 content={schema.dor}
@@ -157,6 +207,7 @@ export function LandingPreview({
         return (
           <div key="solucao">
             {renderSectionFrame(
+              "solucao",
               "sec-solucao",
               <Solucao
                 content={schema.solucao}
@@ -174,6 +225,7 @@ export function LandingPreview({
         return (
           <div key="sobre">
             {renderSectionFrame(
+              "sobre",
               "sec-sobre",
               <Sobre
                 office={schema.office}
@@ -187,6 +239,7 @@ export function LandingPreview({
         return hidden.equipe ? null : (
           <div key="equipe">
             {renderSectionFrame(
+              "equipe",
               "sec-equipe",
               <Equipe
                 lawyers={schema.office.lawyers}
@@ -201,6 +254,7 @@ export function LandingPreview({
         return hidden.areas ? null : (
           <div key="areas">
             {renderSectionFrame(
+              "areas",
               "sec-areas",
               <Areas
                 content={schema.areas}
@@ -215,6 +269,7 @@ export function LandingPreview({
         return hidden.etapas ? null : (
           <div key="etapas">
             {renderSectionFrame(
+              "etapas",
               "sec-etapas",
               <Etapas
                 content={schema.etapas}
@@ -228,6 +283,7 @@ export function LandingPreview({
         return hidden.ctaFinal ? null : (
           <div key="ctaFinal">
             {renderSectionFrame(
+              null,
               "sec-ctaFinal",
               <CtaFinal
                 content={schema.ctaFinal}
@@ -256,6 +312,7 @@ export function LandingPreview({
         ) : (
           <>
             {renderSectionFrame(
+              "hero",
               "sec-hero",
               <Hero
                 content={schema.hero}
@@ -275,11 +332,13 @@ export function LandingPreview({
             {order.map(renderItem)}
             {!hidden.faq
               ? renderSectionFrame(
+                  null,
                   "sec-faq",
                   <FAQ content={schema.faq} tone={schema.layout.tones.faq} />,
                 )
               : null}
             {renderSectionFrame(
+              null,
               "sec-footer",
               <Footer
                 office={schema.office}

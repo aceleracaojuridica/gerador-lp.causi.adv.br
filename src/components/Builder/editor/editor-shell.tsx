@@ -18,6 +18,7 @@ import {
   Movie,
   OpenInNew,
   ProgressActivity,
+  Save,
   Search,
   SentimentDissatisfied,
   Storefront,
@@ -40,12 +41,9 @@ import {
   DevicePreview,
   type Viewport,
 } from "@/components/Preview/device-preview";
-import {
-  LandingPreview,
-} from "@/components/Preview/landing-preview";
+import { LandingPreview } from "@/components/Preview/landing-preview";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -60,6 +58,7 @@ import {
   type EquipeVariant,
   type Layout,
   type StoredLp,
+  type Tone,
 } from "@/lib/landing-pages/schema";
 import { TEMPLATES } from "@/lib/landing-pages/templates";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
@@ -76,7 +75,6 @@ import {
   EQUIPE_VARIANT_LABELS,
   ETAPAS_OPTIONS,
   ETAPAS_VARIANT_LABELS,
-  getVariantControlForDetailSection,
   HERO_OPTIONS,
   HERO_VARIANT_LABELS,
   isDetailSectionId,
@@ -87,7 +85,6 @@ import {
   SOLUCAO_OPTIONS,
   SOLUCAO_VARIANT_LABELS,
 } from "./constants";
-import { SectionVariantPicker } from "./section-variant-picker";
 import {
   Accordion,
   CORNER_OPTIONS,
@@ -123,6 +120,7 @@ import {
   ReorderPanel,
 } from "./panels/layout-panel";
 import { SeoPanel } from "./panels/seo-panel";
+import { SectionVariantPicker } from "./section-variant-picker";
 import {
   AddSectionButton,
   CustomSectionEditor,
@@ -212,9 +210,9 @@ export function Editor({
   const [detailSection, setDetailSection] = useState<DetailSectionId | null>(
     null,
   );
-  const [, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const dirty = form.isDirty;
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [status, setStatus] = useState<"draft" | "published">(
@@ -223,6 +221,7 @@ export function Editor({
   const [publishState, setPublishState] = useState<"idle" | "saving" | "error">(
     "idle",
   );
+  const isPublishing = publishState === "saving";
 
   const needsVideo = layout.hero === "video";
   const needsMetrics = layout.hero === "stats";
@@ -531,11 +530,6 @@ export function Editor({
     ],
   );
 
-  const activeVariantControl = useMemo(
-    () => getVariantControlForDetailSection(detailSection, previewVariantControls),
-    [detailSection, previewVariantControls],
-  );
-
   function goToDetailSection(id: DetailSectionId) {
     setDetailSection(id);
     syncDetailSectionUrl(id);
@@ -725,6 +719,29 @@ export function Editor({
     }
   }
 
+  // Agrupa seletor de layout + tom de fundo num único cartão nativo, em vez
+  // de dois controles soltos flutuando no painel.
+  function renderSectionSettings(
+    variant: PreviewVariantControl | undefined,
+    tone?: { value: Tone; onChange: (t: Tone) => void },
+  ) {
+    if (!variant && !tone) return null;
+    return (
+      <div className="divide-y divide-border rounded-xl border border-border bg-background px-4">
+        {variant ? (
+          <div className="py-3">
+            <SectionVariantPicker control={variant} />
+          </div>
+        ) : null}
+        {tone ? (
+          <div className="py-3">
+            <ToneToggle value={tone.value} onChange={tone.onChange} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderCmsFields() {
     if (!detailSection) {
       return (
@@ -734,8 +751,9 @@ export function Editor({
               Selecione um bloco para editar
             </p>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Use a navegação da esquerda para abrir os campos. No preview,
-              troque a variação do bloco pelo seletor flutuante.
+              Use a navegação da esquerda para abrir os campos. O seletor de
+              variação de cada bloco já aparece flutuando no canto do preview, a
+              qualquer momento.
             </p>
           </div>
         </div>
@@ -752,13 +770,10 @@ export function Editor({
         {detailSection === "seo" && <SeoPanel form={form} />}
         {detailSection === "hero" && (
           <>
-            {previewVariantControls.hero ? (
-              <SectionVariantPicker control={previewVariantControls.hero} />
-            ) : null}
-            <ToneToggle
-              value={tones.hero ?? "light"}
-              onChange={(t) => form.setTone("hero", t)}
-            />
+            {renderSectionSettings(previewVariantControls.hero, {
+              value: tones.hero ?? "light",
+              onChange: (t) => form.setTone("hero", t),
+            })}
             <SectionImageInput form={form} sectionKey="hero" />
             <Accordion title="Textos" flush>
               <HeroTexts form={form} />
@@ -951,13 +966,10 @@ export function Editor({
         )}
         {detailSection === "dor" && (
           <>
-            {previewVariantControls.dor ? (
-              <SectionVariantPicker control={previewVariantControls.dor} />
-            ) : null}
-            <ToneToggle
-              value={tones.dor}
-              onChange={(t) => form.setTone("dor", t)}
-            />
+            {renderSectionSettings(previewVariantControls.dor, {
+              value: tones.dor,
+              onChange: (t) => form.setTone("dor", t),
+            })}
             <SectionImageInput form={form} sectionKey="dor" />
             <Accordion title="Textos" flush>
               <DorTexts form={form} />
@@ -969,13 +981,10 @@ export function Editor({
         )}
         {detailSection === "solucao" && (
           <>
-            {previewVariantControls.solucao ? (
-              <SectionVariantPicker control={previewVariantControls.solucao} />
-            ) : null}
-            <ToneToggle
-              value={tones.solucao}
-              onChange={(t) => form.setTone("solucao", t)}
-            />
+            {renderSectionSettings(previewVariantControls.solucao, {
+              value: tones.solucao,
+              onChange: (t) => form.setTone("solucao", t),
+            })}
             <SectionImageInput form={form} sectionKey="solucao" />
             <Accordion title="Textos" flush>
               <SolucaoTexts form={form} />
@@ -987,13 +996,10 @@ export function Editor({
         )}
         {detailSection === "sobre" && (
           <>
-            {previewVariantControls.sobre ? (
-              <SectionVariantPicker control={previewVariantControls.sobre} />
-            ) : null}
-            <ToneToggle
-              value={tones.sobre}
-              onChange={(t) => form.setTone("sobre", t)}
-            />
+            {renderSectionSettings(previewVariantControls.sobre, {
+              value: tones.sobre,
+              onChange: (t) => form.setTone("sobre", t),
+            })}
             <SectionImageInput form={form} sectionKey="sobre" />
             <Accordion title="Texto" flush>
               <BuilderField
@@ -1018,27 +1024,24 @@ export function Editor({
         )}
         {detailSection === "equipe" && (
           <>
-            {previewVariantControls.equipe ? (
-              <SectionVariantPicker control={previewVariantControls.equipe} />
-            ) : null}
-            {office.lawyers.length >= 2 ? (
-              <ToneToggle
-                value={tones.equipe}
-                onChange={(t) => form.setTone("equipe", t)}
-              />
-            ) : null}
+            {renderSectionSettings(
+              previewVariantControls.equipe,
+              office.lawyers.length >= 2
+                ? {
+                    value: tones.equipe,
+                    onChange: (t) => form.setTone("equipe", t),
+                  }
+                : undefined,
+            )}
             <LawyerPhotosInput form={form} />
           </>
         )}
         {detailSection === "areas" && (
           <>
-            {previewVariantControls.areas ? (
-              <SectionVariantPicker control={previewVariantControls.areas} />
-            ) : null}
-            <ToneToggle
-              value={tones.areas}
-              onChange={(t) => form.setTone("areas", t)}
-            />
+            {renderSectionSettings(previewVariantControls.areas, {
+              value: tones.areas,
+              onChange: (t) => form.setTone("areas", t),
+            })}
             <Accordion title="Textos" flush>
               <AreasTexts form={form} />
             </Accordion>
@@ -1049,13 +1052,10 @@ export function Editor({
         )}
         {detailSection === "etapas" && (
           <>
-            {previewVariantControls.etapas ? (
-              <SectionVariantPicker control={previewVariantControls.etapas} />
-            ) : null}
-            <ToneToggle
-              value={tones.etapas}
-              onChange={(t) => form.setTone("etapas", t)}
-            />
+            {renderSectionSettings(previewVariantControls.etapas, {
+              value: tones.etapas,
+              onChange: (t) => form.setTone("etapas", t),
+            })}
             <Accordion title="Textos" flush>
               <EtapasTexts form={form} />
             </Accordion>
@@ -1066,10 +1066,10 @@ export function Editor({
         )}
         {detailSection === "faq" && (
           <>
-            <ToneToggle
-              value={tones.faq}
-              onChange={(t) => form.setTone("faq", t)}
-            />
+            {renderSectionSettings(undefined, {
+              value: tones.faq,
+              onChange: (t) => form.setTone("faq", t),
+            })}
             <Accordion title="Textos" flush>
               <FaqTexts form={form} />
             </Accordion>
@@ -1080,10 +1080,10 @@ export function Editor({
         )}
         {detailSection === "ctaFinal" && (
           <>
-            <ToneToggle
-              value={tones.ctaFinal}
-              onChange={(t) => form.setTone("ctaFinal", t)}
-            />
+            {renderSectionSettings(undefined, {
+              value: tones.ctaFinal,
+              onChange: (t) => form.setTone("ctaFinal", t),
+            })}
             <Accordion title="Textos" flush>
               <CtaFinalTexts form={form} />
             </Accordion>
@@ -1196,39 +1196,56 @@ export function Editor({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:col-span-3 lg:justify-end">
+              <Button
+                type="button"
+                variant={dirty ? "default" : "outline"}
+                size="sm"
+                onClick={salvar}
+                disabled={!dirty || saveState === "saving" || isPublishing}
+              >
+                {saveState === "saving" ? (
+                  <ProgressActivity size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                Salvar
+              </Button>
               {status === "published" ? (
-                <ButtonGroup>
+                <>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={despublicar}
-                    disabled={publishState === "saving"}
+                    disabled={isPublishing}
                   >
-                    {publishState === "saving" ? (
+                    {isPublishing ? (
                       <ProgressActivity size={16} className="animate-spin" />
                     ) : (
                       <CloudOff size={16} />
                     )}
                     Retirar do ar
                   </Button>
-                  <Button size="icon-sm">
+                  <Button variant="outline" size="sm" asChild>
                     <a
                       href={publicLpUrl(officeSubdomain, slug)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <OpenInNew size={16} />
+                      Visitar
                     </a>
                   </Button>
-                </ButtonGroup>
+                </>
               ) : (
                 <Button
+                  type="button"
+                  variant="default"
                   size="sm"
                   onClick={publicar}
-                  disabled={publishState === "saving"}
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  disabled={isPublishing}
                 >
-                  {publishState === "saving" ? (
+                  {isPublishing ? (
                     <ProgressActivity size={16} className="animate-spin" />
                   ) : null}
                   {dirty ? "Salvar e publicar" : "Publicar"}
@@ -1335,17 +1352,7 @@ export function Editor({
                   </p>
                 </div>
 
-                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
-                  {activeVariantControl ? (
-                    <div className="min-w-0 max-w-full shrink">
-                      <SectionVariantPicker
-                        control={activeVariantControl}
-                        compact
-                      />
-                    </div>
-                  ) : null}
-
-                  <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
+                <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
                   {(
                     [
                       { id: "desktop", label: "Desktop", Icon: DesktopWindows },
@@ -1370,14 +1377,16 @@ export function Editor({
                       <span className="hidden sm:inline">{label}</span>
                     </button>
                   ))}
-                  </div>
                 </div>
               </div>
             </div>
 
             <div className="min-h-[min(70vh,640px)] min-h-0 flex-1 overflow-hidden">
               <DevicePreview ref={previewRef} mode={viewport}>
-                <LandingPreview schema={form.schema} />
+                <LandingPreview
+                  schema={form.schema}
+                  editor={{ variantControls: previewVariantControls }}
+                />
               </DevicePreview>
             </div>
           </main>
@@ -1413,7 +1422,7 @@ export function Editor({
                         currentDetail.id === "equipe" ||
                         currentDetail.id === "areas" ||
                         currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. Use o seletor de variação acima para mudar o layout.`
+                        ? `${currentDetail.description}. Use as setas no canto do preview (ou o seletor abaixo) para mudar o layout.`
                         : currentDetail.description
                       : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
                   </p>
