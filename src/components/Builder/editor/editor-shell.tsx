@@ -42,8 +42,6 @@ import {
 } from "@/components/Preview/device-preview";
 import {
   LandingPreview,
-  type PreviewEditableSectionId,
-  type PreviewVariantControl,
 } from "@/components/Preview/landing-preview";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,14 +76,18 @@ import {
   EQUIPE_VARIANT_LABELS,
   ETAPAS_OPTIONS,
   ETAPAS_VARIANT_LABELS,
+  getVariantControlForDetailSection,
   HERO_OPTIONS,
   HERO_VARIANT_LABELS,
   isDetailSectionId,
+  type PreviewEditableSectionId,
+  type PreviewVariantControl,
   SOBRE_OPTIONS,
   SOBRE_VARIANT_LABELS,
   SOLUCAO_OPTIONS,
   SOLUCAO_VARIANT_LABELS,
 } from "./constants";
+import { SectionVariantPicker } from "./section-variant-picker";
 import {
   Accordion,
   CORNER_OPTIONS,
@@ -183,14 +185,12 @@ export function Editor({
   officeSubdomain,
   name,
   status: initialStatus,
-  startTour,
 }: {
   form: LpEditorForm;
   slug: string;
   officeSubdomain: string;
   name: string;
   status?: "draft" | "published";
-  startTour?: boolean;
 }) {
   const router = useRouter();
   const { office, set, layout } = form;
@@ -531,6 +531,11 @@ export function Editor({
     ],
   );
 
+  const activeVariantControl = useMemo(
+    () => getVariantControlForDetailSection(detailSection, previewVariantControls),
+    [detailSection, previewVariantControls],
+  );
+
   function goToDetailSection(id: DetailSectionId) {
     setDetailSection(id);
     syncDetailSectionUrl(id);
@@ -590,14 +595,6 @@ export function Editor({
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
-
-  // Limpa o ?novo=1 da URL após abrir o editor pela primeira vez.
-  useEffect(() => {
-    if (!startTour) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("novo");
-    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
-  }, [startTour]);
 
   async function salvar() {
     form.form.clearErrors();
@@ -755,6 +752,9 @@ export function Editor({
         {detailSection === "seo" && <SeoPanel form={form} />}
         {detailSection === "hero" && (
           <>
+            {previewVariantControls.hero ? (
+              <SectionVariantPicker control={previewVariantControls.hero} />
+            ) : null}
             <ToneToggle
               value={tones.hero ?? "light"}
               onChange={(t) => form.setTone("hero", t)}
@@ -951,6 +951,9 @@ export function Editor({
         )}
         {detailSection === "dor" && (
           <>
+            {previewVariantControls.dor ? (
+              <SectionVariantPicker control={previewVariantControls.dor} />
+            ) : null}
             <ToneToggle
               value={tones.dor}
               onChange={(t) => form.setTone("dor", t)}
@@ -966,6 +969,9 @@ export function Editor({
         )}
         {detailSection === "solucao" && (
           <>
+            {previewVariantControls.solucao ? (
+              <SectionVariantPicker control={previewVariantControls.solucao} />
+            ) : null}
             <ToneToggle
               value={tones.solucao}
               onChange={(t) => form.setTone("solucao", t)}
@@ -981,6 +987,9 @@ export function Editor({
         )}
         {detailSection === "sobre" && (
           <>
+            {previewVariantControls.sobre ? (
+              <SectionVariantPicker control={previewVariantControls.sobre} />
+            ) : null}
             <ToneToggle
               value={tones.sobre}
               onChange={(t) => form.setTone("sobre", t)}
@@ -1009,6 +1018,9 @@ export function Editor({
         )}
         {detailSection === "equipe" && (
           <>
+            {previewVariantControls.equipe ? (
+              <SectionVariantPicker control={previewVariantControls.equipe} />
+            ) : null}
             {office.lawyers.length >= 2 ? (
               <ToneToggle
                 value={tones.equipe}
@@ -1020,6 +1032,9 @@ export function Editor({
         )}
         {detailSection === "areas" && (
           <>
+            {previewVariantControls.areas ? (
+              <SectionVariantPicker control={previewVariantControls.areas} />
+            ) : null}
             <ToneToggle
               value={tones.areas}
               onChange={(t) => form.setTone("areas", t)}
@@ -1034,6 +1049,9 @@ export function Editor({
         )}
         {detailSection === "etapas" && (
           <>
+            {previewVariantControls.etapas ? (
+              <SectionVariantPicker control={previewVariantControls.etapas} />
+            ) : null}
             <ToneToggle
               value={tones.etapas}
               onChange={(t) => form.setTone("etapas", t)}
@@ -1309,7 +1327,7 @@ export function Editor({
             )}
           >
             <div className="border-b border-border px-5 py-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                   <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                     <Visibility size={13} />
@@ -1317,7 +1335,17 @@ export function Editor({
                   </p>
                 </div>
 
-                <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+                  {activeVariantControl ? (
+                    <div className="min-w-0 max-w-full shrink">
+                      <SectionVariantPicker
+                        control={activeVariantControl}
+                        compact
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
                   {(
                     [
                       { id: "desktop", label: "Desktop", Icon: DesktopWindows },
@@ -1342,18 +1370,14 @@ export function Editor({
                       <span className="hidden sm:inline">{label}</span>
                     </button>
                   ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="min-h-[min(70vh,640px)] min-h-0 flex-1 overflow-hidden">
               <DevicePreview ref={previewRef} mode={viewport}>
-                <LandingPreview
-                  schema={form.schema}
-                  editor={{
-                    variantControls: previewVariantControls,
-                  }}
-                />
+                <LandingPreview schema={form.schema} />
               </DevicePreview>
             </div>
           </main>
@@ -1389,7 +1413,7 @@ export function Editor({
                         currentDetail.id === "equipe" ||
                         currentDetail.id === "areas" ||
                         currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. A variação fica no seletor flutuante do preview.`
+                        ? `${currentDetail.description}. Use o seletor de variação acima para mudar o layout.`
                         : currentDetail.description
                       : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
                   </p>

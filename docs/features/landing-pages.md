@@ -364,7 +364,7 @@ type LpSchema = {
 ### Submissão
 
 1. Passo 3: **Criar e editar** → `POST /api/gerar-copy` e `POST /api/gerar-lp` com `layout` do preset escolhido (default `classic-light`).
-2. Redirect → `/lp/{slug}?novo=1`.
+2. Redirect → `/lp/{slug}`.
 
 ---
 

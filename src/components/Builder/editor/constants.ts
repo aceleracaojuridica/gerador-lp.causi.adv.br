@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   AREAS_THUMBS,
   DOR_THUMBS,
@@ -123,70 +124,44 @@ export function isDetailSectionId(value: string | null): value is DetailSectionI
   return value !== null && DETAIL_SECTION_IDS.includes(value as DetailSectionId);
 }
 
-export const TOUR: {
-  id: string;
-  target: string;
-  title: string;
-  hint: string;
-}[] = [
-  {
-    id: "hero",
-    target: "sec-hero",
-    title: "Topo da página",
-    hint: "Escolha o estilo do topo.",
-  },
-  {
-    id: "dor",
-    target: "sec-dor",
-    title: "Dores do cliente",
-    hint: "Escolha o estilo e o fundo (claro ou escuro).",
-  },
-  {
-    id: "solucao",
-    target: "sec-solucao",
-    title: "Como você ajuda",
-    hint: "Escolha o estilo e o fundo (claro ou escuro).",
-  },
-  {
-    id: "sobre",
-    target: "sec-sobre",
-    title: "Sobre o escritório",
-    hint: "Escolha o estilo e o fundo (claro ou escuro).",
-  },
-  {
-    id: "equipe",
-    target: "sec-equipe",
-    title: "Equipe",
-    hint: "Adicione as fotos e escolha o fundo (claro ou escuro).",
-  },
-  {
-    id: "areas",
-    target: "sec-areas",
-    title: "Áreas de atuação",
-    hint: "Escolha o estilo e o fundo (claro ou escuro).",
-  },
-  {
-    id: "etapas",
-    target: "sec-etapas",
-    title: "Como funciona",
-    hint: "Escolha o estilo e o fundo (claro ou escuro).",
-  },
-  {
-    id: "faq",
-    target: "sec-faq",
-    title: "Perguntas frequentes",
-    hint: "Escolha o fundo (claro ou escuro).",
-  },
-  {
-    id: "ctaFinal",
-    target: "sec-ctaFinal",
-    title: "Convite final",
-    hint: "Escolha o fundo (claro ou escuro).",
-  },
-  {
-    id: "footer",
-    target: "sec-footer",
-    title: "Contato e rodapé",
-    hint: "Confira seus contatos e endereço.",
-  },
-];
+export type PreviewEditableSectionId =
+  | "hero"
+  | "dor"
+  | "solucao"
+  | "sobre"
+  | "equipe"
+  | "areas"
+  | "etapas"
+  | "faq"
+  | "ctaFinal"
+  | "footer";
+
+export type PreviewVariantControl = {
+  label: string;
+  options: Array<{
+    id: string;
+    label: string;
+    thumb?: ReactNode;
+  }>;
+  value: string;
+  onChange: (id: string) => void;
+};
+
+const VARIANT_DETAIL_SECTIONS = new Set<DetailSectionId>([
+  "hero",
+  "dor",
+  "solucao",
+  "sobre",
+  "equipe",
+  "areas",
+  "etapas",
+]);
+
+/** Retorna o controle de variação da seção aberta no painel CMS, se houver. */
+export function getVariantControlForDetailSection(
+  sectionId: DetailSectionId | null,
+  controls: Partial<Record<PreviewEditableSectionId, PreviewVariantControl>>,
+): PreviewVariantControl | undefined {
+  if (!sectionId || !VARIANT_DETAIL_SECTIONS.has(sectionId)) return undefined;
+  return controls[sectionId as PreviewEditableSectionId];
+}

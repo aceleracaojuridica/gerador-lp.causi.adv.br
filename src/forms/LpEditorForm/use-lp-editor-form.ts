@@ -73,7 +73,7 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
  * Validação Zod roda só no save/publicar (`validateSave`) — evita re-render
  * em centenas de campos com `mode: "onChange"`.
  */
-export function useLpEditorForm(seed?: LpSeed, _slug?: string) {
+export function useLpEditorForm(seed?: LpSeed) {
   const form = useForm<LpEditorFormValues>({
     defaultValues: seedToFormValues(seed),
     mode: "onSubmit",

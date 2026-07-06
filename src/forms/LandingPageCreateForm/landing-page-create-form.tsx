@@ -400,7 +400,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
       }
       if (!res.ok || !data.slug)
         throw new Error(data.error || "Falha ao salvar a página.");
-      router.push(`/lp/${data.slug}?novo=1`);
+      router.push(`/lp/${data.slug}`);
     } catch (e) {
       console.error(e);
       setErro(
