@@ -18,12 +18,12 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { AutoTextarea } from "@/components/auto-textarea";
-import { EstadoCidade } from "@/components/Builder/estado-cidade";
-import { maskPhone } from "@/components/Builder/fields";
-import { MelhorarTextoButton } from "@/components/Builder/melhorar-texto-button";
-import { PalettePicker } from "@/components/Builder/palette-picker";
-import { SocialsInput } from "@/components/Builder/socials-input";
-import { TemplateCard } from "@/components/Builder/template-card";
+import { EstadoCidade } from "@/components/Builder/create/estado-cidade";
+import { maskPhone } from "@/components/Builder/create/fields";
+import { MelhorarTextoButton } from "@/components/Builder/create/melhorar-texto-button";
+import { PalettePicker } from "@/components/Builder/create/palette-picker";
+import { SocialsInput } from "@/components/Builder/create/socials-input";
+import { TemplateCard } from "@/components/Builder/create/template-card";
 import CausiLogo from "@/components/icons/causi-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -381,7 +381,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
       images: generatedImages,
       layout: templateLayout,
       logoSrc,
-    });
+    };
 
     try {
       const res = await fetch("/api/gerar-lp", {
