@@ -7,16 +7,16 @@ import {
   saveLp,
 } from "@/lib/landing-pages/lp-store";
 import {
-  buildOfficeFromGerarLpPayload,
-  type GerarLpPayload,
-} from "@/lib/landing-pages/shared/create-seed";
-import {
   DEFAULT_LAYOUT,
   DEFAULT_THEME,
   type Layout,
   type Theme,
 } from "@/lib/landing-pages/schema";
 import { normalizeSeo } from "@/lib/landing-pages/seo";
+import {
+  buildOfficeFromGerarLpPayload,
+  type GerarLpPayload,
+} from "@/lib/landing-pages/shared/create-seed";
 import {
   allocateUniqueLpSlug,
   slugFromOfficeName,

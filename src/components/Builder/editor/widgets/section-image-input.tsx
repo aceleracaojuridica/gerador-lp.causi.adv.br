@@ -2,7 +2,7 @@
 
 import { ProgressActivity, WandStars } from "@material-symbols-svg/react";
 import { useState } from "react";
-import { LazyImageSlot } from "@/components/builder/shared/image-picker-dialog";
+import { LazyImageSlot } from "@/components/Builder/shared/image-picker-dialog";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import type { SectionImageKey } from "@/lib/landing-pages/schema";
 

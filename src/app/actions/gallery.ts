@@ -5,12 +5,12 @@ import type { ActionResult } from "@/app/actions/lps";
 import { mapLpDbError } from "@/lib/errors";
 import {
   deleteGalleryImage,
+  type GalleryImageItem,
   listGalleryImages,
   uploadGalleryImage,
-  type GalleryImageItem,
 } from "@/lib/landing-pages/gallery-store";
-import { createClient } from "@/lib/supabase/server";
 import { requireLpSession } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 function toMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) {

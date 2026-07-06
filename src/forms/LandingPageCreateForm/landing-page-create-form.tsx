@@ -256,7 +256,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
         form.setValue(
           "autoTheme",
           pal.brand !== DEFAULT_THEME.brand ||
-          pal.accent !== DEFAULT_THEME.accent,
+            pal.accent !== DEFAULT_THEME.accent,
         );
       };
       img.src = dataUrl;

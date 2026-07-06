@@ -14,7 +14,7 @@ import {
   SEO_TITLE_MAX,
   seoCharStatus,
 } from "@/lib/landing-pages/seo";
-import { Accordion, AccordionListContext } from "../controls/editor-controls";
+import { FieldGroup } from "../controls/editor-controls";
 
 function SeoCharHint({
   status,
@@ -60,132 +60,123 @@ export function SeoPanel({ form }: { form: LpEditorForm }) {
         aparece nos resultados de busca e no compartilhamento em redes sociais.
       </p>
 
-      <AccordionListContext.Provider value={true}>
-        <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-          <Accordion title="Título e descrição" flush defaultOpen>
-            <FormField
-              control={rhf.control}
-              name="copy.seo.title"
-              render={({ field }) => (
-                <BuilderField
-                  label={`Título (${titleLen}/${SEO_TITLE_MAX} chars)`}
-                  hint="Aparece na aba do navegador e nos resultados de busca."
-                >
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? rawSeo.title ?? seo.title ?? ""}
-                      aria-label="Título SEO"
-                      maxLength={SEO_TITLE_MAX + 10}
-                    />
-                  </FormControl>
-                  <SeoCharHint
-                    status={titleStatus}
-                    ok="Comprimento ideal"
-                    long="Muito longo — será cortado"
-                    short="Pode ser mais descritivo"
-                  />
-                  <FormMessage />
-                </BuilderField>
-              )}
-            />
-            <FormField
-              control={rhf.control}
-              name="copy.seo.description"
-              render={({ field }) => (
-                <BuilderField
-                  label={`Descrição (${descLen}/${SEO_DESC_MAX} chars)`}
-                  hint="Aparece abaixo do título nos resultados de busca."
-                >
-                  <FormControl>
-                    <AutoTextarea
-                      {...field}
-                      value={
-                        field.value ??
-                        rawSeo.description ??
-                        seo.description ??
-                        ""
-                      }
-                      aria-label="Descrição SEO"
-                      className="min-h-[80px] resize-y"
-                    />
-                  </FormControl>
-                  <SeoCharHint
-                    status={descStatus}
-                    ok="Comprimento ideal"
-                    long="Muito longa — será cortada"
-                    short="Pode ser mais descritiva"
-                  />
-                  <FormMessage />
-                </BuilderField>
-              )}
-            />
-            <FormField
-              control={rhf.control}
-              name="copy.seo.keywords"
-              render={({ field }) => (
-                <BuilderField
-                  label="Palavras-chave"
-                  hint="Separadas por vírgula. Ex: direito trabalhista, advogado SP"
-                >
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={
-                        field.value ?? rawSeo.keywords ?? seo.keywords ?? ""
-                      }
-                      aria-label="Keywords SEO"
-                      placeholder="direito trabalhista, advogado, São Paulo"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </BuilderField>
-              )}
-            />
-          </Accordion>
+      <FieldGroup title="Título e descrição">
+        <FormField
+          control={rhf.control}
+          name="copy.seo.title"
+          render={({ field }) => (
+            <BuilderField
+              label={`Título (${titleLen}/${SEO_TITLE_MAX} chars)`}
+              hint="Aparece na aba do navegador e nos resultados de busca."
+            >
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? rawSeo.title ?? seo.title ?? ""}
+                  aria-label="Título SEO"
+                  maxLength={SEO_TITLE_MAX + 10}
+                />
+              </FormControl>
+              <SeoCharHint
+                status={titleStatus}
+                ok="Comprimento ideal"
+                long="Muito longo — será cortado"
+                short="Pode ser mais descritivo"
+              />
+              <FormMessage />
+            </BuilderField>
+          )}
+        />
+        <FormField
+          control={rhf.control}
+          name="copy.seo.description"
+          render={({ field }) => (
+            <BuilderField
+              label={`Descrição (${descLen}/${SEO_DESC_MAX} chars)`}
+              hint="Aparece abaixo do título nos resultados de busca."
+            >
+              <FormControl>
+                <AutoTextarea
+                  {...field}
+                  value={
+                    field.value ?? rawSeo.description ?? seo.description ?? ""
+                  }
+                  aria-label="Descrição SEO"
+                  className="min-h-[80px] resize-y"
+                />
+              </FormControl>
+              <SeoCharHint
+                status={descStatus}
+                ok="Comprimento ideal"
+                long="Muito longa — será cortada"
+                short="Pode ser mais descritiva"
+              />
+              <FormMessage />
+            </BuilderField>
+          )}
+        />
+        <FormField
+          control={rhf.control}
+          name="copy.seo.keywords"
+          render={({ field }) => (
+            <BuilderField
+              label="Palavras-chave"
+              hint="Separadas por vírgula. Ex: direito trabalhista, advogado SP"
+            >
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? rawSeo.keywords ?? seo.keywords ?? ""}
+                  aria-label="Keywords SEO"
+                  placeholder="direito trabalhista, advogado, São Paulo"
+                />
+              </FormControl>
+              <FormMessage />
+            </BuilderField>
+          )}
+        />
+      </FieldGroup>
 
-          <Accordion title="Indexação e redes sociais" flush>
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  Indexável nos buscadores
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Desative para LPs de tráfego pago (Google/Meta Ads).
-                </p>
-              </div>
-              <Badge
-                variant="secondary"
-                className="shrink-0 cursor-pointer"
-                onClick={() => form.setSeoField("indexable", !indexable)}
-              >
-                {indexable ? "Indexável" : "Noindex"}
-              </Badge>
-            </div>
-            <FormField
-              control={rhf.control}
-              name="copy.seo.ogImage"
-              render={({ field }) => (
-                <BuilderField
-                  label="Imagem de compartilhamento (OG)"
-                  hint="Aparece ao compartilhar em WhatsApp, Instagram etc. 1200×630px."
-                >
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? rawSeo.ogImage ?? seo.ogImage ?? ""}
-                      aria-label="OG Image URL"
-                      placeholder="https://..."
-                      inputMode="url"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </BuilderField>
-              )}
-            />
-          </Accordion>
+      <FieldGroup title="Indexação e redes sociais">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Indexável nos buscadores
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Desative para LPs de tráfego pago (Google/Meta Ads).
+            </p>
+          </div>
+          <Badge
+            variant="secondary"
+            className="shrink-0 cursor-pointer"
+            onClick={() => form.setSeoField("indexable", !indexable)}
+          >
+            {indexable ? "Indexável" : "Noindex"}
+          </Badge>
         </div>
-      </AccordionListContext.Provider>
+        <FormField
+          control={rhf.control}
+          name="copy.seo.ogImage"
+          render={({ field }) => (
+            <BuilderField
+              label="Imagem de compartilhamento (OG)"
+              hint="Aparece ao compartilhar em WhatsApp, Instagram etc. 1200×630px."
+            >
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? rawSeo.ogImage ?? seo.ogImage ?? ""}
+                  aria-label="OG Image URL"
+                  placeholder="https://..."
+                  inputMode="url"
+                />
+              </FormControl>
+              <FormMessage />
+            </BuilderField>
+          )}
+        />
+      </FieldGroup>
     </div>
   );
 }

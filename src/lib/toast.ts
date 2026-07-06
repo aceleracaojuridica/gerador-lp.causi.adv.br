@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { mapLpDbError, mapLpMessageError, type LpToastMessage } from "./errors";
+import { type LpToastMessage, mapLpDbError, mapLpMessageError } from "./errors";
 
 export function showAccessDeniedToast(description?: string) {
   toast.error("Acesso negado", {

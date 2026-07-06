@@ -34,7 +34,7 @@ import {
   type LpEditorFormValues,
   lpEditorDefaultValues,
   validateLpEditorSave,
-} from "./schema";
+} from "@/forms/LpEditorForm/schema";
 
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
@@ -771,4 +771,4 @@ export function useLpEditorForm(seed?: LpSeed) {
 
 export type LpEditorForm = ReturnType<typeof useLpEditorForm>;
 
-export { EMPTY_OFFICE } from "./schema";
+export { EMPTY_OFFICE } from "@/forms/LpEditorForm/schema";
