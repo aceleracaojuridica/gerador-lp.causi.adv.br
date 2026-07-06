@@ -140,7 +140,7 @@ flowchart LR
   A["/nova — wizard"] --> B["Escritório · Contato · Imagens"]
   B --> C["POST /api/gerar-copy + /api/gerar-lp"]
   C --> D["saveLp → tabela lps"]
-  D --> E["/lp/slug?novo=1 — LpStudio"]
+  D --> E["/lp/slug — LpStudio"]
   E --> F["Editor + VariantPicker por seção"]
   F --> G["saveLpAction"]
 ```

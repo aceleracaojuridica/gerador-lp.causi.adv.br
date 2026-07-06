@@ -1,6 +1,6 @@
 import { listLps } from "@/lib/landing-pages/lp-store";
-import { createClient } from "@/lib/supabase/server";
 import { hasLpAccess, requireAuth } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { HomePageClient } from "./page.client";
 
 export const dynamic = "force-dynamic";

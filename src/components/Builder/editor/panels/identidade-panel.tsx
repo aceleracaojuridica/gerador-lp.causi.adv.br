@@ -2,7 +2,7 @@
 
 import { KeyboardArrowDown, Palette, Undo } from "@material-symbols-svg/react";
 import { useState } from "react";
-import { LazyImageSlot } from "@/components/builder/shared/image-picker-dialog";
+import { LazyImageSlot } from "@/components/Builder/shared/image-picker-dialog";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { BuilderField } from "../../shared/fields";
 import { PalettePicker } from "../../shared/palette-picker";
@@ -63,9 +63,9 @@ export function IdentidadePanel({ form }: { form: LpEditorForm }) {
               theme.accent,
               theme.accentSoft,
               theme.cream,
-            ].map((c) => (
+            ].map((c, index) => (
               <span
-                key={c}
+                key={`${index}-${c}`}
                 className="h-6 w-6 rounded-full border border-slate-200"
                 style={{ backgroundColor: c }}
                 title={c}

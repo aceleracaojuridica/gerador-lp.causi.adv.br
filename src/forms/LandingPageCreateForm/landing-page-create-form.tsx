@@ -256,7 +256,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
         form.setValue(
           "autoTheme",
           pal.brand !== DEFAULT_THEME.brand ||
-          pal.accent !== DEFAULT_THEME.accent,
+            pal.accent !== DEFAULT_THEME.accent,
         );
       };
       img.src = dataUrl;
@@ -400,7 +400,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
       }
       if (!res.ok || !data.slug)
         throw new Error(data.error || "Falha ao salvar a página.");
-      router.push(`/lp/${data.slug}?novo=1`);
+      router.push(`/lp/${data.slug}`);
     } catch (e) {
       console.error(e);
       setErro(

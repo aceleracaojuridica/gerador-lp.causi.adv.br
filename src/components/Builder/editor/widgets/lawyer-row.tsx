@@ -169,10 +169,11 @@ function LawyerRow({
             }}
             aria-label="Enquadrar"
             title="Reposiciona a foto para o rosto não ser cortado"
-            className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur transition ${framing
+            className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur transition ${
+              framing
                 ? "bg-ui-soft/95 text-ui"
                 : "bg-white/90 text-slate-600 hover:bg-white"
-              }`}
+            }`}
           >
             <OpenWith size={16} />
           </button>

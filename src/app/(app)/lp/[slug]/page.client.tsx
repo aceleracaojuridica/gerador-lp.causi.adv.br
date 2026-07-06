@@ -2,20 +2,16 @@
 
 import { useEffect } from "react";
 import { getConfigAction } from "@/app/actions/config";
-import { Editor } from "@/components/builder/editor";
+import { Editor } from "@/components/Builder/editor";
 import { Container } from "@/components/ui-patterns/container";
 import { type LpSeed, useLpEditorForm } from "@/forms/LpEditorForm";
 import type { StoredLp } from "@/lib/landing-pages/schema";
 
 type LpEditorPageClientProps = {
   initial: StoredLp;
-  startTour?: boolean;
 };
 
-export function LpEditorPageClient({
-  initial,
-  startTour,
-}: LpEditorPageClientProps) {
+export function LpEditorPageClient({ initial }: LpEditorPageClientProps) {
   const s = initial.schema;
   const seed: LpSeed = {
     office: s.office,
@@ -34,7 +30,7 @@ export function LpEditorPageClient({
     },
     customSections: s.customSections ?? [],
   };
-  const lpForm = useLpEditorForm(seed, initial.slug);
+  const lpForm = useLpEditorForm(seed);
 
   useEffect(() => {
     let alive = true;
@@ -61,7 +57,6 @@ export function LpEditorPageClient({
           officeSubdomain={initial.officeSubdomain}
           name={initial.name}
           status={initial.status ?? "draft"}
-          startTour={startTour}
         />
       </div>
     </Container>

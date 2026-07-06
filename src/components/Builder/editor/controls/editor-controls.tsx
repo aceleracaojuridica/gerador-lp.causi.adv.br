@@ -5,7 +5,7 @@ import {
   ChevronRight,
   KeyboardArrowDown,
 } from "@material-symbols-svg/react";
-import { createContext, useContext, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -13,6 +13,25 @@ import type { Tone } from "@/lib/landing-pages/schema";
 import { cn } from "@/lib/utils";
 
 export const AccordionListContext = createContext(false);
+
+/**
+ * Cabeçalho de agrupamento de campos sem colapsar — mostra tudo direto,
+ * só separa visualmente com um título e uma linha divisória no topo.
+ */
+export function FieldGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      {children}
+    </div>
+  );
+}
 
 export function EditorSectionAccordion({
   title,

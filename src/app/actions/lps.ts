@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { ACCESS_DENIED_ERROR, LP_ERRORS, mapLpDbError } from "@/lib/errors";
-import { canEditLp } from "@/lib/landing-pages/permissions";
 import {
   deleteLp,
   getLpMeta,
@@ -10,6 +9,7 @@ import {
   saveLp,
   unpublishLp,
 } from "@/lib/landing-pages/lp-store";
+import { canEditLp } from "@/lib/landing-pages/permissions";
 import type { StoredLp } from "@/lib/landing-pages/schema";
 import { requireLpSession } from "@/lib/session";
 

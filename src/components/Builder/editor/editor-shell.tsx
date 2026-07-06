@@ -18,6 +18,7 @@ import {
   Movie,
   OpenInNew,
   ProgressActivity,
+  Save,
   Search,
   SentimentDissatisfied,
   Storefront,
@@ -40,14 +41,9 @@ import {
   DevicePreview,
   type Viewport,
 } from "@/components/Preview/device-preview";
-import {
-  LandingPreview,
-  type PreviewEditableSectionId,
-  type PreviewVariantControl,
-} from "@/components/Preview/landing-preview";
+import { LandingPreview } from "@/components/Preview/landing-preview";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -62,6 +58,7 @@ import {
   type EquipeVariant,
   type Layout,
   type StoredLp,
+  type Tone,
 } from "@/lib/landing-pages/schema";
 import { TEMPLATES } from "@/lib/landing-pages/templates";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
@@ -81,15 +78,17 @@ import {
   HERO_OPTIONS,
   HERO_VARIANT_LABELS,
   isDetailSectionId,
+  type PreviewEditableSectionId,
+  type PreviewVariantControl,
   SOBRE_OPTIONS,
   SOBRE_VARIANT_LABELS,
   SOLUCAO_OPTIONS,
   SOLUCAO_VARIANT_LABELS,
 } from "./constants";
 import {
-  Accordion,
   CORNER_OPTIONS,
   EditorSectionMenuRow,
+  FieldGroup,
   Segmented,
   ToneToggle,
 } from "./controls/editor-controls";
@@ -121,6 +120,7 @@ import {
   ReorderPanel,
 } from "./panels/layout-panel";
 import { SeoPanel } from "./panels/seo-panel";
+import { SectionVariantPicker } from "./section-variant-picker";
 import {
   AddSectionButton,
   CustomSectionEditor,
@@ -183,14 +183,12 @@ export function Editor({
   officeSubdomain,
   name,
   status: initialStatus,
-  startTour,
 }: {
   form: LpEditorForm;
   slug: string;
   officeSubdomain: string;
   name: string;
   status?: "draft" | "published";
-  startTour?: boolean;
 }) {
   const router = useRouter();
   const { office, set, layout } = form;
@@ -212,9 +210,9 @@ export function Editor({
   const [detailSection, setDetailSection] = useState<DetailSectionId | null>(
     null,
   );
-  const [, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const dirty = form.isDirty;
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [status, setStatus] = useState<"draft" | "published">(
@@ -223,6 +221,7 @@ export function Editor({
   const [publishState, setPublishState] = useState<"idle" | "saving" | "error">(
     "idle",
   );
+  const isPublishing = publishState === "saving";
 
   const needsVideo = layout.hero === "video";
   const needsMetrics = layout.hero === "stats";
@@ -591,14 +590,6 @@ export function Editor({
     });
   }
 
-  // Limpa o ?novo=1 da URL após abrir o editor pela primeira vez.
-  useEffect(() => {
-    if (!startTour) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("novo");
-    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
-  }, [startTour]);
-
   async function salvar() {
     form.form.clearErrors();
     const saveError = form.validateSave();
@@ -728,352 +719,25 @@ export function Editor({
     }
   }
 
-  function renderCmsFields() {
-    if (!detailSection) {
-      return (
-        <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-foreground">
-              Selecione um bloco para editar
-            </p>
-            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Use a navegação da esquerda para abrir os campos. No preview,
-              troque a variação do bloco pelo seletor flutuante.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
+  // Agrupa seletor de layout + tom de fundo num único cartão nativo, em vez
+  // de dois controles soltos flutuando no painel.
+  function renderSectionSettings(
+    variant: PreviewVariantControl | undefined,
+    tone?: { value: Tone; onChange: (t: Tone) => void },
+  ) {
+    if (!variant && !tone) return null;
     return (
-      <div className="min-w-0 max-w-full space-y-3">
-        {detailSection === "identidade" && <IdentidadePanel form={form} />}
-        {detailSection === "imagens" && <ImagensPanel form={form} />}
-        {detailSection === "modelo" && (
-          <ModeloPicker form={form} currentId={currentTemplateId} />
-        )}
-        {detailSection === "seo" && <SeoPanel form={form} />}
-        {detailSection === "hero" && (
-          <>
-            <ToneToggle
-              value={tones.hero ?? "light"}
-              onChange={(t) => form.setTone("hero", t)}
-            />
-            <SectionImageInput form={form} sectionKey="hero" />
-            <Accordion title="Textos" flush>
-              <HeroTexts form={form} />
-            </Accordion>
-            {needsVideo ? (
-              <Accordion title="Vídeo" flush>
-                <BuilderField
-                  label="Link do vídeo do YouTube"
-                  hint="Cole o link do YouTube — a gente identifica o vídeo."
-                >
-                  <div className="flex items-center gap-2">
-                    <Movie size={16} className="shrink-0 text-slate-400" />
-                    <Input
-                      aria-label="Link do vídeo do YouTube"
-                      value={form.videoId}
-                      onChange={(e) =>
-                        form.setVideoId(extractYouTubeId(e.target.value))
-                      }
-                      placeholder="Cole o link (ex: youtube.com/watch?v=...)"
-                    />
-                  </div>
-                </BuilderField>
-              </Accordion>
-            ) : null}
-            {needsMetrics ? (
-              <Accordion title="Métricas" flush>
-                <MetricsInput form={form} />
-              </Accordion>
-            ) : null}
-            {needsCards ? (
-              <Accordion title="Mini-cards" flush>
-                <HeroFeaturesInput form={form} />
-              </Accordion>
-            ) : null}
-          </>
-        )}
-        {detailSection === "aparencia" && (
-          <>
-            <div>
-              <p className="mb-2 text-sm font-medium text-slate-700">
-                Cantos (arredondado ou quadrado)
-              </p>
-              <div className="space-y-2">
-                <Segmented
-                  label="Cards"
-                  value={office.cardRadius ?? "square"}
-                  onChange={(v) => set("cardRadius", v)}
-                  options={CORNER_OPTIONS}
-                />
-                <Segmented
-                  label="Botões"
-                  value={office.buttons?.radius ?? "square"}
-                  onChange={(v) => form.setButtonField("radius", v)}
-                  options={CORNER_OPTIONS}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 border-t border-slate-100 pt-3">
-              <BuilderField
-                label="O que acontece ao clicar num botão"
-                hint="Vale para todos os botões de chamada da página."
-              >
-                <select
-                  aria-label="Ação dos botões"
-                  className={inputCls}
-                  value={office.buttons?.action ?? "popup"}
-                  onChange={(e) =>
-                    form.setButtonField("action", e.target.value)
-                  }
-                >
-                  <option value="popup">Abrir popup de formulário</option>
-                  <option value="whatsapp">Abrir WhatsApp</option>
-                  <option value="link">Abrir link personalizado</option>
-                </select>
-              </BuilderField>
-              {(office.buttons?.action ?? "popup") === "link" ? (
-                <BuilderField
-                  label="Link do botão"
-                  hint="Endereço completo (ex.: https://...)."
-                >
-                  <Input
-                    value={office.buttons?.link ?? ""}
-                    onChange={(e) =>
-                      form.setButtonField("link", e.target.value)
-                    }
-                    placeholder="https://..."
-                    inputMode="url"
-                  />
-                </BuilderField>
-              ) : (office.buttons?.action ?? "popup") === "whatsapp" ? (
-                <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
-                  Os botões abrem o WhatsApp informado no{" "}
-                  <strong>Rodapé</strong>.
-                </p>
-              ) : (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                  <p className="text-xs leading-relaxed text-slate-500">
-                    Abre um formulário que termina sempre com{" "}
-                    <strong>nome</strong> e <strong>telefone</strong>. Você pode
-                    adicionar perguntas antes desse passo.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setBuilderOpen(true)}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
-                  >
-                    <Tune size={15} /> Personalizar formulário
-                    {office.buttons?.popup?.questions.length
-                      ? ` (${office.buttons.popup.questions.length})`
-                      : ""}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2 border-t border-slate-100 pt-3">
-              <p className="text-sm font-medium text-slate-700">Tipografia</p>
-              <BuilderField
-                label="Títulos e destaques"
-                hint="Fonte usada nos títulos de seção e manchetes."
-              >
-                <select
-                  aria-label="Fonte dos títulos"
-                  className={inputCls}
-                  value={office.fonts?.heading ?? ""}
-                  onChange={(e) => form.setFont("heading", e.target.value)}
-                >
-                  <option value="">Padrão do site</option>
-                  {HEADING_FONTS.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </BuilderField>
-              <BuilderField
-                label="Textos e parágrafos"
-                hint="Fonte usada nos parágrafos e textos de apoio."
-              >
-                <select
-                  aria-label="Fonte dos textos"
-                  className={inputCls}
-                  value={office.fonts?.body ?? ""}
-                  onChange={(e) => form.setFont("body", e.target.value)}
-                >
-                  <option value="">Padrão do site</option>
-                  {BODY_FONTS.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </BuilderField>
-            </div>
-
-            <div className="border-t border-slate-100 pt-3">
-              <Accordion title="Tags de rastreamento" flush>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Cole aqui os scripts do Google Analytics, Meta Pixel, Google
-                  Tag Manager ou qualquer outro código de tracking.
-                </p>
-                <BuilderField
-                  label="Código no <head>"
-                  hint="Carrega antes do conteúdo — ideal para GTM e gtag."
-                >
-                  <AutoTextarea
-                    aria-label="Tags no head"
-                    className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                    value={office.tags?.head ?? ""}
-                    onChange={(e) => form.setTag("head", e.target.value)}
-                    placeholder={"<script>\n  // seu código aqui\n</script>"}
-                  />
-                </BuilderField>
-                <BuilderField
-                  label="Código no <body>"
-                  hint="Logo após a abertura do body — para noscript do GTM."
-                >
-                  <AutoTextarea
-                    aria-label="Tags no body"
-                    className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                    value={office.tags?.body ?? ""}
-                    onChange={(e) => form.setTag("body", e.target.value)}
-                    placeholder={"<noscript>...</noscript>"}
-                  />
-                </BuilderField>
-              </Accordion>
-            </div>
-          </>
-        )}
-        {detailSection === "dor" && (
-          <>
-            <ToneToggle
-              value={tones.dor}
-              onChange={(t) => form.setTone("dor", t)}
-            />
-            <SectionImageInput form={form} sectionKey="dor" />
-            <Accordion title="Textos" flush>
-              <DorTexts form={form} />
-            </Accordion>
-            <Accordion title="Cards" flush>
-              <DorCards form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "solucao" && (
-          <>
-            <ToneToggle
-              value={tones.solucao}
-              onChange={(t) => form.setTone("solucao", t)}
-            />
-            <SectionImageInput form={form} sectionKey="solucao" />
-            <Accordion title="Textos" flush>
-              <SolucaoTexts form={form} />
-            </Accordion>
-            <Accordion title="Cards" flush>
-              <SolucaoCards form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "sobre" && (
-          <>
-            <ToneToggle
-              value={tones.sobre}
-              onChange={(t) => form.setTone("sobre", t)}
-            />
-            <SectionImageInput form={form} sectionKey="sobre" />
-            <Accordion title="Texto" flush>
-              <BuilderField
-                label="Apresentação"
-                hint="Pule linha para separar em parágrafos."
-              >
-                <AutoTextarea
-                  aria-label="Texto do Sobre"
-                  className={`${inputCls} min-h-[140px] resize-y`}
-                  value={office.about}
-                  onChange={(e) => set("about", e.target.value)}
-                  placeholder="Atuamos com dedicação na defesa de quem trabalha..."
-                />
-              </BuilderField>
-            </Accordion>
-            {layout.sobre === "fotoLista" || layout.sobre === "duasColunas" ? (
-              <Accordion title="Diferenciais" flush>
-                <DiferenciaisInput form={form} />
-              </Accordion>
-            ) : null}
-          </>
-        )}
-        {detailSection === "equipe" && (
-          <>
-            {office.lawyers.length >= 2 ? (
-              <ToneToggle
-                value={tones.equipe}
-                onChange={(t) => form.setTone("equipe", t)}
-              />
-            ) : null}
-            <LawyerPhotosInput form={form} />
-          </>
-        )}
-        {detailSection === "areas" && (
-          <>
-            <ToneToggle
-              value={tones.areas}
-              onChange={(t) => form.setTone("areas", t)}
-            />
-            <Accordion title="Textos" flush>
-              <AreasTexts form={form} />
-            </Accordion>
-            <Accordion title="Cards" flush>
-              <AreasCards form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "etapas" && (
-          <>
-            <ToneToggle
-              value={tones.etapas}
-              onChange={(t) => form.setTone("etapas", t)}
-            />
-            <Accordion title="Textos" flush>
-              <EtapasTexts form={form} />
-            </Accordion>
-            <Accordion title="Passos" flush>
-              <EtapasCards form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "faq" && (
-          <>
-            <ToneToggle
-              value={tones.faq}
-              onChange={(t) => form.setTone("faq", t)}
-            />
-            <Accordion title="Textos" flush>
-              <FaqTexts form={form} />
-            </Accordion>
-            <Accordion title="Perguntas" flush>
-              <FaqPerguntas form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "ctaFinal" && (
-          <>
-            <ToneToggle
-              value={tones.ctaFinal}
-              onChange={(t) => form.setTone("ctaFinal", t)}
-            />
-            <Accordion title="Textos" flush>
-              <CtaFinalTexts form={form} />
-            </Accordion>
-          </>
-        )}
-        {detailSection === "footer" && (
-          <FooterDetailPanel form={form} office={office} />
-        )}
+      <div className="divide-y divide-border rounded-xl border border-border bg-background px-4">
+        {variant ? (
+          <div className="py-3">
+            <SectionVariantPicker control={variant} />
+          </div>
+        ) : null}
+        {tone ? (
+          <div className="py-3">
+            <ToneToggle value={tone.value} onChange={tone.onChange} />
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -1178,39 +842,56 @@ export function Editor({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:col-span-3 lg:justify-end">
+              <Button
+                type="button"
+                variant={dirty ? "default" : "outline"}
+                size="sm"
+                onClick={salvar}
+                disabled={!dirty || saveState === "saving" || isPublishing}
+              >
+                {saveState === "saving" ? (
+                  <ProgressActivity size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                Salvar
+              </Button>
               {status === "published" ? (
-                <ButtonGroup>
+                <>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={despublicar}
-                    disabled={publishState === "saving"}
+                    disabled={isPublishing}
                   >
-                    {publishState === "saving" ? (
+                    {isPublishing ? (
                       <ProgressActivity size={16} className="animate-spin" />
                     ) : (
                       <CloudOff size={16} />
                     )}
                     Retirar do ar
                   </Button>
-                  <Button size="icon-sm">
+                  <Button variant="outline" size="sm" asChild>
                     <a
                       href={publicLpUrl(officeSubdomain, slug)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <OpenInNew size={16} />
+                      Visitar
                     </a>
                   </Button>
-                </ButtonGroup>
+                </>
               ) : (
                 <Button
+                  type="button"
+                  variant="default"
                   size="sm"
                   onClick={publicar}
-                  disabled={publishState === "saving"}
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  disabled={isPublishing}
                 >
-                  {publishState === "saving" ? (
+                  {isPublishing ? (
                     <ProgressActivity size={16} className="animate-spin" />
                   ) : null}
                   {dirty ? "Salvar e publicar" : "Publicar"}
@@ -1309,7 +990,7 @@ export function Editor({
             )}
           >
             <div className="border-b border-border px-5 py-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                   <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                     <Visibility size={13} />
@@ -1350,9 +1031,7 @@ export function Editor({
               <DevicePreview ref={previewRef} mode={viewport}>
                 <LandingPreview
                   schema={form.schema}
-                  editor={{
-                    variantControls: previewVariantControls,
-                  }}
+                  editor={{ variantControls: previewVariantControls }}
                 />
               </DevicePreview>
             </div>
@@ -1389,7 +1068,7 @@ export function Editor({
                         currentDetail.id === "equipe" ||
                         currentDetail.id === "areas" ||
                         currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. A variação fica no seletor flutuante do preview.`
+                        ? `${currentDetail.description}. Use as setas no canto do preview (ou o seletor abaixo) para mudar o layout.`
                         : currentDetail.description
                       : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
                   </p>
@@ -1398,7 +1077,377 @@ export function Editor({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-              {renderCmsFields()}
+              {!detailSection ? (
+                <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      Selecione um bloco para editar
+                    </p>
+                    <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                      Use a navegação da esquerda para abrir os campos. O
+                      seletor de variação de cada bloco já aparece flutuando no
+                      canto do preview, a qualquer momento.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="min-w-0 max-w-full space-y-3">
+                  {detailSection === "identidade" && (
+                    <IdentidadePanel form={form} />
+                  )}
+                  {detailSection === "imagens" && <ImagensPanel form={form} />}
+                  {detailSection === "modelo" && (
+                    <ModeloPicker form={form} currentId={currentTemplateId} />
+                  )}
+                  {detailSection === "seo" && <SeoPanel form={form} />}
+                  {detailSection === "hero" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.hero, {
+                        value: tones.hero ?? "light",
+                        onChange: (t) => form.setTone("hero", t),
+                      })}
+                      <SectionImageInput form={form} sectionKey="hero" />
+                      <FieldGroup title="Textos">
+                        <HeroTexts form={form} />
+                      </FieldGroup>
+                      {needsVideo ? (
+                        <FieldGroup title="Vídeo">
+                          <BuilderField
+                            label="Link do vídeo do YouTube"
+                            hint="Cole o link do YouTube — a gente identifica o vídeo."
+                          >
+                            <div className="flex items-center gap-2">
+                              <Movie
+                                size={16}
+                                className="shrink-0 text-slate-400"
+                              />
+                              <Input
+                                aria-label="Link do vídeo do YouTube"
+                                value={form.videoId}
+                                onChange={(e) =>
+                                  form.setVideoId(
+                                    extractYouTubeId(e.target.value),
+                                  )
+                                }
+                                placeholder="Cole o link (ex: youtube.com/watch?v=...)"
+                              />
+                            </div>
+                          </BuilderField>
+                        </FieldGroup>
+                      ) : null}
+                      {needsMetrics ? (
+                        <FieldGroup title="Métricas">
+                          <MetricsInput form={form} />
+                        </FieldGroup>
+                      ) : null}
+                      {needsCards ? (
+                        <FieldGroup title="Mini-cards">
+                          <HeroFeaturesInput form={form} />
+                        </FieldGroup>
+                      ) : null}
+                    </>
+                  )}
+                  {detailSection === "aparencia" && (
+                    <>
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-slate-700">
+                          Cantos (arredondado ou quadrado)
+                        </p>
+                        <div className="space-y-2">
+                          <Segmented
+                            label="Cards"
+                            value={office.cardRadius ?? "square"}
+                            onChange={(v) => set("cardRadius", v)}
+                            options={CORNER_OPTIONS}
+                          />
+                          <Segmented
+                            label="Botões"
+                            value={office.buttons?.radius ?? "square"}
+                            onChange={(v) => form.setButtonField("radius", v)}
+                            options={CORNER_OPTIONS}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 border-t border-slate-100 pt-3">
+                        <BuilderField
+                          label="O que acontece ao clicar num botão"
+                          hint="Vale para todos os botões de chamada da página."
+                        >
+                          <select
+                            aria-label="Ação dos botões"
+                            className={inputCls}
+                            value={office.buttons?.action ?? "popup"}
+                            onChange={(e) =>
+                              form.setButtonField("action", e.target.value)
+                            }
+                          >
+                            <option value="popup">
+                              Abrir popup de formulário
+                            </option>
+                            <option value="whatsapp">Abrir WhatsApp</option>
+                            <option value="link">
+                              Abrir link personalizado
+                            </option>
+                          </select>
+                        </BuilderField>
+                        {(office.buttons?.action ?? "popup") === "link" ? (
+                          <BuilderField
+                            label="Link do botão"
+                            hint="Endereço completo (ex.: https://...)."
+                          >
+                            <Input
+                              value={office.buttons?.link ?? ""}
+                              onChange={(e) =>
+                                form.setButtonField("link", e.target.value)
+                              }
+                              placeholder="https://..."
+                              inputMode="url"
+                            />
+                          </BuilderField>
+                        ) : (office.buttons?.action ?? "popup") ===
+                          "whatsapp" ? (
+                          <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
+                            Os botões abrem o WhatsApp informado no{" "}
+                            <strong>Rodapé</strong>.
+                          </p>
+                        ) : (
+                          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                            <p className="text-xs leading-relaxed text-slate-500">
+                              Abre um formulário que termina sempre com{" "}
+                              <strong>nome</strong> e <strong>telefone</strong>.
+                              Você pode adicionar perguntas antes desse passo.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setBuilderOpen(true)}
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
+                            >
+                              <Tune size={15} /> Personalizar formulário
+                              {office.buttons?.popup?.questions.length
+                                ? ` (${office.buttons.popup.questions.length})`
+                                : ""}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 border-t border-slate-100 pt-3">
+                        <p className="text-sm font-medium text-slate-700">
+                          Tipografia
+                        </p>
+                        <BuilderField
+                          label="Títulos e destaques"
+                          hint="Fonte usada nos títulos de seção e manchetes."
+                        >
+                          <select
+                            aria-label="Fonte dos títulos"
+                            className={inputCls}
+                            value={office.fonts?.heading ?? ""}
+                            onChange={(e) =>
+                              form.setFont("heading", e.target.value)
+                            }
+                          >
+                            <option value="">Padrão do site</option>
+                            {HEADING_FONTS.map((f) => (
+                              <option key={f.id} value={f.id}>
+                                {f.label}
+                              </option>
+                            ))}
+                          </select>
+                        </BuilderField>
+                        <BuilderField
+                          label="Textos e parágrafos"
+                          hint="Fonte usada nos parágrafos e textos de apoio."
+                        >
+                          <select
+                            aria-label="Fonte dos textos"
+                            className={inputCls}
+                            value={office.fonts?.body ?? ""}
+                            onChange={(e) =>
+                              form.setFont("body", e.target.value)
+                            }
+                          >
+                            <option value="">Padrão do site</option>
+                            {BODY_FONTS.map((f) => (
+                              <option key={f.id} value={f.id}>
+                                {f.label}
+                              </option>
+                            ))}
+                          </select>
+                        </BuilderField>
+                      </div>
+
+                      <FieldGroup title="Tags de rastreamento">
+                        <p className="text-xs leading-relaxed text-slate-500">
+                          Cole aqui os scripts do Google Analytics, Meta Pixel,
+                          Google Tag Manager ou qualquer outro código de
+                          tracking.
+                        </p>
+                        <BuilderField
+                          label="Código no <head>"
+                          hint="Carrega antes do conteúdo — ideal para GTM e gtag."
+                        >
+                          <AutoTextarea
+                            aria-label="Tags no head"
+                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                            value={office.tags?.head ?? ""}
+                            onChange={(e) =>
+                              form.setTag("head", e.target.value)
+                            }
+                            placeholder={
+                              "<script>\n  // seu código aqui\n</script>"
+                            }
+                          />
+                        </BuilderField>
+                        <BuilderField
+                          label="Código no <body>"
+                          hint="Logo após a abertura do body — para noscript do GTM."
+                        >
+                          <AutoTextarea
+                            aria-label="Tags no body"
+                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                            value={office.tags?.body ?? ""}
+                            onChange={(e) =>
+                              form.setTag("body", e.target.value)
+                            }
+                            placeholder={"<noscript>...</noscript>"}
+                          />
+                        </BuilderField>
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "dor" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.dor, {
+                        value: tones.dor,
+                        onChange: (t) => form.setTone("dor", t),
+                      })}
+                      <SectionImageInput form={form} sectionKey="dor" />
+                      <FieldGroup title="Textos">
+                        <DorTexts form={form} />
+                      </FieldGroup>
+                      <FieldGroup title="Cards">
+                        <DorCards form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "solucao" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.solucao, {
+                        value: tones.solucao,
+                        onChange: (t) => form.setTone("solucao", t),
+                      })}
+                      <SectionImageInput form={form} sectionKey="solucao" />
+                      <FieldGroup title="Textos">
+                        <SolucaoTexts form={form} />
+                      </FieldGroup>
+                      <FieldGroup title="Cards">
+                        <SolucaoCards form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "sobre" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.sobre, {
+                        value: tones.sobre,
+                        onChange: (t) => form.setTone("sobre", t),
+                      })}
+                      <SectionImageInput form={form} sectionKey="sobre" />
+                      <FieldGroup title="Texto">
+                        <BuilderField
+                          label="Apresentação"
+                          hint="Pule linha para separar em parágrafos."
+                        >
+                          <AutoTextarea
+                            aria-label="Texto do Sobre"
+                            className={`${inputCls} min-h-[140px] resize-y`}
+                            value={office.about}
+                            onChange={(e) => set("about", e.target.value)}
+                            placeholder="Atuamos com dedicação na defesa de quem trabalha..."
+                          />
+                        </BuilderField>
+                      </FieldGroup>
+                      {layout.sobre === "fotoLista" ||
+                      layout.sobre === "duasColunas" ? (
+                        <FieldGroup title="Diferenciais">
+                          <DiferenciaisInput form={form} />
+                        </FieldGroup>
+                      ) : null}
+                    </>
+                  )}
+                  {detailSection === "equipe" && (
+                    <>
+                      {renderSectionSettings(
+                        previewVariantControls.equipe,
+                        office.lawyers.length >= 2
+                          ? {
+                              value: tones.equipe,
+                              onChange: (t) => form.setTone("equipe", t),
+                            }
+                          : undefined,
+                      )}
+                      <LawyerPhotosInput form={form} />
+                    </>
+                  )}
+                  {detailSection === "areas" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.areas, {
+                        value: tones.areas,
+                        onChange: (t) => form.setTone("areas", t),
+                      })}
+                      <FieldGroup title="Textos">
+                        <AreasTexts form={form} />
+                      </FieldGroup>
+                      <FieldGroup title="Cards">
+                        <AreasCards form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "etapas" && (
+                    <>
+                      {renderSectionSettings(previewVariantControls.etapas, {
+                        value: tones.etapas,
+                        onChange: (t) => form.setTone("etapas", t),
+                      })}
+                      <FieldGroup title="Textos">
+                        <EtapasTexts form={form} />
+                      </FieldGroup>
+                      <FieldGroup title="Passos">
+                        <EtapasCards form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "faq" && (
+                    <>
+                      {renderSectionSettings(undefined, {
+                        value: tones.faq,
+                        onChange: (t) => form.setTone("faq", t),
+                      })}
+                      <FieldGroup title="Textos">
+                        <FaqTexts form={form} />
+                      </FieldGroup>
+                      <FieldGroup title="Perguntas">
+                        <FaqPerguntas form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "ctaFinal" && (
+                    <>
+                      {renderSectionSettings(undefined, {
+                        value: tones.ctaFinal,
+                        onChange: (t) => form.setTone("ctaFinal", t),
+                      })}
+                      <FieldGroup title="Textos">
+                        <CtaFinalTexts form={form} />
+                      </FieldGroup>
+                    </>
+                  )}
+                  {detailSection === "footer" && (
+                    <FooterDetailPanel form={form} office={office} />
+                  )}
+                </div>
+              )}
             </div>
           </aside>
         </div>

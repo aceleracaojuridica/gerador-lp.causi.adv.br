@@ -34,7 +34,7 @@ import {
   type LpEditorFormValues,
   lpEditorDefaultValues,
   validateLpEditorSave,
-} from "./schema";
+} from "@/forms/LpEditorForm/schema";
 
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
@@ -73,7 +73,7 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
  * Validação Zod roda só no save/publicar (`validateSave`) — evita re-render
  * em centenas de campos com `mode: "onChange"`.
  */
-export function useLpEditorForm(seed?: LpSeed, _slug?: string) {
+export function useLpEditorForm(seed?: LpSeed) {
   const form = useForm<LpEditorFormValues>({
     defaultValues: seedToFormValues(seed),
     mode: "onSubmit",
@@ -771,4 +771,4 @@ export function useLpEditorForm(seed?: LpSeed, _slug?: string) {
 
 export type LpEditorForm = ReturnType<typeof useLpEditorForm>;
 
-export { EMPTY_OFFICE } from "./schema";
+export { EMPTY_OFFICE } from "@/forms/LpEditorForm/schema";

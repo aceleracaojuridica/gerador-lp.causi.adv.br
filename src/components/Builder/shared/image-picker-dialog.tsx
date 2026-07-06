@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -67,7 +68,7 @@ export function ImagePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-hidden flex flex-col">
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -75,73 +76,87 @@ export function ImagePickerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex shrink-0 gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onFile(f);
-              e.target.value = "";
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="size-4" />
-            {uploading ? "Enviando…" : "Enviar nova"}
-          </Button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {loading ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Carregando galeria…
-            </p>
-          ) : images.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma imagem na galeria. Envie a primeira acima.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {images.map((img) => (
-                <button
-                  key={img.id}
-                  type="button"
-                  className="group relative overflow-hidden rounded-lg border border-border text-left transition hover:ring-2 hover:ring-primary"
-                  onClick={() => {
-                    onSelect(img.url);
-                    onOpenChange(false);
-                  }}
-                >
-                  {/* biome-ignore lint/a11y/useAltText: decorative thumbnail in picker */}
-                  <img
-                    src={img.url}
-                    alt=""
-                    className="aspect-video w-full object-cover"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <p className="truncate text-xs font-medium text-white">
-                      {img.originalFilename ?? "Imagem"}
-                    </p>
-                    <p className="truncate text-[10px] text-white/80">
-                      {img.uploadedByName}
-                      {img.usages.length > 0
-                        ? ` · ${img.usages.length} uso(s)`
-                        : ""}
-                    </p>
-                  </div>
-                </button>
-              ))}
+        <DialogBody className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex shrink-0 flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                Biblioteca de imagens da conta
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Selecione uma imagem já enviada ou adicione um novo arquivo.
+              </p>
             </div>
-          )}
-        </div>
+
+            <div className="flex shrink-0">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void onFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+                className="w-full sm:w-auto"
+              >
+                <Upload className="size-4" />
+                {uploading ? "Enviando…" : "Enviar nova"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {loading ? (
+              <div className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
+                Carregando galeria…
+              </div>
+            ) : images.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
+                Nenhuma imagem na galeria. Envie a primeira acima.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {images.map((img) => (
+                  <button
+                    key={img.id}
+                    type="button"
+                    className="group relative overflow-hidden rounded-lg border border-border bg-card text-left transition hover:ring-2 hover:ring-primary"
+                    onClick={() => {
+                      onSelect(img.url);
+                      onOpenChange(false);
+                    }}
+                  >
+                    {/* biome-ignore lint/a11y/useAltText: decorative thumbnail in picker */}
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="aspect-video w-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                      <p className="truncate text-xs font-medium text-white">
+                        {img.originalFilename ?? "Imagem"}
+                      </p>
+                      <p className="truncate text-[10px] text-white/80">
+                        {img.uploadedByName}
+                        {img.usages.length > 0
+                          ? ` · ${img.usages.length} uso(s)`
+                          : ""}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

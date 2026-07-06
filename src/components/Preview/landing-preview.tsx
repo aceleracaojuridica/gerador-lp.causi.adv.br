@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { SectionVariantControls } from "@/components/builder/shared/section-variant-carousel";
+import { SectionVariantControls } from "@/components/Builder/shared/section-variant-controls";
 import { Areas } from "@/components/Sections/areas";
 import { CtaFinal } from "@/components/Sections/cta-final";
 import { CustomSection } from "@/components/Sections/custom-section";
@@ -31,18 +31,11 @@ export type PreviewEditableSectionId =
   | "sobre"
   | "equipe"
   | "areas"
-  | "etapas"
-  | "faq"
-  | "ctaFinal"
-  | "footer";
+  | "etapas";
 
 export type PreviewVariantControl = {
   label: string;
-  options: Array<{
-    id: string;
-    label: string;
-    thumb?: ReactNode;
-  }>;
+  options: Array<{ id: string; label: string }>;
   value: string;
   onChange: (id: string) => void;
 };
@@ -66,6 +59,7 @@ export function LandingPreview({
   schema: LpSchema;
   /** true no editor/preview interno; false na LP publicada */
   demo?: boolean;
+  /** Habilita os seletores de variante flutuantes sobre cada seção (editor). */
   editor?: PreviewEditorConfig;
 }) {
   const accentRgb = hexToRgbString(schema.theme.accent);
@@ -148,46 +142,30 @@ export function LandingPreview({
       ? (schema.layout.tones.faq ?? "light")
       : "light";
 
-  function renderEditableFrame(
-    sectionId: PreviewEditableSectionId,
+  function renderSectionFrame(
+    sectionId: PreviewEditableSectionId | null,
     anchorId: string,
-    _label: string,
     children: ReactNode,
   ) {
-    const control = editor?.variantControls?.[sectionId];
-
-    if (!editor || !control) {
-      return (
-        <div id={anchorId} className={anchor}>
-          {children}
-        </div>
-      );
-    }
-
-    const variantLabels = control
-      ? Object.fromEntries(
-          control.options.map((option) => [option.id, option.label]),
-        )
-      : {};
-    const currentThumb = control.options.find(
-      (option) => option.id === control.value,
-    )?.thumb;
-
+    const control = sectionId
+      ? editor?.variantControls?.[sectionId]
+      : undefined;
     return (
-      <div id={anchorId} className={cn(anchor, "relative")}>
+      <div
+        id={anchorId}
+        className={cn(anchor, control ? "relative" : undefined)}
+      >
         {children}
         {control ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-20 max-w-[calc(100%-1.5rem)]">
-            <SectionVariantControls
-              label={control.label}
-              variants={control.options.map((option) => option.id)}
-              variantLabels={variantLabels}
-              current={control.value}
-              onChange={control.onChange}
-              thumb={currentThumb}
-              thumbPlacement="inline"
-              className="pointer-events-auto border-white/70 bg-white/88 shadow-md backdrop-blur-md"
-            />
+          <div className="pointer-events-none absolute right-3 top-3 z-20">
+            <div className="pointer-events-auto">
+              <SectionVariantControls
+                label={control.label}
+                variants={control.options.map((option) => option.id)}
+                current={control.value}
+                onChange={control.onChange}
+              />
+            </div>
           </div>
         ) : null}
       </div>
@@ -210,10 +188,9 @@ export function LandingPreview({
       case "dor":
         return (
           <div key="dor">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "dor",
               "sec-dor",
-              "Dores",
               <Dor
                 content={schema.dor}
                 variant={schema.layout.dor}
@@ -229,10 +206,9 @@ export function LandingPreview({
       case "solucao":
         return (
           <div key="solucao">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "solucao",
               "sec-solucao",
-              "Solução",
               <Solucao
                 content={schema.solucao}
                 variant={schema.layout.solucao}
@@ -248,10 +224,9 @@ export function LandingPreview({
       case "sobre":
         return (
           <div key="sobre">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "sobre",
               "sec-sobre",
-              "Sobre",
               <Sobre
                 office={schema.office}
                 variant={schema.layout.sobre}
@@ -263,10 +238,9 @@ export function LandingPreview({
       case "equipe":
         return hidden.equipe ? null : (
           <div key="equipe">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "equipe",
               "sec-equipe",
-              "Equipe",
               <Equipe
                 lawyers={schema.office.lawyers}
                 brandRgb={brandRgb}
@@ -279,10 +253,9 @@ export function LandingPreview({
       case "areas":
         return hidden.areas ? null : (
           <div key="areas">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "areas",
               "sec-areas",
-              "Áreas",
               <Areas
                 content={schema.areas}
                 variant={schema.layout.areas}
@@ -295,10 +268,9 @@ export function LandingPreview({
       case "etapas":
         return hidden.etapas ? null : (
           <div key="etapas">
-            {renderEditableFrame(
+            {renderSectionFrame(
               "etapas",
               "sec-etapas",
-              "Etapas",
               <Etapas
                 content={schema.etapas}
                 variant={schema.layout.etapas}
@@ -310,10 +282,9 @@ export function LandingPreview({
       case "ctaFinal":
         return hidden.ctaFinal ? null : (
           <div key="ctaFinal">
-            {renderEditableFrame(
-              "ctaFinal",
+            {renderSectionFrame(
+              null,
               "sec-ctaFinal",
-              "CTA final",
               <CtaFinal
                 content={schema.ctaFinal}
                 accentRgb={accentRgb}
@@ -340,10 +311,9 @@ export function LandingPreview({
           />
         ) : (
           <>
-            {renderEditableFrame(
+            {renderSectionFrame(
               "hero",
               "sec-hero",
-              "Topo",
               <Hero
                 content={schema.hero}
                 office={schema.office}
@@ -361,17 +331,15 @@ export function LandingPreview({
             {/* Seções do meio na ordem definida (Hero acima, FAQ/Rodapé abaixo). */}
             {order.map(renderItem)}
             {!hidden.faq
-              ? renderEditableFrame(
-                  "faq",
+              ? renderSectionFrame(
+                  null,
                   "sec-faq",
-                  "FAQ",
                   <FAQ content={schema.faq} tone={schema.layout.tones.faq} />,
                 )
               : null}
-            {renderEditableFrame(
-              "footer",
+            {renderSectionFrame(
+              null,
               "sec-footer",
-              "Rodapé",
               <Footer
                 office={schema.office}
                 onPrivacyClick={() => setShowPolicy(true)}

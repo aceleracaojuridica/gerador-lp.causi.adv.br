@@ -211,12 +211,7 @@ export type EtapasContent = {
 /* ===== Variantes de layout por seção (espelham os PRDs da skill) ===== */
 
 /** Headline: 1 Split 50/50 · 2 Vídeo+Foto · 3 Centralizado · 4 Hero com Stats · 5 Recorte (foto sem fundo sobre cena borrada) */
-export type HeroVariant =
-  | "split"
-  | "video"
-  | "centered"
-  | "stats"
-  | "recorte";
+export type HeroVariant = "split" | "video" | "centered" | "stats" | "recorte";
 /** Dor (LAYOUT, independente do tom): com imagem + cards · só cards */
 export type DorVariant = "comImagem" | "soCards";
 /** Solução (LAYOUT): com imagem + cards · só cards · cards com destaque */

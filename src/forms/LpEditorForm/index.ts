@@ -11,4 +11,4 @@ export {
   type LpEditorForm,
   type LpSeed,
   useLpEditorForm,
-} from "./use-lp-editor-form";
+} from "@/hooks/use-lp-editor-form";

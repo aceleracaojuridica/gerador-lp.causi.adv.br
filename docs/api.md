@@ -96,7 +96,7 @@ O `slug` é alocado **no início** do handler, antes da geração IA:
 
 1. Deriva do `name` via `slugFromOfficeName()` — kebab-case, sem acentos.
 2. Se já existir em `landing_pages` (qualquer usuário), tenta sufixos `-2`, `-3`, …
-3. Persiste com esse slug ao final; o front redireciona para `/lp/{slug}?novo=1`.
+3. Persiste com esse slug ao final; o front redireciona para `/lp/{slug}`.
 
 Colisão esgotada → **409** `{ "error": "Não foi possível gerar um identificador único..." }`.
 
