@@ -48,8 +48,6 @@ export type PreviewVariantControl = {
 };
 
 type PreviewEditorConfig = {
-  selectedSection?: PreviewEditableSectionId;
-  onSectionSelect?: (sectionId: PreviewEditableSectionId) => void;
   variantControls?: Partial<
     Record<PreviewEditableSectionId, PreviewVariantControl | undefined>
   >;
@@ -153,10 +151,12 @@ export function LandingPreview({
   function renderEditableFrame(
     sectionId: PreviewEditableSectionId,
     anchorId: string,
-    label: string,
+    _label: string,
     children: ReactNode,
   ) {
-    if (!editor) {
+    const control = editor?.variantControls?.[sectionId];
+
+    if (!editor || !control) {
       return (
         <div id={anchorId} className={anchor}>
           {children}
@@ -164,51 +164,29 @@ export function LandingPreview({
       );
     }
 
-    const selected = editor.selectedSection === sectionId;
-    const control = editor.variantControls?.[sectionId];
     const variantLabels = control
       ? Object.fromEntries(
           control.options.map((option) => [option.id, option.label]),
         )
       : {};
+    const currentThumb = control.options.find(
+      (option) => option.id === control.value,
+    )?.thumb;
 
     return (
-      <div id={anchorId} className={cn(anchor, "group/section relative")}>
+      <div id={anchorId} className={cn(anchor, "relative")}>
         {children}
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-2 rounded-[28px] ring-1 transition",
-            selected
-              ? "ring-primary shadow-lg shadow-slate-900/10"
-              : "ring-black/5 group-hover/section:ring-primary/20",
-          )}
-        />
-        <div className="absolute left-4 top-4 z-20">
-          <button
-            type="button"
-            onClick={() => editor.onSectionSelect?.(sectionId)}
-            className={cn(
-              "pointer-events-auto inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur transition",
-              selected
-                ? "border-primary/30 bg-primary text-primary-foreground"
-                : "border-white/80 bg-white/90 text-slate-700 hover:border-primary/20 hover:text-primary",
-            )}
-          >
-            <span>{label}</span>
-            <span className="opacity-70">
-              {selected ? "Editando" : "Selecionar"}
-            </span>
-          </button>
-        </div>
         {control ? (
-          <div className="absolute right-4 top-4 z-20 w-[min(320px,calc(100%-2rem))]">
+          <div className="pointer-events-none absolute right-3 top-3 z-20 max-w-[calc(100%-1.5rem)]">
             <SectionVariantControls
               label={control.label}
               variants={control.options.map((option) => option.id)}
               variantLabels={variantLabels}
               current={control.value}
               onChange={control.onChange}
-              className="border-white/80 bg-white/92 shadow-lg backdrop-blur"
+              thumb={currentThumb}
+              thumbPlacement="inline"
+              className="pointer-events-auto border-white/70 bg-white/88 shadow-md backdrop-blur-md"
             />
           </div>
         ) : null}

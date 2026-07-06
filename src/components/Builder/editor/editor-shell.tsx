@@ -3,8 +3,7 @@
 import {
   Badge,
   Campaign,
-  CheckCircle,
-  ChevronLeft,
+  Close,
   CloudOff,
   ContactPage,
   DesktopWindows,
@@ -17,6 +16,7 @@ import {
   Image,
   Lightbulb,
   Movie,
+  OpenInNew,
   ProgressActivity,
   Search,
   SentimentDissatisfied,
@@ -28,7 +28,6 @@ import {
   Web,
 } from "@material-symbols-svg/react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -47,15 +46,8 @@ import {
   type PreviewVariantControl,
 } from "@/components/Preview/landing-preview";
 import { Badge as UiBadge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -64,7 +56,7 @@ import { applyLpEditorSaveErrorsToForm } from "@/forms/LpEditorForm/schema";
 import { useIsLgUp } from "@/hooks/use-media-query";
 import { isAccessDeniedError } from "@/lib/errors";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
-import { publicLpDisplayHost, publicLpUrl } from "@/lib/landing-pages/lp-url";
+import { publicLpUrl } from "@/lib/landing-pages/lp-url";
 import {
   DEFAULT_LAYOUT,
   type EquipeVariant,
@@ -134,7 +126,6 @@ import {
   CustomSectionEditor,
 } from "./widgets/custom-section-editor";
 import { LawyerPhotosInput } from "./widgets/lawyer-row";
-
 import { SectionImageInput } from "./widgets/section-image-input";
 
 const PopupBuilder = dynamic(
@@ -221,9 +212,9 @@ export function Editor({
   const [detailSection, setDetailSection] = useState<DetailSectionId | null>(
     null,
   );
-  const [saveState, setSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
+  const [, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
   const dirty = form.isDirty;
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [status, setStatus] = useState<"draft" | "published">(
@@ -423,11 +414,6 @@ export function Editor({
   const conversionSections = editorSections.filter(
     (section) => section.stage === "conversion",
   );
-  const activeOptionalSections = editorSections.filter(
-    (section) =>
-      ["equipe", "areas", "etapas", "faq", "ctaFinal"].includes(section.id) &&
-      section.enabled,
-  ).length;
   const lifecycleMessage =
     status === "published"
       ? dirty
@@ -436,26 +422,6 @@ export function Editor({
       : dirty
         ? "Há alterações locais aguardando salvamento antes da publicação."
         : "Rascunho salvo. Continue editando ou publique quando estiver pronto.";
-  const previewMessage =
-    status === "published"
-      ? dirty
-        ? "Prévia da próxima versão"
-        : "Versão atualmente no ar"
-      : "Prévia do rascunho";
-  const saveButtonLabel =
-    saveState === "saving"
-      ? status === "published"
-        ? "Atualizando site…"
-        : "Salvando rascunho…"
-      : saveState === "error"
-        ? "Erro ao salvar"
-        : dirty
-          ? status === "published"
-            ? "Atualizar site"
-            : "Salvar rascunho"
-          : status === "published"
-            ? "Site atualizado"
-            : "Rascunho salvo";
   const syncDetailSectionUrl = useCallback((id: DetailSectionId | null) => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -466,14 +432,6 @@ export function Editor({
       window.history.replaceState(null, "", next);
     }
   }, []);
-  const goToPreviewSection = useCallback(
-    (id: PreviewEditableSectionId) => {
-      setDetailSection(id);
-      syncDetailSectionUrl(id);
-      if (!isLgUp) setMobileTab("cms");
-    },
-    [isLgUp, syncDetailSectionUrl],
-  );
   const previewVariantControls = useMemo<
     Partial<Record<PreviewEditableSectionId, PreviewVariantControl>>
   >(
@@ -483,7 +441,6 @@ export function Editor({
         options: heroOptions,
         value: layout.hero,
         onChange: (id) => {
-          goToPreviewSection("hero");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             hero: id as Layout["hero"],
@@ -495,7 +452,6 @@ export function Editor({
         options: DOR_OPTIONS,
         value: layout.dor,
         onChange: (id) => {
-          goToPreviewSection("dor");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             dor: id as Layout["dor"],
@@ -507,7 +463,6 @@ export function Editor({
         options: SOLUCAO_OPTIONS,
         value: layout.solucao,
         onChange: (id) => {
-          goToPreviewSection("solucao");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             solucao: id as Layout["solucao"],
@@ -519,7 +474,6 @@ export function Editor({
         options: SOBRE_OPTIONS,
         value: layout.sobre,
         onChange: (id) => {
-          goToPreviewSection("sobre");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             sobre: id as Layout["sobre"],
@@ -533,7 +487,6 @@ export function Editor({
               options: EQUIPE_OPTIONS,
               value: equipeVariant,
               onChange: (id) => {
-                goToPreviewSection("equipe");
                 form.setLayout((currentLayout) => ({
                   ...currentLayout,
                   equipe: id as EquipeVariant,
@@ -546,7 +499,6 @@ export function Editor({
         options: AREAS_OPTIONS,
         value: layout.areas,
         onChange: (id) => {
-          goToPreviewSection("areas");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             areas: id as Layout["areas"],
@@ -558,7 +510,6 @@ export function Editor({
         options: ETAPAS_OPTIONS,
         value: layout.etapas,
         onChange: (id) => {
-          goToPreviewSection("etapas");
           form.setLayout((currentLayout) => ({
             ...currentLayout,
             etapas: id as Layout["etapas"],
@@ -577,31 +528,8 @@ export function Editor({
       office.lawyers.length,
       equipeVariant,
       form,
-      goToPreviewSection,
     ],
   );
-  const previewSelectedSection: PreviewEditableSectionId | undefined =
-    detailSection
-      ? [
-          "hero",
-          "dor",
-          "solucao",
-          "sobre",
-          "equipe",
-          "areas",
-          "etapas",
-          "faq",
-          "ctaFinal",
-          "footer",
-        ].includes(detailSection)
-        ? (detailSection as PreviewEditableSectionId)
-        : undefined
-      : undefined;
-
-  function backToSectionMenu() {
-    setDetailSection(null);
-    syncDetailSectionUrl(null);
-  }
 
   function goToDetailSection(id: DetailSectionId) {
     setDetailSection(id);
@@ -809,8 +737,8 @@ export function Editor({
               Selecione um bloco para editar
             </p>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Use a navegação da esquerda ou clique diretamente numa seção do
-              preview para abrir os campos editáveis aqui.
+              Use a navegação da esquerda para abrir os campos. No preview,
+              troque a variação do bloco pelo seletor flutuante.
             </p>
           </div>
         </div>
@@ -1211,57 +1139,47 @@ export function Editor({
           variant="destructive"
           onConfirm={() => router.push("/")}
         />
-        <header className="shrink-0 border-b border-border bg-gradient-to-b from-background via-background to-muted/20 px-4 py-4 sm:px-5">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                      <Link
-                        href="/"
-                        onClick={(event) => {
-                          if (!dirty) return;
-                          event.preventDefault();
-                          setLeaveOpen(true);
-                        }}
-                      >
-                        Galeria
-                      </Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{office.name || name}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                  {currentDetail ? (
-                    <>
-                      <BreadcrumbSeparator />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage>{currentDetail.label}</BreadcrumbPage>
-                      </BreadcrumbItem>
-                    </>
-                  ) : null}
-                </BreadcrumbList>
-              </Breadcrumb>
+        <div className="shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4">
+            <div className="flex min-w-0 items-center gap-2 lg:col-span-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  if (dirty) {
+                    setLeaveOpen(true);
+                    return;
+                  }
+                  router.push("/");
+                }}
+              >
+                <Close size={16} />
+              </Button>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {office.name || name}
+                </p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-2">
-                {detailSection ? (
-                  <Button variant="ghost" size="sm" onClick={backToSectionMenu}>
-                    <ChevronLeft size={16} />
-                    Limpar foco
-                  </Button>
-                ) : null}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={salvar}
-                  disabled={saveState === "saving"}
-                  className="min-w-[140px]"
-                >
-                  {saveButtonLabel}
-                </Button>
-                {status === "published" ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-6 lg:justify-center">
+              <UiBadge variant={dirty ? "secondary" : "muted"}>
+                {dirty ? "Alterações locais" : "Tudo salvo"}
+              </UiBadge>
+              <UiBadge
+                variant={status === "published" ? "secondary" : "outline"}
+              >
+                {status === "published" ? "Publicado" : "Rascunho"}
+              </UiBadge>
+              <p className="min-w-0 flex-1 text-sm text-muted-foreground lg:flex-none">
+                {lifecycleMessage}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:col-span-3 lg:justify-end">
+              {status === "published" ? (
+                <ButtonGroup>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1275,53 +1193,32 @@ export function Editor({
                     )}
                     Retirar do ar
                   </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={publicar}
-                    disabled={publishState === "saving"}
-                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                  >
-                    {publishState === "saving" ? (
-                      <ProgressActivity size={16} className="animate-spin" />
-                    ) : null}
-                    {dirty ? "Salvar e publicar" : "Publicar"}
+                  <Button size="icon-sm">
+                    <a
+                      href={publicLpUrl(officeSubdomain, slug)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <OpenInNew size={16} />
+                    </a>
                   </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-lg font-semibold text-foreground">
-                  {office.name || name}
-                </h2>
-                <UiBadge variant={dirty ? "secondary" : "muted"}>
-                  {dirty ? "Alterações locais" : "Tudo salvo"}
-                </UiBadge>
-                <UiBadge
-                  variant={status === "published" ? "secondary" : "outline"}
+                </ButtonGroup>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={publicar}
+                  disabled={publishState === "saving"}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  {status === "published" ? "Publicado" : "Rascunho"}
-                </UiBadge>
-                {status === "published" ? (
-                  <a
-                    href={publicLpUrl(officeSubdomain, slug)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
-                  >
-                    <CheckCircle size={13} />
-                    {publicLpDisplayHost(officeSubdomain, slug)}
-                  </a>
-                ) : null}
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {lifecycleMessage}
-              </p>
+                  {publishState === "saving" ? (
+                    <ProgressActivity size={16} className="animate-spin" />
+                  ) : null}
+                  {dirty ? "Salvar e publicar" : "Publicar"}
+                </Button>
+              )}
             </div>
           </div>
-        </header>
+        </div>
 
         <div className="min-h-0 flex-1 lg:grid lg:grid-cols-12">
           <aside
@@ -1330,31 +1227,6 @@ export function Editor({
               showNavigationPanel ? "flex" : "hidden",
             )}
           >
-            <div className="border-b border-border px-4 py-4">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    Navegação da landing page
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    A coluna central funciona como um lego visual: selecione o
-                    bloco no preview ou navegue por recursos e seções aqui.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <UiBadge variant="muted">
-                    {resourceSections.length} recursos
-                  </UiBadge>
-                  <UiBadge variant="muted">
-                    {contentSections.length + conversionSections.length} seções
-                  </UiBadge>
-                  <UiBadge variant="muted">
-                    {activeOptionalSections} opcionais ativas
-                  </UiBadge>
-                </div>
-              </div>
-            </div>
-
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
               {reorderMode ? (
                 <ReorderPanel
@@ -1363,27 +1235,6 @@ export function Editor({
                 />
               ) : (
                 <div className="space-y-5">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-2xl border border-border bg-background px-3 py-3">
-                      <p className="text-xs text-muted-foreground">Recursos</p>
-                      <p className="mt-1 text-lg font-semibold text-foreground">
-                        {resourceSections.length}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-background px-3 py-3">
-                      <p className="text-xs text-muted-foreground">Seções</p>
-                      <p className="mt-1 text-lg font-semibold text-foreground">
-                        {contentSections.length + conversionSections.length}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-background px-3 py-3">
-                      <p className="text-xs text-muted-foreground">Custom</p>
-                      <p className="mt-1 text-lg font-semibold text-foreground">
-                        {form.customSections.length}
-                      </p>
-                    </div>
-                  </div>
-
                   {renderNavigationGroup({
                     title: "Recursos da página",
                     description:
@@ -1459,24 +1310,10 @@ export function Editor({
           >
             <div className="border-b border-border px-5 py-3">
               <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 space-y-1">
                   <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                     <Visibility size={13} />
                     Preview interativo
-                  </p>
-                  <p
-                    className={cn(
-                      "truncate text-sm",
-                      status === "published"
-                        ? "text-emerald-600"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {previewMessage}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Clique numa seção para abrir o CMS e troque variações direto
-                    sobre o preview.
                   </p>
                 </div>
 
@@ -1514,8 +1351,6 @@ export function Editor({
                 <LandingPreview
                   schema={form.schema}
                   editor={{
-                    selectedSection: previewSelectedSection,
-                    onSectionSelect: goToPreviewSection,
                     variantControls: previewVariantControls,
                   }}
                 />
@@ -1532,7 +1367,6 @@ export function Editor({
             <div className="border-b border-border px-4 py-4">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <UiBadge variant="outline">CMS contextual</UiBadge>
                   {currentDetail?.variantLabel ? (
                     <UiBadge variant="secondary">
                       {currentDetail.variantLabel}
@@ -1555,7 +1389,7 @@ export function Editor({
                         currentDetail.id === "equipe" ||
                         currentDetail.id === "areas" ||
                         currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. A variação fica no próprio preview.`
+                        ? `${currentDetail.description}. A variação fica no seletor flutuante do preview.`
                         : currentDetail.description
                       : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
                   </p>
