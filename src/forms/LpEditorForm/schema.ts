@@ -128,6 +128,22 @@ const officeSchema = z.object({
       footer: z.string(),
     })
     .optional(),
+  tracking: z
+    .object({
+      ga4MeasurementId: z.string(),
+      gtmContainerId: z.string(),
+      metaPixelId: z.string(),
+      googleAdsId: z.string(),
+      googleAdsLabel: z.string(),
+    })
+    .optional(),
+  captcha: z
+    .object({
+      provider: z.enum(["none", "turnstile"]),
+      siteKey: z.string(),
+      widgetTheme: z.enum(["auto", "light", "dark"]),
+    })
+    .optional(),
   domain: z.string().optional(),
   privacyPolicy: z.string().optional(),
   fonts: z.object({ heading: z.string(), body: z.string() }).optional(),
@@ -241,6 +257,18 @@ export const EMPTY_OFFICE: LpEditorFormValues["office"] = {
   extraAddresses: [],
   extraContacts: [],
   tags: { head: "", body: "", footer: "" },
+  tracking: {
+    ga4MeasurementId: "",
+    gtmContainerId: "",
+    metaPixelId: "",
+    googleAdsId: "",
+    googleAdsLabel: "",
+  },
+  captcha: {
+    provider: "none",
+    siteKey: "",
+    widgetTheme: "auto",
+  },
   domain: "",
   fonts: { heading: "", body: "" },
   cardRadius: "square",
@@ -277,6 +305,8 @@ export function lpEditorDefaultValues(
           extraAddresses: seed.office.extraAddresses ?? [],
           extraContacts: seed.office.extraContacts ?? [],
           tags: seed.office.tags ?? { head: "", body: "", footer: "" },
+          tracking: seed.office.tracking ?? EMPTY_OFFICE.tracking,
+          captcha: seed.office.captcha ?? EMPTY_OFFICE.captcha,
           domain: seed.office.domain ?? "",
           fonts: seed.office.fonts ?? { heading: "", body: "" },
           cardRadius: seed.office.cardRadius ?? "square",

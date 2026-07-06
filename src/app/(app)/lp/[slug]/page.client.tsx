@@ -1,17 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
-import { getConfigAction } from "@/app/actions/config";
 import { Editor } from "@/components/Builder/editor";
 import { Container } from "@/components/ui-patterns/container";
 import { type LpSeed, useLpEditorForm } from "@/forms/LpEditorForm";
+import {
+  DEFAULT_CONFIG,
+  type GlobalConfig,
+} from "@/lib/landing-pages/global-config";
 import type { StoredLp } from "@/lib/landing-pages/schema";
 
 type LpEditorPageClientProps = {
   initial: StoredLp;
+  initialAccountConfig: GlobalConfig;
 };
 
-export function LpEditorPageClient({ initial }: LpEditorPageClientProps) {
+export function LpEditorPageClient({
+  initial,
+  initialAccountConfig,
+}: LpEditorPageClientProps) {
   const s = initial.schema;
   const seed: LpSeed = {
     office: s.office,
@@ -31,18 +38,12 @@ export function LpEditorPageClient({ initial }: LpEditorPageClientProps) {
     customSections: s.customSections ?? [],
   };
   const lpForm = useLpEditorForm(seed);
+  const { applyAccountDefaults } = lpForm;
+  const accountConfig = initialAccountConfig ?? DEFAULT_CONFIG;
 
   useEffect(() => {
-    let alive = true;
-    getConfigAction()
-      .then((c) => {
-        if (alive && c?.fonts) lpForm.set("fonts", c.fonts);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [lpForm.set]);
+    applyAccountDefaults(accountConfig);
+  }, [accountConfig, applyAccountDefaults]);
 
   return (
     <Container
@@ -57,6 +58,7 @@ export function LpEditorPageClient({ initial }: LpEditorPageClientProps) {
           officeSubdomain={initial.officeSubdomain}
           name={initial.name}
           status={initial.status ?? "draft"}
+          initialAccountConfig={accountConfig}
         />
       </div>
     </Container>

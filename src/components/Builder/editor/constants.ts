@@ -71,6 +71,7 @@ export type DetailSectionId =
   | "imagens"
   | "modelo"
   | "aparencia"
+  | "integracoes"
   | "seo"
   | "hero"
   | "dor"
@@ -88,6 +89,7 @@ export const DETAIL_SECTION_IDS: DetailSectionId[] = [
   "imagens",
   "modelo",
   "aparencia",
+  "integracoes",
   "seo",
   "hero",
   "dor",

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AccessDenied } from "@/components/ui/access-denied";
+import { getConfig } from "@/lib/landing-pages/config";
 import { getLp, getLpMeta } from "@/lib/landing-pages/lp-store";
 import { canEditLp } from "@/lib/landing-pages/permissions";
 import { hasLpAccess, requireAuth } from "@/lib/session";
@@ -26,5 +27,12 @@ export default async function Page({
   const lp = await getLp(session, slug);
   if (!lp) notFound();
 
-  return <LpEditorPageClient initial={lp} />;
+  const initialAccountConfig = await getConfig();
+
+  return (
+    <LpEditorPageClient
+      initial={lp}
+      initialAccountConfig={initialAccountConfig}
+    />
+  );
 }

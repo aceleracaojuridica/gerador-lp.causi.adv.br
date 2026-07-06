@@ -2,7 +2,7 @@
 
 import { Add, Close } from "@material-symbols-svg/react";
 import { AutoTextarea } from "@/components/auto-textarea";
-import { BuilderField } from "@/components/builder/shared/fields";
+import { BuilderField } from "@/components/Builder/shared/fields";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import {

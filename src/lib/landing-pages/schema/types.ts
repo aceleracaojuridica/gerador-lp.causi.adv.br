@@ -33,6 +33,18 @@ export type SocialNetwork =
 export type Social = { network: SocialNetwork; url: string };
 
 export type ConversionTags = { head: string; body: string; footer: string };
+export type TrackingProviderConfig = {
+  ga4MeasurementId: string;
+  gtmContainerId: string;
+  metaPixelId: string;
+  googleAdsId: string;
+  googleAdsLabel: string;
+};
+export type CaptchaConfig = {
+  provider: "none" | "turnstile";
+  siteKey: string;
+  widgetTheme: "auto" | "light" | "dark";
+};
 export type CustomCard = { title: string; text: string };
 
 export type PopupQuestion = {
@@ -75,6 +87,8 @@ export type Office = {
   extraAddresses?: ExtraAddress[];
   extraContacts?: ExtraContact[];
   tags?: ConversionTags;
+  tracking?: TrackingProviderConfig;
+  captcha?: CaptchaConfig;
   domain?: string;
   privacyPolicy?: string;
   fonts?: { heading: string; body: string };

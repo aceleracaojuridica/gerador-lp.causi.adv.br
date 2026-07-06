@@ -1,7 +1,7 @@
 "use client";
 
 import { AutoTextarea } from "@/components/auto-textarea";
-import { BuilderField } from "@/components/builder/shared/fields";
+import { BuilderField } from "@/components/Builder/shared/fields";
 import { Badge } from "@/components/ui/badge";
 import { FormControl, FormField, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";

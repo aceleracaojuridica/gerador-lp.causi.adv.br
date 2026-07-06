@@ -8,16 +8,6 @@ CREATE TABLE public.profiles (
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
-CREATE TABLE public.user_settings (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  causi_user_id text NOT NULL UNIQUE,
-  heading_font text NOT NULL DEFAULT ''::text,
-  body_font text NOT NULL DEFAULT ''::text,
-  tracking_tags jsonb NOT NULL DEFAULT '{"body": "", "head": "", "footer": ""}'::jsonb,
-  custom_domain text NOT NULL DEFAULT ''::text,
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT user_settings_pkey PRIMARY KEY (id)
-);
 CREATE TABLE public.leads (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
@@ -44,6 +34,19 @@ CREATE TABLE public.landing_pages (
   office_subdomain text NOT NULL,
   CONSTRAINT landing_pages_pkey PRIMARY KEY (id),
   CONSTRAINT landing_pages_profile_fk FOREIGN KEY (profile_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.lp_account_settings (
+  account_id bigint NOT NULL,
+  updated_by_user_id uuid NOT NULL,
+  heading_font text NOT NULL DEFAULT ''::text,
+  body_font text NOT NULL DEFAULT ''::text,
+  tracking_providers jsonb NOT NULL DEFAULT '{"ga4MeasurementId": "", "googleAdsId": "", "googleAdsLabel": "", "gtmContainerId": "", "metaPixelId": ""}'::jsonb,
+  tracking_scripts jsonb NOT NULL DEFAULT '{"body": "", "head": "", "footer": ""}'::jsonb,
+  captcha_config jsonb NOT NULL DEFAULT '{"provider": "none", "siteKey": "", "widgetTheme": "auto"}'::jsonb,
+  custom_domain text NOT NULL DEFAULT ''::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lp_account_settings_pkey PRIMARY KEY (account_id)
 );
 CREATE TABLE public.lp_account_images (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

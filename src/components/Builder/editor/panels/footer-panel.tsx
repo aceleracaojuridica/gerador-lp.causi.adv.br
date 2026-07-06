@@ -2,8 +2,8 @@
 
 import { Add, Close } from "@material-symbols-svg/react";
 import { AutoTextarea } from "@/components/auto-textarea";
-import { BuilderField } from "@/components/builder/shared/fields";
-import { SocialsInput } from "@/components/builder/shared/socials-input";
+import { BuilderField } from "@/components/Builder/shared/fields";
+import { SocialsInput } from "@/components/Builder/shared/socials-input";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormField, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -216,7 +216,7 @@ export function FooterDetailPanel({ form, office }: FooterDetailPanelProps) {
       <FieldGroup title="Redes sociais">
         <SocialsInput
           socials={office.socials}
-          onChange={form.setSocialField}
+          onChange={(index, url) => form.setSocialField(index, "url", url)}
           onAdd={form.addSocial}
           onRemove={form.removeSocial}
         />

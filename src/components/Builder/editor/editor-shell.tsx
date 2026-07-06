@@ -14,6 +14,8 @@ import {
   Groups,
   Help,
   Image,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
   Lightbulb,
   Movie,
   OpenInNew,
@@ -30,7 +32,15 @@ import {
 } from "@material-symbols-svg/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import {
   publishLpAction,
   saveLpAction,
@@ -52,6 +62,10 @@ import { applyLpEditorSaveErrorsToForm } from "@/forms/LpEditorForm/schema";
 import { useIsLgUp } from "@/hooks/use-media-query";
 import { isAccessDeniedError } from "@/lib/errors";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
+import {
+  DEFAULT_CONFIG,
+  type GlobalConfig,
+} from "@/lib/landing-pages/global-config";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
 import {
   DEFAULT_LAYOUT,
@@ -114,6 +128,7 @@ import {
   MetricsInput,
 } from "./panels/hero-inputs";
 import { IdentidadePanel } from "./panels/identidade-panel";
+import { IntegracoesPanel } from "./panels/integracoes-panel";
 import {
   ImagensPanel,
   ModeloPicker,
@@ -152,6 +167,8 @@ function getSectionDescription(sectionId: DetailSectionId): string {
       return "Combinação visual base para a landing page";
     case "aparencia":
       return "Tipografia, botões e detalhes visuais";
+    case "integracoes":
+      return "Tracking, scripts, domínio e captcha";
     case "seo":
       return "Título, descrição e indexação";
     case "hero":
@@ -174,6 +191,8 @@ function getSectionDescription(sectionId: DetailSectionId): string {
       return "Convite final para conversão";
     case "footer":
       return "Contato, endereço e privacidade";
+    default:
+      return "";
   }
 }
 
@@ -183,12 +202,14 @@ export function Editor({
   officeSubdomain,
   name,
   status: initialStatus,
+  initialAccountConfig,
 }: {
   form: LpEditorForm;
   slug: string;
   officeSubdomain: string;
   name: string;
   status?: "draft" | "published";
+  initialAccountConfig: GlobalConfig;
 }) {
   const router = useRouter();
   const { office, set, layout } = form;
@@ -196,7 +217,7 @@ export function Editor({
   const previewRef = useRef<HTMLIFrameElement>(null);
   const isLgUp = useIsLgUp();
   const [mobileTab, setMobileTab] = useState<"navigation" | "preview" | "cms">(
-    "preview",
+    "navigation",
   );
   const showNavigationPanel = isLgUp || mobileTab === "navigation";
   const showPreviewPanel = isLgUp || mobileTab === "preview";
@@ -221,6 +242,10 @@ export function Editor({
   const [publishState, setPublishState] = useState<"idle" | "saving" | "error">(
     "idle",
   );
+  const accountConfig = initialAccountConfig ?? DEFAULT_CONFIG;
+  const [restoreDefaultsOpen, setRestoreDefaultsOpen] = useState(false);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const isPublishing = publishState === "saving";
 
   const needsVideo = layout.hero === "video";
@@ -284,6 +309,14 @@ export function Editor({
         label: "Aparência",
         previewTarget: "sec-hero",
         description: getSectionDescription("aparencia"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "integracoes",
+        label: "Integrações",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("integracoes"),
         stage: "foundation",
         enabled: true,
       },
@@ -421,6 +454,10 @@ export function Editor({
       : dirty
         ? "Há alterações locais aguardando salvamento antes da publicação."
         : "Rascunho salvo. Continue editando ou publique quando estiver pronto.";
+  const desktopGridStyle = {
+    "--editor-left": leftPanelCollapsed ? "4.5rem" : "minmax(18rem, 24rem)",
+    "--editor-right": rightPanelCollapsed ? "4.5rem" : "minmax(20rem, 26rem)",
+  } as CSSProperties;
   const syncDetailSectionUrl = useCallback((id: DetailSectionId | null) => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -630,6 +667,12 @@ export function Editor({
     }
   }
 
+  function restoreAccountDefaults() {
+    form.applyAccountDefaults(accountConfig, true);
+    setRestoreDefaultsOpen(false);
+    toast.success("Padrão da conta aplicado nesta página.");
+  }
+
   async function publicar() {
     if (dirty) {
       const saved = await salvar();
@@ -694,6 +737,8 @@ export function Editor({
         return <GridView size={18} />;
       case "aparencia":
         return <Tune size={18} />;
+      case "integracoes":
+        return <Campaign size={18} />;
       case "seo":
         return <Search size={18} />;
       case "hero":
@@ -793,7 +838,7 @@ export function Editor({
 
   return (
     <Form {...form.form}>
-      <div className="app-ui flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
+      <div className="app-ui flex h-[100dvh] min-h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
         <ConfirmDialog
           open={leaveOpen}
           onOpenChange={setLeaveOpen}
@@ -802,6 +847,15 @@ export function Editor({
           confirmLabel="Sair sem salvar"
           variant="destructive"
           onConfirm={() => router.push("/")}
+        />
+        <ConfirmDialog
+          open={restoreDefaultsOpen}
+          onOpenChange={setRestoreDefaultsOpen}
+          title="Restaurar padrão da conta"
+          description="Isso substitui o tracking, os scripts, o captcha e o domínio desta página pelos valores padrão da conta. Continuar?"
+          confirmLabel="Restaurar"
+          variant="destructive"
+          onConfirm={restoreAccountDefaults}
         />
         <div className="shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5">
           <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4">
@@ -901,15 +955,85 @@ export function Editor({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 lg:grid lg:grid-cols-12">
+        <div
+          className="min-h-0 flex-1 lg:grid lg:[grid-template-columns:var(--editor-left)_minmax(0,1fr)_var(--editor-right)]"
+          style={desktopGridStyle}
+        >
           <aside
             className={cn(
-              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-3 lg:border-b-0 lg:border-r",
+              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:border-b-0 lg:border-r",
               showNavigationPanel ? "flex" : "hidden",
             )}
           >
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              {reorderMode ? (
+            <div className="flex items-center justify-between border-b border-border px-3 py-3">
+              {!(isLgUp && leftPanelCollapsed) ? (
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    Navegação
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Estrutura, blocos e atalhos do editor
+                  </p>
+                </div>
+              ) : null}
+              {isLgUp ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn("shrink-0", leftPanelCollapsed ? "ml-auto" : "")}
+                  onClick={() => setLeftPanelCollapsed((current) => !current)}
+                >
+                  {leftPanelCollapsed ? (
+                    <KeyboardArrowRight size={18} />
+                  ) : (
+                    <KeyboardArrowLeft size={18} />
+                  )}
+                  <span className="sr-only">
+                    {leftPanelCollapsed
+                      ? "Expandir navegação"
+                      : "Minimizar navegação"}
+                  </span>
+                </Button>
+              ) : null}
+            </div>
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto",
+                isLgUp && leftPanelCollapsed ? "px-2 py-3" : "px-4 py-4",
+              )}
+            >
+              {isLgUp && leftPanelCollapsed ? (
+                <div className="space-y-2">
+                  {editorSections.map((section) => (
+                    <Button
+                      key={section.id}
+                      type="button"
+                      variant={detailSection === section.id ? "secondary" : "ghost"}
+                      className="h-11 w-full justify-center px-0"
+                      onClick={() => {
+                        setLeftPanelCollapsed(false);
+                        goToDetailSection(section.id);
+                      }}
+                      title={section.label}
+                    >
+                      {renderSectionIcon(section.id)}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full justify-center px-0"
+                    onClick={() => {
+                      setLeftPanelCollapsed(false);
+                      setReorderMode(true);
+                    }}
+                    title="Reordenar"
+                  >
+                    <SwapVert size={16} />
+                  </Button>
+                </div>
+              ) : reorderMode ? (
                 <ReorderPanel
                   form={form}
                   onClose={() => setReorderMode(false)}
@@ -919,7 +1043,7 @@ export function Editor({
                   {renderNavigationGroup({
                     title: "Recursos da página",
                     description:
-                      "Marca, imagens, template, aparência geral e metadados.",
+                      "Marca, imagens, template, aparência geral, integrações e metadados.",
                     sections: resourceSections,
                   })}
 
@@ -985,7 +1109,7 @@ export function Editor({
 
           <main
             className={cn(
-              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-6 lg:border-b-0 lg:border-r",
+              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:border-b-0 lg:border-r",
               showPreviewPanel ? "flex" : "hidden",
             )}
           >
@@ -1039,45 +1163,90 @@ export function Editor({
 
           <aside
             className={cn(
-              "min-h-0 flex-col overflow-hidden bg-card lg:col-span-3",
+              "min-h-0 flex-col overflow-hidden bg-card",
               showCmsPanel ? "flex" : "hidden",
             )}
           >
-            <div className="border-b border-border px-4 py-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {currentDetail?.variantLabel ? (
-                    <UiBadge variant="secondary">
-                      {currentDetail.variantLabel}
-                    </UiBadge>
-                  ) : null}
-                  {!currentDetail?.enabled && currentDetail ? (
-                    <UiBadge variant="muted">Oculta na página</UiBadge>
-                  ) : null}
+            <div className="flex items-center justify-between border-b border-border px-4 py-4">
+              {!(isLgUp && rightPanelCollapsed) ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {currentDetail?.variantLabel ? (
+                      <UiBadge variant="secondary">
+                        {currentDetail.variantLabel}
+                      </UiBadge>
+                    ) : null}
+                    {!currentDetail?.enabled && currentDetail ? (
+                      <UiBadge variant="muted">Oculta na página</UiBadge>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {currentDetail?.label ?? "Campos editáveis"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {currentDetail
+                        ? currentDetail.id === "hero" ||
+                          currentDetail.id === "dor" ||
+                          currentDetail.id === "solucao" ||
+                          currentDetail.id === "sobre" ||
+                          currentDetail.id === "equipe" ||
+                          currentDetail.id === "areas" ||
+                          currentDetail.id === "etapas"
+                          ? `${currentDetail.description}. Use as setas no canto do preview (ou o seletor abaixo) para mudar o layout.`
+                          : currentDetail.description
+                        : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {currentDetail?.label ?? "Campos editáveis"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {currentDetail
-                      ? currentDetail.id === "hero" ||
-                        currentDetail.id === "dor" ||
-                        currentDetail.id === "solucao" ||
-                        currentDetail.id === "sobre" ||
-                        currentDetail.id === "equipe" ||
-                        currentDetail.id === "areas" ||
-                        currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. Use as setas no canto do preview (ou o seletor abaixo) para mudar o layout.`
-                        : currentDetail.description
-                      : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
-                  </p>
+              ) : (
+                <div className="w-full text-center text-xs font-medium text-muted-foreground">
+                  CMS
                 </div>
-              </div>
+              )}
+              {isLgUp ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn("shrink-0", rightPanelCollapsed ? "ml-auto" : "")}
+                  onClick={() => setRightPanelCollapsed((current) => !current)}
+                >
+                  {rightPanelCollapsed ? (
+                    <KeyboardArrowLeft size={18} />
+                  ) : (
+                    <KeyboardArrowRight size={18} />
+                  )}
+                  <span className="sr-only">
+                    {rightPanelCollapsed ? "Expandir CMS" : "Minimizar CMS"}
+                  </span>
+                </Button>
+              ) : null}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-              {!detailSection ? (
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto",
+                isLgUp && rightPanelCollapsed ? "px-2 py-3" : "px-4 py-5",
+              )}
+            >
+              {isLgUp && rightPanelCollapsed ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="h-11 w-full justify-center px-0"
+                    onClick={() => setRightPanelCollapsed(false)}
+                    title={currentDetail?.label ?? "Abrir editor"}
+                  >
+                    {currentDetail ? (
+                      renderSectionIcon(currentDetail.id)
+                    ) : (
+                      <Tune size={18} />
+                    )}
+                  </Button>
+                </div>
+              ) : !detailSection ? (
                 <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
                   <div className="space-y-2">
                     <p className="text-sm font-semibold text-foreground">
@@ -1100,6 +1269,13 @@ export function Editor({
                     <ModeloPicker form={form} currentId={currentTemplateId} />
                   )}
                   {detailSection === "seo" && <SeoPanel form={form} />}
+                  {detailSection === "integracoes" && (
+                    <IntegracoesPanel
+                      form={form}
+                      accountConfig={accountConfig}
+                      onRestoreDefaults={() => setRestoreDefaultsOpen(true)}
+                    />
+                  )}
                   {detailSection === "hero" && (
                     <>
                       {renderSectionSettings(previewVariantControls.hero, {
@@ -1278,43 +1454,6 @@ export function Editor({
                         </BuilderField>
                       </div>
 
-                      <FieldGroup title="Tags de rastreamento">
-                        <p className="text-xs leading-relaxed text-slate-500">
-                          Cole aqui os scripts do Google Analytics, Meta Pixel,
-                          Google Tag Manager ou qualquer outro código de
-                          tracking.
-                        </p>
-                        <BuilderField
-                          label="Código no <head>"
-                          hint="Carrega antes do conteúdo — ideal para GTM e gtag."
-                        >
-                          <AutoTextarea
-                            aria-label="Tags no head"
-                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                            value={office.tags?.head ?? ""}
-                            onChange={(e) =>
-                              form.setTag("head", e.target.value)
-                            }
-                            placeholder={
-                              "<script>\n  // seu código aqui\n</script>"
-                            }
-                          />
-                        </BuilderField>
-                        <BuilderField
-                          label="Código no <body>"
-                          hint="Logo após a abertura do body — para noscript do GTM."
-                        >
-                          <AutoTextarea
-                            aria-label="Tags no body"
-                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                            value={office.tags?.body ?? ""}
-                            onChange={(e) =>
-                              form.setTag("body", e.target.value)
-                            }
-                            placeholder={"<noscript>...</noscript>"}
-                          />
-                        </BuilderField>
-                      </FieldGroup>
                     </>
                   )}
                   {detailSection === "dor" && (

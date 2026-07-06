@@ -380,7 +380,6 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
       copy: generatedCopy,
       images: generatedImages,
       layout: templateLayout,
-      logoSrc,
     };
 
     try {

@@ -4,9 +4,9 @@ import {
   Add,
   ChevronLeft,
   EventAvailable,
+  FileCopy,
   GridView,
   Help,
-  FileCopy,
   IdCard,
   Image,
   Inbox,
@@ -20,10 +20,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import React from "react";
 import CausiLogoIcon from "@/components/icons/causi-logo";
+import { useLpAccess } from "@/components/lp-access-provider";
 import { SupportModal } from "@/components/support-modal";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/use-access-control";
-import { useLpAccess } from "@/components/lp-access-provider";
 import { useSession } from "@/hooks/use-session";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";

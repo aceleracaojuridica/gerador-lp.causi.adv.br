@@ -1,18 +1,23 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { type UseFormReturn, useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
-  DEFAULT_LOGO_BG,
-  detectLogoBackground,
-  extractPalette,
-} from "@/lib/landing-pages/colors";
+  type LpEditorFormValues,
+  lpEditorDefaultValues,
+  validateLpEditorSave,
+} from "@/forms/LpEditorForm/schema";
+import { detectLogoBackground, extractPalette } from "@/lib/landing-pages/colors";
 import {
   buildSchema,
   type FocoCopy,
   focoGenerico,
   matchFoco,
 } from "@/lib/landing-pages/focos";
+import {
+  applyGlobalConfigToOffice,
+  type GlobalConfig,
+} from "@/lib/landing-pages/global-config";
 import { maskPhone } from "@/lib/landing-pages/phone";
 import type {
   CustomSection,
@@ -30,11 +35,6 @@ import type {
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
 import type { LpTemplate } from "@/lib/landing-pages/templates";
-import {
-  type LpEditorFormValues,
-  lpEditorDefaultValues,
-  validateLpEditorSave,
-} from "@/forms/LpEditorForm/schema";
 
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
@@ -386,6 +386,61 @@ export function useLpEditorForm(seed?: LpSeed) {
     form.setValue("office.tags", { ...tags, [part]: v }, { shouldDirty: true });
   }
 
+  function setTrackingField(
+    key:
+      | "ga4MeasurementId"
+      | "gtmContainerId"
+      | "metaPixelId"
+      | "googleAdsId"
+      | "googleAdsLabel",
+    value: string,
+  ) {
+    const tracking = form.getValues("office.tracking") ?? {
+      ga4MeasurementId: "",
+      gtmContainerId: "",
+      metaPixelId: "",
+      googleAdsId: "",
+      googleAdsLabel: "",
+    };
+    form.setValue(
+      "office.tracking",
+      { ...tracking, [key]: value },
+      { shouldDirty: true },
+    );
+  }
+
+  function setCaptchaField(
+    key: "provider" | "siteKey" | "widgetTheme",
+    value: string,
+  ) {
+    const captcha = form.getValues("office.captcha") ?? {
+      provider: "none" as const,
+      siteKey: "",
+      widgetTheme: "auto" as const,
+    };
+    form.setValue(
+      "office.captcha",
+      { ...captcha, [key]: value },
+      { shouldDirty: true },
+    );
+  }
+
+  const applyAccountDefaults = useCallback(
+    (config: GlobalConfig, overwrite = false) => {
+      const values = form.getValues();
+      form.reset(
+        {
+          ...values,
+          office: applyGlobalConfigToOffice(values.office, config, {
+            overwrite,
+          }),
+        },
+        { keepDirty: false, keepTouched: true, keepErrors: true },
+      );
+    },
+    [form],
+  );
+
   function addCustomSection(kind: CustomSection["kind"]) {
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
@@ -731,10 +786,13 @@ export function useLpEditorForm(seed?: LpSeed) {
     removeContact,
     setSeoField,
     setTag,
+    setTrackingField,
+    setCaptchaField,
     setFont,
     setButtonField,
     setPopupQuestions,
     setPopupEmail,
+    applyAccountDefaults,
     customSections,
     addCustomSection,
     setCustomField,
