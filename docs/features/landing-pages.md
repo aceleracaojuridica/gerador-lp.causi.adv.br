@@ -6,7 +6,7 @@ Documentação da feature de criação, edição e publicação de landing pages
 
 O advogado preenche um formulário, a IA gera a copy e o advogado escolhe **variações por seção** no passo Layout. O sistema salva um **snapshot JSON** (`LpSchema`). O editor e o site publicado usam o **mesmo renderer React** (`LandingPreview`). Não há HTML no banco.
 
-**Centro da feature:** a LP é composta por **seções com variações**. Cada seção (Hero, Dor, Solução, etc.) tem variantes de layout independentes. O template (`lib/templates.ts`) é apenas um preset que copia valores iniciais para `schema.layout` — ver [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
+**Centro da feature:** a LP é composta por **seções com variações**. Cada seção (Hero, Dor, Solução, etc.) tem variantes de layout independentes. O template (`lib/landing-pages/templates.ts`) é apenas um preset que copia valores iniciais para `schema.layout` — ver [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
 
 Cada escritório pode criar **N landing pages** sem limite.
 
@@ -252,7 +252,9 @@ No passo final (Imagens), ao clicar em **Criar e editar**, o wizard chama `POST 
 
 ## Editor (`/lp/[slug]`)
 
-**Arquivos:** `app/lp/[slug]/page.tsx`, `LpStudio.tsx`, `Editor.tsx`
+**Arquivos:** `app/(app)/lp/[slug]/page.tsx`, `page.client.tsx`, `forms/LpEditorForm/use-lp-editor-form.ts`, `components/builder/editor/editor-shell.tsx`
+
+Ver também: [lp-editor-architecture.md](lp-editor-architecture.md)
 
 ### Controles por seção
 
@@ -277,7 +279,7 @@ Componente central do editor. Exibe miniaturas esquemáticas (wireframes) de cad
 
 | Recurso | Onde |
 |---------|------|
-| Simples / Avançado | `Editor.tsx` |
+| Simples / Avançado | `editor-shell.tsx` |
 | Reordenar seções | drag & drop sobre `schema.layout.order` |
 | Ligar/desligar seções | toggle de `schema.layout.hidden` |
 | Adicionar seção customizada | cria item em `schema.customSections` |
@@ -293,7 +295,7 @@ Componente central do editor. Exibe miniaturas esquemáticas (wireframes) de cad
 
 ---
 
-## Schema JSON (`lib/schema.ts`)
+## Schema JSON (`lib/landing-pages/schema/`)
 
 ### `Layout` — estado atual das variações
 
@@ -349,7 +351,7 @@ type LpSchema = {
 
 ## Formulário multi-step (`/nova`)
 
-**Arquivos:** `app/(app)/nova/page.tsx`, `forms/LandingPageCreateForm/landing-page-create-form.tsx`, `components/Builder/template-card.tsx`
+**Arquivos:** `app/(app)/nova/page.tsx`, `forms/LandingPageCreateForm/`, `components/builder/create/template-card.tsx`
 
 ### Passos
 
@@ -438,20 +440,20 @@ Mesmo padrão em `Dor`, `Solucao`, `Sobre`, `Areas`, `Etapas`, `Equipe`.
 
 | Gap | Nota |
 |-----|------|
-| "Trocar template" no editor | `TemplatePicker` compacto existe; ação de re-aplicar layout ainda não implementada |
-| `Editor.tsx` grande | Refatorar após MVP |
+| "Trocar template" no editor | Re-aplicar layout de preset ainda parcial |
 | `POST /api/lead` | Popup demo funciona; captura real não implementada |
 
 ---
 
 ## Referências
 
+- [lp-editor-architecture.md](lp-editor-architecture.md) — camadas do editor e mapa de pastas
 - [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md) — template vs `schema.layout` (referência canônica)
 - [prd.md](../prd.md) — requisitos RF-04, RF-06
 - [database.md](../database.md) — schema `lps`
 - [api.md](../api.md) — `POST /api/gerar-lp`
 - [server-actions.md](../server-actions.md) — CRUD `lps` via Server Actions
 - [features/leads.md](leads.md) — popup e captura
-- `lib/schema.ts` — tipos `Layout`, `LpSchema`, variantes
-- `lib/templates.ts` — templates e `getTemplate()`
-- `components/Builder/variant-picker.tsx` — `VariantPicker` e miniaturas
+- `lib/landing-pages/schema/` — tipos `Layout`, `LpSchema`, variantes
+- `lib/landing-pages/templates.ts` — templates e `getTemplate()`
+- `components/builder/shared/variant-picker.tsx` — `VariantPicker` e miniaturas

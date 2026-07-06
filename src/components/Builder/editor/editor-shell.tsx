@@ -1,0 +1,1462 @@
+"use client";
+
+import {
+  Badge,
+  Campaign,
+  Close,
+  CloudOff,
+  ContactPage,
+  DesktopWindows,
+  Devices,
+  FormatListNumbered,
+  Gavel,
+  GridView,
+  Groups,
+  Help,
+  Image,
+  Lightbulb,
+  Movie,
+  OpenInNew,
+  ProgressActivity,
+  Search,
+  SentimentDissatisfied,
+  Storefront,
+  SwapVert,
+  Tablet,
+  Tune,
+  Visibility,
+  Web,
+} from "@material-symbols-svg/react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  publishLpAction,
+  saveLpAction,
+  unpublishLpAction,
+} from "@/app/actions/lps";
+import { AutoTextarea } from "@/components/auto-textarea";
+import {
+  DevicePreview,
+  type Viewport,
+} from "@/components/Preview/device-preview";
+import {
+  LandingPreview,
+  type PreviewEditableSectionId,
+  type PreviewVariantControl,
+} from "@/components/Preview/landing-preview";
+import { Badge as UiBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import type { LpEditorForm } from "@/forms/LpEditorForm";
+import { applyLpEditorSaveErrorsToForm } from "@/forms/LpEditorForm/schema";
+import { useIsLgUp } from "@/hooks/use-media-query";
+import { isAccessDeniedError } from "@/lib/errors";
+import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
+import { publicLpUrl } from "@/lib/landing-pages/lp-url";
+import {
+  DEFAULT_LAYOUT,
+  type EquipeVariant,
+  type Layout,
+  type StoredLp,
+} from "@/lib/landing-pages/schema";
+import { TEMPLATES } from "@/lib/landing-pages/templates";
+import { extractYouTubeId } from "@/lib/landing-pages/youtube";
+import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { BuilderField, inputCls } from "../shared/fields";
+import {
+  AREAS_OPTIONS,
+  AREAS_VARIANT_LABELS,
+  type DetailSectionId,
+  DOR_OPTIONS,
+  DOR_VARIANT_LABELS,
+  EQUIPE_OPTIONS,
+  EQUIPE_VARIANT_LABELS,
+  ETAPAS_OPTIONS,
+  ETAPAS_VARIANT_LABELS,
+  HERO_OPTIONS,
+  HERO_VARIANT_LABELS,
+  isDetailSectionId,
+  SOBRE_OPTIONS,
+  SOBRE_VARIANT_LABELS,
+  SOLUCAO_OPTIONS,
+  SOLUCAO_VARIANT_LABELS,
+} from "./constants";
+import {
+  Accordion,
+  CORNER_OPTIONS,
+  EditorSectionMenuRow,
+  Segmented,
+  ToneToggle,
+} from "./controls/editor-controls";
+import type { EditorSectionMeta } from "./editor-section-nav";
+import {
+  AreasCards,
+  AreasTexts,
+  CtaFinalTexts,
+  DorCards,
+  DorTexts,
+  EtapasCards,
+  EtapasTexts,
+  FaqPerguntas,
+  FaqTexts,
+  HeroTexts,
+  SolucaoCards,
+  SolucaoTexts,
+} from "./panels/copy-panels";
+import { FooterDetailPanel } from "./panels/footer-panel";
+import {
+  DiferenciaisInput,
+  HeroFeaturesInput,
+  MetricsInput,
+} from "./panels/hero-inputs";
+import { IdentidadePanel } from "./panels/identidade-panel";
+import {
+  ImagensPanel,
+  ModeloPicker,
+  ReorderPanel,
+} from "./panels/layout-panel";
+import { SeoPanel } from "./panels/seo-panel";
+import {
+  AddSectionButton,
+  CustomSectionEditor,
+} from "./widgets/custom-section-editor";
+import { LawyerPhotosInput } from "./widgets/lawyer-row";
+import { SectionImageInput } from "./widgets/section-image-input";
+
+const PopupBuilder = dynamic(
+  () => import("./widgets/popup-builder").then((m) => m.PopupBuilder),
+  { ssr: false },
+);
+
+type EditorStageId = "foundation" | "content" | "conversion";
+
+type WorkspaceSectionMeta = Omit<EditorSectionMeta, "id"> & {
+  id: DetailSectionId;
+  stage: EditorStageId;
+  description: string;
+  enabled: boolean;
+};
+
+function getSectionDescription(sectionId: DetailSectionId): string {
+  switch (sectionId) {
+    case "identidade":
+      return "Logo, tema e paleta da página";
+    case "imagens":
+      return "Fotos das seções e retratos da equipe";
+    case "modelo":
+      return "Combinação visual base para a landing page";
+    case "aparencia":
+      return "Tipografia, botões e detalhes visuais";
+    case "seo":
+      return "Título, descrição e indexação";
+    case "hero":
+      return "Primeira impressão da página";
+    case "dor":
+      return "Problemas que o cliente reconhece";
+    case "solucao":
+      return "Como o escritório resolve";
+    case "sobre":
+      return "Apresentação institucional";
+    case "equipe":
+      return "Fotos e presença dos advogados";
+    case "areas":
+      return "Áreas de atuação e expertise";
+    case "etapas":
+      return "Passo a passo do atendimento";
+    case "faq":
+      return "Dúvidas antes do contato";
+    case "ctaFinal":
+      return "Convite final para conversão";
+    case "footer":
+      return "Contato, endereço e privacidade";
+  }
+}
+
+export function Editor({
+  form,
+  slug,
+  officeSubdomain,
+  name,
+  status: initialStatus,
+  startTour,
+}: {
+  form: LpEditorForm;
+  slug: string;
+  officeSubdomain: string;
+  name: string;
+  status?: "draft" | "published";
+  startTour?: boolean;
+}) {
+  const router = useRouter();
+  const { office, set, layout } = form;
+  const tones = layout.tones ?? DEFAULT_LAYOUT.tones;
+  const previewRef = useRef<HTMLIFrameElement>(null);
+  const isLgUp = useIsLgUp();
+  const [mobileTab, setMobileTab] = useState<"navigation" | "preview" | "cms">(
+    "preview",
+  );
+  const showNavigationPanel = isLgUp || mobileTab === "navigation";
+  const showPreviewPanel = isLgUp || mobileTab === "preview";
+  const showCmsPanel = isLgUp || mobileTab === "cms";
+  const [viewport, setViewport] = useState<Viewport>("desktop");
+  // Modal de personalização do formulário do popup de lead.
+  const [builderOpen, setBuilderOpen] = useState(false);
+  // Modo "Mudar sequência": colapsa tudo e mostra só as seções arrastáveis.
+  const [reorderMode, setReorderMode] = useState(false);
+  // Mestre-detalhe: seção aberta no painel de configuração (null = menu inicial).
+  const [detailSection, setDetailSection] = useState<DetailSectionId | null>(
+    null,
+  );
+  const [, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
+  const dirty = form.isDirty;
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [status, setStatus] = useState<"draft" | "published">(
+    initialStatus ?? "draft",
+  );
+  const [publishState, setPublishState] = useState<"idle" | "saving" | "error">(
+    "idle",
+  );
+
+  const needsVideo = layout.hero === "video";
+  const needsMetrics = layout.hero === "stats";
+  // Só o Hero centralizado mostra os mini-cards de destaque (ícone + texto).
+  const needsCards = layout.hero === "centered";
+
+  const heroOptions = useMemo(
+    () =>
+      form.videoId
+        ? HERO_OPTIONS
+        : HERO_OPTIONS.filter((o) => o.id !== "video"),
+    [form.videoId],
+  );
+
+  const equipeVariant =
+    layout.equipe ??
+    ((office.lawyers?.length ?? 0) <= 3 ? "splitAlternado" : "retratoElegante");
+
+  // Detecta qual template está aplicado no momento (match parcial por variantes).
+  const currentTemplateId = useMemo(() => {
+    return TEMPLATES.find(
+      (t) =>
+        t.layout.hero === layout.hero &&
+        t.layout.dor === layout.dor &&
+        t.layout.solucao === layout.solucao &&
+        t.layout.sobre === layout.sobre &&
+        t.layout.areas === layout.areas &&
+        t.layout.etapas === layout.etapas,
+    )?.id;
+  }, [layout]);
+
+  const editorSections = useMemo((): WorkspaceSectionMeta[] => {
+    const items: WorkspaceSectionMeta[] = [
+      {
+        id: "identidade",
+        label: "Identidade",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("identidade"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "imagens",
+        label: "Imagens",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("imagens"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "modelo",
+        label: "Modelo",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("modelo"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "aparencia",
+        label: "Aparência",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("aparencia"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "seo",
+        label: "SEO",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("seo"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "hero",
+        label: "Topo",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("hero"),
+        stage: "content",
+        enabled: true,
+        variantLabel: layout.hero
+          ? HERO_VARIANT_LABELS[layout.hero]
+          : undefined,
+      },
+      {
+        id: "dor",
+        label: "Dores",
+        previewTarget: "sec-dor",
+        description: getSectionDescription("dor"),
+        stage: "content",
+        enabled: true,
+        variantLabel: layout.dor ? DOR_VARIANT_LABELS[layout.dor] : undefined,
+      },
+      {
+        id: "solucao",
+        label: "Solução",
+        previewTarget: "sec-solucao",
+        description: getSectionDescription("solucao"),
+        stage: "content",
+        enabled: true,
+        variantLabel: layout.solucao
+          ? SOLUCAO_VARIANT_LABELS[layout.solucao]
+          : undefined,
+      },
+      {
+        id: "sobre",
+        label: "Sobre",
+        previewTarget: "sec-sobre",
+        description: getSectionDescription("sobre"),
+        stage: "content",
+        enabled: true,
+        variantLabel: layout.sobre
+          ? SOBRE_VARIANT_LABELS[layout.sobre]
+          : undefined,
+      },
+      {
+        id: "equipe",
+        label: "Equipe",
+        previewTarget: "sec-equipe",
+        description: getSectionDescription("equipe"),
+        stage: "content",
+        enabled: !layout.hidden?.equipe,
+        variantLabel:
+          (office.lawyers?.length ?? 0) >= 2
+            ? EQUIPE_VARIANT_LABELS[equipeVariant]
+            : undefined,
+      },
+      {
+        id: "areas",
+        label: "Áreas",
+        previewTarget: "sec-areas",
+        description: getSectionDescription("areas"),
+        stage: "content",
+        enabled: !layout.hidden?.areas,
+        variantLabel: layout.areas
+          ? AREAS_VARIANT_LABELS[layout.areas]
+          : undefined,
+      },
+      {
+        id: "etapas",
+        label: "Etapas",
+        previewTarget: "sec-etapas",
+        description: getSectionDescription("etapas"),
+        stage: "content",
+        enabled: !layout.hidden?.etapas,
+        variantLabel: layout.etapas
+          ? ETAPAS_VARIANT_LABELS[layout.etapas]
+          : undefined,
+      },
+      {
+        id: "faq",
+        label: "FAQ",
+        previewTarget: "sec-faq",
+        description: getSectionDescription("faq"),
+        stage: "conversion",
+        enabled: !layout.hidden?.faq,
+      },
+      {
+        id: "ctaFinal",
+        label: "CTA final",
+        previewTarget: "sec-ctaFinal",
+        description: getSectionDescription("ctaFinal"),
+        stage: "conversion",
+        enabled: !layout.hidden?.ctaFinal,
+      },
+      {
+        id: "footer",
+        label: "Rodapé",
+        previewTarget: "sec-footer",
+        description: getSectionDescription("footer"),
+        stage: "conversion",
+        enabled: true,
+      },
+    ];
+    return items;
+  }, [layout, office.lawyers?.length, equipeVariant]);
+
+  const currentDetail =
+    detailSection === null
+      ? null
+      : (editorSections.find((section) => section.id === detailSection) ??
+        null);
+  const resourceSections = editorSections.filter(
+    (section) => section.stage === "foundation",
+  );
+  const contentSections = editorSections.filter(
+    (section) => section.stage === "content",
+  );
+  const conversionSections = editorSections.filter(
+    (section) => section.stage === "conversion",
+  );
+  const lifecycleMessage =
+    status === "published"
+      ? dirty
+        ? "O site está no ar. Salve para publicar as alterações da prévia."
+        : "Site publicado e sincronizado com a versão ao vivo."
+      : dirty
+        ? "Há alterações locais aguardando salvamento antes da publicação."
+        : "Rascunho salvo. Continue editando ou publique quando estiver pronto.";
+  const syncDetailSectionUrl = useCallback((id: DetailSectionId | null) => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("sec", id);
+    else url.searchParams.delete("sec");
+    const next = `${url.pathname}${url.search}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, "", next);
+    }
+  }, []);
+  const previewVariantControls = useMemo<
+    Partial<Record<PreviewEditableSectionId, PreviewVariantControl>>
+  >(
+    () => ({
+      hero: {
+        label: "Topo",
+        options: heroOptions,
+        value: layout.hero,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            hero: id as Layout["hero"],
+          }));
+        },
+      },
+      dor: {
+        label: "Dores",
+        options: DOR_OPTIONS,
+        value: layout.dor,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            dor: id as Layout["dor"],
+          }));
+        },
+      },
+      solucao: {
+        label: "Solução",
+        options: SOLUCAO_OPTIONS,
+        value: layout.solucao,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            solucao: id as Layout["solucao"],
+          }));
+        },
+      },
+      sobre: {
+        label: "Sobre",
+        options: SOBRE_OPTIONS,
+        value: layout.sobre,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            sobre: id as Layout["sobre"],
+          }));
+        },
+      },
+      equipe:
+        office.lawyers.length >= 2
+          ? {
+              label: "Equipe",
+              options: EQUIPE_OPTIONS,
+              value: equipeVariant,
+              onChange: (id) => {
+                form.setLayout((currentLayout) => ({
+                  ...currentLayout,
+                  equipe: id as EquipeVariant,
+                }));
+              },
+            }
+          : undefined,
+      areas: {
+        label: "Áreas",
+        options: AREAS_OPTIONS,
+        value: layout.areas,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            areas: id as Layout["areas"],
+          }));
+        },
+      },
+      etapas: {
+        label: "Etapas",
+        options: ETAPAS_OPTIONS,
+        value: layout.etapas,
+        onChange: (id) => {
+          form.setLayout((currentLayout) => ({
+            ...currentLayout,
+            etapas: id as Layout["etapas"],
+          }));
+        },
+      },
+    }),
+    [
+      heroOptions,
+      layout.hero,
+      layout.dor,
+      layout.solucao,
+      layout.sobre,
+      layout.areas,
+      layout.etapas,
+      office.lawyers.length,
+      equipeVariant,
+      form,
+    ],
+  );
+
+  function goToDetailSection(id: DetailSectionId) {
+    setDetailSection(id);
+    syncDetailSectionUrl(id);
+    if (!isLgUp) setMobileTab("cms");
+    const target =
+      editorSections.find((s) => s.id === id)?.previewTarget ?? `sec-${id}`;
+    scrollToSection(target);
+  }
+
+  function getSectionToggle(sectionId: DetailSectionId) {
+    switch (sectionId) {
+      case "equipe":
+        return {
+          on: !layout.hidden?.equipe,
+          onChange: (on: boolean) => form.setSectionHidden("equipe", !on),
+        };
+      case "areas":
+        return {
+          on: !layout.hidden?.areas,
+          onChange: (on: boolean) => form.setSectionHidden("areas", !on),
+        };
+      case "etapas":
+        return {
+          on: !layout.hidden?.etapas,
+          onChange: (on: boolean) => form.setSectionHidden("etapas", !on),
+        };
+      case "faq":
+        return {
+          on: !layout.hidden?.faq,
+          onChange: (on: boolean) => form.setSectionHidden("faq", !on),
+        };
+      case "ctaFinal":
+        return {
+          on: !layout.hidden?.ctaFinal,
+          onChange: (on: boolean) => form.setSectionHidden("ctaFinal", !on),
+        };
+      default:
+        return undefined;
+    }
+  }
+
+  // Restaura a seção aberta a partir da URL (?sec=hero) após refresh ou HMR.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sec = params.get("sec");
+    if (isDetailSectionId(sec)) {
+      setDetailSection(sec);
+    }
+  }, []);
+
+  // Ao abrir um accordeon, rola o preview até a seção correspondente. O preview
+  // vive dentro de um <iframe>, então busca-se a seção no documento do iframe.
+  function scrollToSection(id: string) {
+    requestAnimationFrame(() => {
+      previewRef.current?.contentDocument
+        ?.getElementById(id)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  // Limpa o ?novo=1 da URL após abrir o editor pela primeira vez.
+  useEffect(() => {
+    if (!startTour) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("novo");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }, [startTour]);
+
+  async function salvar() {
+    form.form.clearErrors();
+    const saveError = form.validateSave();
+    if (saveError) {
+      applyLpEditorSaveErrorsToForm(form.form, saveError);
+      setSaveState("error");
+      showLpMessageError(
+        saveError.issues[0]?.message ?? "Dados inválidos para salvar",
+      );
+      return false;
+    }
+    setSaveState("saving");
+    const stored: StoredLp = {
+      slug,
+      officeSubdomain,
+      name: office.name || name,
+      tema: form.tema,
+      status,
+      schema: form.schema,
+    };
+    try {
+      const res = await saveLpAction(stored);
+      if ("error" in res) {
+        if (isAccessDeniedError(res.error)) {
+          showAccessDeniedToast();
+        } else {
+          showLpMessageError(res.error);
+        }
+        setSaveState("error");
+        return false;
+      }
+      form.markSaved();
+      setSaveState("saved");
+      return true;
+    } catch {
+      setSaveState("error");
+      return false;
+    }
+  }
+
+  async function publicar() {
+    if (dirty) {
+      const saved = await salvar();
+      if (!saved) {
+        setPublishState("idle");
+        return;
+      }
+    }
+
+    setPublishState("saving");
+    try {
+      const res = await publishLpAction(slug);
+      if ("error" in res) {
+        if (isAccessDeniedError(res.error)) showAccessDeniedToast();
+        else showLpMessageError(res.error);
+        setPublishState("error");
+        return;
+      }
+      setStatus("published");
+      setPublishState("idle");
+    } catch {
+      setPublishState("error");
+    }
+  }
+
+  async function despublicar() {
+    setPublishState("saving");
+    try {
+      const res = await unpublishLpAction(slug);
+      if (!res.ok) {
+        if (res.error && isAccessDeniedError(res.error))
+          showAccessDeniedToast();
+        else if (res.error) showLpMessageError(res.error);
+        setPublishState("error");
+        return;
+      }
+      setStatus("draft");
+      setPublishState("idle");
+    } catch {
+      setPublishState("error");
+    }
+  }
+
+  // Avisa o navegador antes de fechar/recarregar com alterações pendentes.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  function renderSectionIcon(sectionId: DetailSectionId) {
+    switch (sectionId) {
+      case "identidade":
+        return <Storefront size={18} />;
+      case "imagens":
+        return <Image size={18} />;
+      case "modelo":
+        return <GridView size={18} />;
+      case "aparencia":
+        return <Tune size={18} />;
+      case "seo":
+        return <Search size={18} />;
+      case "hero":
+        return <Web size={18} />;
+      case "dor":
+        return <SentimentDissatisfied size={18} />;
+      case "solucao":
+        return <Lightbulb size={18} />;
+      case "sobre":
+        return <Badge size={18} />;
+      case "equipe":
+        return <Groups size={18} />;
+      case "areas":
+        return <Gavel size={18} />;
+      case "etapas":
+        return <FormatListNumbered size={18} />;
+      case "faq":
+        return <Help size={18} />;
+      case "ctaFinal":
+        return <Campaign size={18} />;
+      case "footer":
+        return <ContactPage size={18} />;
+    }
+  }
+
+  function renderCmsFields() {
+    if (!detailSection) {
+      return (
+        <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              Selecione um bloco para editar
+            </p>
+            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+              Use a navegação da esquerda para abrir os campos. No preview,
+              troque a variação do bloco pelo seletor flutuante.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-w-0 max-w-full space-y-3">
+        {detailSection === "identidade" && <IdentidadePanel form={form} />}
+        {detailSection === "imagens" && <ImagensPanel form={form} />}
+        {detailSection === "modelo" && (
+          <ModeloPicker form={form} currentId={currentTemplateId} />
+        )}
+        {detailSection === "seo" && <SeoPanel form={form} />}
+        {detailSection === "hero" && (
+          <>
+            <ToneToggle
+              value={tones.hero ?? "light"}
+              onChange={(t) => form.setTone("hero", t)}
+            />
+            <SectionImageInput form={form} sectionKey="hero" />
+            <Accordion title="Textos" flush>
+              <HeroTexts form={form} />
+            </Accordion>
+            {needsVideo ? (
+              <Accordion title="Vídeo" flush>
+                <BuilderField
+                  label="Link do vídeo do YouTube"
+                  hint="Cole o link do YouTube — a gente identifica o vídeo."
+                >
+                  <div className="flex items-center gap-2">
+                    <Movie size={16} className="shrink-0 text-slate-400" />
+                    <Input
+                      aria-label="Link do vídeo do YouTube"
+                      value={form.videoId}
+                      onChange={(e) =>
+                        form.setVideoId(extractYouTubeId(e.target.value))
+                      }
+                      placeholder="Cole o link (ex: youtube.com/watch?v=...)"
+                    />
+                  </div>
+                </BuilderField>
+              </Accordion>
+            ) : null}
+            {needsMetrics ? (
+              <Accordion title="Métricas" flush>
+                <MetricsInput form={form} />
+              </Accordion>
+            ) : null}
+            {needsCards ? (
+              <Accordion title="Mini-cards" flush>
+                <HeroFeaturesInput form={form} />
+              </Accordion>
+            ) : null}
+          </>
+        )}
+        {detailSection === "aparencia" && (
+          <>
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-700">
+                Cantos (arredondado ou quadrado)
+              </p>
+              <div className="space-y-2">
+                <Segmented
+                  label="Cards"
+                  value={office.cardRadius ?? "square"}
+                  onChange={(v) => set("cardRadius", v)}
+                  options={CORNER_OPTIONS}
+                />
+                <Segmented
+                  label="Botões"
+                  value={office.buttons?.radius ?? "square"}
+                  onChange={(v) => form.setButtonField("radius", v)}
+                  options={CORNER_OPTIONS}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t border-slate-100 pt-3">
+              <BuilderField
+                label="O que acontece ao clicar num botão"
+                hint="Vale para todos os botões de chamada da página."
+              >
+                <select
+                  aria-label="Ação dos botões"
+                  className={inputCls}
+                  value={office.buttons?.action ?? "popup"}
+                  onChange={(e) =>
+                    form.setButtonField("action", e.target.value)
+                  }
+                >
+                  <option value="popup">Abrir popup de formulário</option>
+                  <option value="whatsapp">Abrir WhatsApp</option>
+                  <option value="link">Abrir link personalizado</option>
+                </select>
+              </BuilderField>
+              {(office.buttons?.action ?? "popup") === "link" ? (
+                <BuilderField
+                  label="Link do botão"
+                  hint="Endereço completo (ex.: https://...)."
+                >
+                  <Input
+                    value={office.buttons?.link ?? ""}
+                    onChange={(e) =>
+                      form.setButtonField("link", e.target.value)
+                    }
+                    placeholder="https://..."
+                    inputMode="url"
+                  />
+                </BuilderField>
+              ) : (office.buttons?.action ?? "popup") === "whatsapp" ? (
+                <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
+                  Os botões abrem o WhatsApp informado no{" "}
+                  <strong>Rodapé</strong>.
+                </p>
+              ) : (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                  <p className="text-xs leading-relaxed text-slate-500">
+                    Abre um formulário que termina sempre com{" "}
+                    <strong>nome</strong> e <strong>telefone</strong>. Você pode
+                    adicionar perguntas antes desse passo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setBuilderOpen(true)}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
+                  >
+                    <Tune size={15} /> Personalizar formulário
+                    {office.buttons?.popup?.questions.length
+                      ? ` (${office.buttons.popup.questions.length})`
+                      : ""}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 border-t border-slate-100 pt-3">
+              <p className="text-sm font-medium text-slate-700">Tipografia</p>
+              <BuilderField
+                label="Títulos e destaques"
+                hint="Fonte usada nos títulos de seção e manchetes."
+              >
+                <select
+                  aria-label="Fonte dos títulos"
+                  className={inputCls}
+                  value={office.fonts?.heading ?? ""}
+                  onChange={(e) => form.setFont("heading", e.target.value)}
+                >
+                  <option value="">Padrão do site</option>
+                  {HEADING_FONTS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </BuilderField>
+              <BuilderField
+                label="Textos e parágrafos"
+                hint="Fonte usada nos parágrafos e textos de apoio."
+              >
+                <select
+                  aria-label="Fonte dos textos"
+                  className={inputCls}
+                  value={office.fonts?.body ?? ""}
+                  onChange={(e) => form.setFont("body", e.target.value)}
+                >
+                  <option value="">Padrão do site</option>
+                  {BODY_FONTS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </BuilderField>
+            </div>
+
+            <div className="border-t border-slate-100 pt-3">
+              <Accordion title="Tags de rastreamento" flush>
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Cole aqui os scripts do Google Analytics, Meta Pixel, Google
+                  Tag Manager ou qualquer outro código de tracking.
+                </p>
+                <BuilderField
+                  label="Código no <head>"
+                  hint="Carrega antes do conteúdo — ideal para GTM e gtag."
+                >
+                  <AutoTextarea
+                    aria-label="Tags no head"
+                    className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                    value={office.tags?.head ?? ""}
+                    onChange={(e) => form.setTag("head", e.target.value)}
+                    placeholder={"<script>\n  // seu código aqui\n</script>"}
+                  />
+                </BuilderField>
+                <BuilderField
+                  label="Código no <body>"
+                  hint="Logo após a abertura do body — para noscript do GTM."
+                >
+                  <AutoTextarea
+                    aria-label="Tags no body"
+                    className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
+                    value={office.tags?.body ?? ""}
+                    onChange={(e) => form.setTag("body", e.target.value)}
+                    placeholder={"<noscript>...</noscript>"}
+                  />
+                </BuilderField>
+              </Accordion>
+            </div>
+          </>
+        )}
+        {detailSection === "dor" && (
+          <>
+            <ToneToggle
+              value={tones.dor}
+              onChange={(t) => form.setTone("dor", t)}
+            />
+            <SectionImageInput form={form} sectionKey="dor" />
+            <Accordion title="Textos" flush>
+              <DorTexts form={form} />
+            </Accordion>
+            <Accordion title="Cards" flush>
+              <DorCards form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "solucao" && (
+          <>
+            <ToneToggle
+              value={tones.solucao}
+              onChange={(t) => form.setTone("solucao", t)}
+            />
+            <SectionImageInput form={form} sectionKey="solucao" />
+            <Accordion title="Textos" flush>
+              <SolucaoTexts form={form} />
+            </Accordion>
+            <Accordion title="Cards" flush>
+              <SolucaoCards form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "sobre" && (
+          <>
+            <ToneToggle
+              value={tones.sobre}
+              onChange={(t) => form.setTone("sobre", t)}
+            />
+            <SectionImageInput form={form} sectionKey="sobre" />
+            <Accordion title="Texto" flush>
+              <BuilderField
+                label="Apresentação"
+                hint="Pule linha para separar em parágrafos."
+              >
+                <AutoTextarea
+                  aria-label="Texto do Sobre"
+                  className={`${inputCls} min-h-[140px] resize-y`}
+                  value={office.about}
+                  onChange={(e) => set("about", e.target.value)}
+                  placeholder="Atuamos com dedicação na defesa de quem trabalha..."
+                />
+              </BuilderField>
+            </Accordion>
+            {layout.sobre === "fotoLista" || layout.sobre === "duasColunas" ? (
+              <Accordion title="Diferenciais" flush>
+                <DiferenciaisInput form={form} />
+              </Accordion>
+            ) : null}
+          </>
+        )}
+        {detailSection === "equipe" && (
+          <>
+            {office.lawyers.length >= 2 ? (
+              <ToneToggle
+                value={tones.equipe}
+                onChange={(t) => form.setTone("equipe", t)}
+              />
+            ) : null}
+            <LawyerPhotosInput form={form} />
+          </>
+        )}
+        {detailSection === "areas" && (
+          <>
+            <ToneToggle
+              value={tones.areas}
+              onChange={(t) => form.setTone("areas", t)}
+            />
+            <Accordion title="Textos" flush>
+              <AreasTexts form={form} />
+            </Accordion>
+            <Accordion title="Cards" flush>
+              <AreasCards form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "etapas" && (
+          <>
+            <ToneToggle
+              value={tones.etapas}
+              onChange={(t) => form.setTone("etapas", t)}
+            />
+            <Accordion title="Textos" flush>
+              <EtapasTexts form={form} />
+            </Accordion>
+            <Accordion title="Passos" flush>
+              <EtapasCards form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "faq" && (
+          <>
+            <ToneToggle
+              value={tones.faq}
+              onChange={(t) => form.setTone("faq", t)}
+            />
+            <Accordion title="Textos" flush>
+              <FaqTexts form={form} />
+            </Accordion>
+            <Accordion title="Perguntas" flush>
+              <FaqPerguntas form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "ctaFinal" && (
+          <>
+            <ToneToggle
+              value={tones.ctaFinal}
+              onChange={(t) => form.setTone("ctaFinal", t)}
+            />
+            <Accordion title="Textos" flush>
+              <CtaFinalTexts form={form} />
+            </Accordion>
+          </>
+        )}
+        {detailSection === "footer" && (
+          <FooterDetailPanel form={form} office={office} />
+        )}
+      </div>
+    );
+  }
+
+  function renderNavigationGroup({
+    title,
+    description,
+    sections,
+  }: {
+    title: string;
+    description: string;
+    sections: WorkspaceSectionMeta[];
+  }) {
+    return (
+      <section className="space-y-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-border bg-background">
+          {sections.map((section) => (
+            <EditorSectionMenuRow
+              key={section.id}
+              title={section.label}
+              subtitle={
+                section.variantLabel
+                  ? `${section.description} · ${section.variantLabel}`
+                  : section.description
+              }
+              icon={
+                <span
+                  className={cn(
+                    "inline-flex size-10 items-center justify-center rounded-lg",
+                    section.enabled
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-muted text-muted-foreground/50",
+                  )}
+                >
+                  {renderSectionIcon(section.id)}
+                </span>
+              }
+              toggle={getSectionToggle(section.id)}
+              active={detailSection === section.id}
+              onPress={() => goToDetailSection(section.id)}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <Form {...form.form}>
+      <div className="app-ui flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
+        <ConfirmDialog
+          open={leaveOpen}
+          onOpenChange={setLeaveOpen}
+          title="Alterações não salvas"
+          description="Você tem alterações que ainda não foram salvas. Sair mesmo assim?"
+          confirmLabel="Sair sem salvar"
+          variant="destructive"
+          onConfirm={() => router.push("/")}
+        />
+        <div className="shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4">
+            <div className="flex min-w-0 items-center gap-2 lg:col-span-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  if (dirty) {
+                    setLeaveOpen(true);
+                    return;
+                  }
+                  router.push("/");
+                }}
+              >
+                <Close size={16} />
+              </Button>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {office.name || name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-6 lg:justify-center">
+              <UiBadge variant={dirty ? "secondary" : "muted"}>
+                {dirty ? "Alterações locais" : "Tudo salvo"}
+              </UiBadge>
+              <UiBadge
+                variant={status === "published" ? "secondary" : "outline"}
+              >
+                {status === "published" ? "Publicado" : "Rascunho"}
+              </UiBadge>
+              <p className="min-w-0 flex-1 text-sm text-muted-foreground lg:flex-none">
+                {lifecycleMessage}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:col-span-3 lg:justify-end">
+              {status === "published" ? (
+                <ButtonGroup>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={despublicar}
+                    disabled={publishState === "saving"}
+                  >
+                    {publishState === "saving" ? (
+                      <ProgressActivity size={16} className="animate-spin" />
+                    ) : (
+                      <CloudOff size={16} />
+                    )}
+                    Retirar do ar
+                  </Button>
+                  <Button size="icon-sm">
+                    <a
+                      href={publicLpUrl(officeSubdomain, slug)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <OpenInNew size={16} />
+                    </a>
+                  </Button>
+                </ButtonGroup>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={publicar}
+                  disabled={publishState === "saving"}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  {publishState === "saving" ? (
+                    <ProgressActivity size={16} className="animate-spin" />
+                  ) : null}
+                  {dirty ? "Salvar e publicar" : "Publicar"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 lg:grid lg:grid-cols-12">
+          <aside
+            className={cn(
+              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-3 lg:border-b-0 lg:border-r",
+              showNavigationPanel ? "flex" : "hidden",
+            )}
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+              {reorderMode ? (
+                <ReorderPanel
+                  form={form}
+                  onClose={() => setReorderMode(false)}
+                />
+              ) : (
+                <div className="space-y-5">
+                  {renderNavigationGroup({
+                    title: "Recursos da página",
+                    description:
+                      "Marca, imagens, template, aparência geral e metadados.",
+                    sections: resourceSections,
+                  })}
+
+                  {renderNavigationGroup({
+                    title: "Seções principais",
+                    description:
+                      "Blocos centrais da narrativa visíveis no preview.",
+                    sections: contentSections,
+                  })}
+
+                  {renderNavigationGroup({
+                    title: "Conversão e fechamento",
+                    description: "FAQ, CTA final e rodapé da landing page.",
+                    sections: conversionSections,
+                  })}
+
+                  <section className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          Seções personalizadas
+                        </p>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          Reordene a composição da landing page ou adicione
+                          novos blocos entre as seções padrão.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReorderMode(true)}
+                      >
+                        <SwapVert size={16} />
+                        Reordenar
+                      </Button>
+                    </div>
+
+                    {form.customSections.length ? (
+                      <div className="overflow-hidden rounded-2xl border border-border bg-background">
+                        {form.customSections.map((sec) => (
+                          <CustomSectionEditor
+                            key={sec.id}
+                            form={form}
+                            section={sec}
+                            onScroll={() =>
+                              scrollToSection(`sec-custom-${sec.id}`)
+                            }
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm text-muted-foreground">
+                        Nenhuma seção personalizada adicionada.
+                      </div>
+                    )}
+
+                    <AddSectionButton onAdd={form.addCustomSection} />
+                  </section>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          <main
+            className={cn(
+              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-6 lg:border-b-0 lg:border-r",
+              showPreviewPanel ? "flex" : "hidden",
+            )}
+          >
+            <div className="border-b border-border px-5 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    <Visibility size={13} />
+                    Preview interativo
+                  </p>
+                </div>
+
+                <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
+                  {(
+                    [
+                      { id: "desktop", label: "Desktop", Icon: DesktopWindows },
+                      { id: "tablet", label: "Tablet", Icon: Tablet },
+                      { id: "mobile", label: "Mobile", Icon: Devices },
+                    ] as const
+                  ).map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setViewport(id)}
+                      aria-pressed={viewport === id}
+                      title={label}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
+                        viewport === id
+                          ? "bg-ui-soft text-ui"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon size={14} />
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-[min(70vh,640px)] min-h-0 flex-1 overflow-hidden">
+              <DevicePreview ref={previewRef} mode={viewport}>
+                <LandingPreview
+                  schema={form.schema}
+                  editor={{
+                    variantControls: previewVariantControls,
+                  }}
+                />
+              </DevicePreview>
+            </div>
+          </main>
+
+          <aside
+            className={cn(
+              "min-h-0 flex-col overflow-hidden bg-card lg:col-span-3",
+              showCmsPanel ? "flex" : "hidden",
+            )}
+          >
+            <div className="border-b border-border px-4 py-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {currentDetail?.variantLabel ? (
+                    <UiBadge variant="secondary">
+                      {currentDetail.variantLabel}
+                    </UiBadge>
+                  ) : null}
+                  {!currentDetail?.enabled && currentDetail ? (
+                    <UiBadge variant="muted">Oculta na página</UiBadge>
+                  ) : null}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {currentDetail?.label ?? "Campos editáveis"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentDetail
+                      ? currentDetail.id === "hero" ||
+                        currentDetail.id === "dor" ||
+                        currentDetail.id === "solucao" ||
+                        currentDetail.id === "sobre" ||
+                        currentDetail.id === "equipe" ||
+                        currentDetail.id === "areas" ||
+                        currentDetail.id === "etapas"
+                        ? `${currentDetail.description}. A variação fica no seletor flutuante do preview.`
+                        : currentDetail.description
+                      : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+              {renderCmsFields()}
+            </div>
+          </aside>
+        </div>
+
+        {!isLgUp ? (
+          <nav
+            aria-label="Alternar áreas do editor"
+            className="flex shrink-0 border-t border-border bg-background supports-[padding:max(0px)]:pb-[max(0px,env(safe-area-inset-bottom))] lg:hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setMobileTab("navigation")}
+              aria-pressed={mobileTab === "navigation"}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium transition",
+                mobileTab === "navigation"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <GridView size={20} />
+              Navegação
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab("preview")}
+              aria-pressed={mobileTab === "preview"}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium transition",
+                mobileTab === "preview"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Visibility size={20} />
+              Prévia
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab("cms")}
+              aria-pressed={mobileTab === "cms"}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium transition",
+                mobileTab === "cms"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Tune size={20} />
+              CMS
+            </button>
+          </nav>
+        ) : null}
+
+        {builderOpen ? (
+          <PopupBuilder form={form} onClose={() => setBuilderOpen(false)} />
+        ) : null}
+      </div>
+    </Form>
+  );
+}

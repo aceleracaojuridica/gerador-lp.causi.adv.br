@@ -1,51 +1,18 @@
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
+import {
+  refineRequiredEmail,
+  refineRequiredWhatsapp,
+} from "@/lib/landing-pages/validation/contact";
 import { DEFAULT_LOGO_BG } from "@/lib/landing-pages/colors";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
-
-const socialNetworkSchema = z.enum([
-  "instagram",
-  "facebook",
-  "youtube",
-  "tiktok",
-  "linkedin",
-]);
-
-const addressEntrySchema = z.object({
-  address: z.string(),
-  uf: z.string(),
-  cidade: z.string(),
-  mapsUrl: z.string(),
-  showMaps: z.boolean(),
-});
-
-const lawyerSchema = z.object({
-  photo: z.string(),
-  name: z.string(),
-  role: z.string(),
-  focal: z
-    .object({
-      x: z.number(),
-      y: z.number(),
-    })
-    .optional(),
-});
-
-const logoBgSchema = z.object({
-  type: z.enum(["transparent", "light", "dark"]),
-  color: z.string(),
-});
-
-const themeSchema = z.object({
-  brand: z.string(),
-  brandDark: z.string(),
-  accent: z.string(),
-  accentSoft: z.string(),
-  cream: z.string(),
-  creamDeep: z.string(),
-  ink: z.string(),
-  inkSoft: z.string(),
-});
+import {
+  addressEntrySchema,
+  lawyerSchema,
+  logoBgSchema,
+  socialNetworkSchema,
+  themeSchema,
+} from "@/lib/landing-pages/zod-shared";
 
 /** Schema base — tipagem e valores default; validação por passo em `step0Schema` / `step1Schema`. */
 export const landingPageCreateFormSchema = z.object({
@@ -125,31 +92,12 @@ export const step1Schema = z
     ),
   })
   .superRefine((data, ctx) => {
-    if (data.whatsapp.length !== 13) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["whatsapp"],
-        message:
-          data.whatsapp.length === 0
-            ? "O campo é obrigatório"
-            : "Informe DDD + 9 dígitos",
-      });
-    }
-
-    const email = data.email.trim();
-    if (!email) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["email"],
-        message: "O campo é obrigatório",
-      });
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["email"],
-        message: "E-mail inválido",
-      });
-    }
+    refineRequiredWhatsapp(ctx, data.whatsapp, ["whatsapp"], {
+      emptyMessage: "O campo é obrigatório",
+    });
+    refineRequiredEmail(ctx, data.email, ["email"], {
+      emptyMessage: "O campo é obrigatório",
+    });
 
     data.addresses.forEach((a, i) => {
       const maps = a.mapsUrl.trim();

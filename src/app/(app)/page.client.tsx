@@ -2,7 +2,7 @@
 
 import { Add, Inbox } from "@material-symbols-svg/react";
 import Link from "next/link";
-import { LpCard } from "@/components/Builder/lp-card";
+import { LpCard } from "@/components/builder/gallery/lp-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

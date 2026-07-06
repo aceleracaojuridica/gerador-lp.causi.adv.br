@@ -388,3 +388,18 @@ function createUser(body: unknown): CreateUserInput {
     return result.data;
 }
 ```
+
+---
+
+## Landing Pages — schemas do projeto
+
+| Camada | Arquivo | Papel |
+|--------|---------|-------|
+| Tipos de domínio | `lib/landing-pages/schema/types.ts` | `Office`, `Layout`, `LpSchema` |
+| Primitivos Zod | `lib/landing-pages/validation/zod-primitives.ts` | `themeSchema`, `lawyerSchema`, … |
+| Contato | `lib/landing-pages/validation/contact.ts` | WhatsApp + e-mail (wizard e save do editor) |
+| Wizard | `forms/LandingPageCreateForm/schema.ts` | `step0Schema`, `step1Schema` |
+| Editor | `forms/LpEditorForm/schema.ts` | `lpEditorFormSchema`, `lpEditorSaveSchema` (validação no save) |
+| Create → API | `lib/landing-pages/shared/create-seed.ts` | `createGerarLpPayloadFromWizard` |
+
+O editor usa `mode: "onSubmit"` no React Hook Form e valida campos obrigatórios de contato apenas ao salvar/publicar (`validateLpEditorSave` + `applyLpEditorSaveErrorsToForm`).

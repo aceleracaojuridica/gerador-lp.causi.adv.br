@@ -36,9 +36,5 @@ const REGISTRY: Record<string, string> = {
   scroll: "article",
 };
 
-export function resolveIcon(key: string): string {
-  return REGISTRY[key] ?? "balance";
-}
-
 // Chaves válidas de ícone — passadas para a IA escolher só destas.
 export const ICON_KEYS = Object.keys(REGISTRY);

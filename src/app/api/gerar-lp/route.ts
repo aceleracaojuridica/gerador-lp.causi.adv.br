@@ -1,8 +1,4 @@
-import {
-  buildSchema,
-  type FocoCopy,
-  matchFoco,
-} from "@/lib/landing-pages/focos";
+import { buildSchema, type FocoCopy } from "@/lib/landing-pages/focos";
 import { imagensDoTema } from "@/lib/landing-pages/image-bank";
 import { callOpenAiForCopy } from "@/lib/landing-pages/lp-generate-copy";
 import {
@@ -11,12 +7,13 @@ import {
   saveLp,
 } from "@/lib/landing-pages/lp-store";
 import {
+  buildOfficeFromGerarLpPayload,
+  type GerarLpPayload,
+} from "@/lib/landing-pages/shared/create-seed";
+import {
   DEFAULT_LAYOUT,
   DEFAULT_THEME,
-  type Lawyer,
   type Layout,
-  type Office,
-  type Social,
   type Theme,
 } from "@/lib/landing-pages/schema";
 import { normalizeSeo } from "@/lib/landing-pages/seo";
@@ -39,30 +36,7 @@ import { requireLpSession } from "@/lib/session";
 */
 export const runtime = "nodejs";
 
-type Payload = {
-  name?: string;
-  tema?: string;
-  city?: string;
-  whatsapp?: string;
-  whatsappDisplay?: string;
-  email?: string;
-  address?: string;
-  mapsUrl?: string;
-  about?: string;
-  diferenciais?: string[];
-  videoId?: string;
-  logoSrc?: string;
-  logoBg?: Office["logoBg"];
-  theme?: Theme;
-  lawyers?: Lawyer[];
-  socials?: Social[];
-  extraAddresses?: Office["extraAddresses"];
-  // Pré-gerados pelo /api/gerar-copy (evita segunda chamada à IA)
-  copy?: FocoCopy;
-  images?: { hero: string; dor: string; sobre: string; solucao: string };
-  // Layout com variantes iniciais (preset do wizard)
-  layout?: Layout;
-};
+type Payload = Partial<GerarLpPayload>;
 
 export async function POST(request: Request) {
   let user: Session;
@@ -159,33 +133,32 @@ export async function POST(request: Request) {
   }
 
   // 3. Monta office + schema
-  const foco = matchFoco(tema);
   const theme: Theme = p.theme ?? DEFAULT_THEME;
-  const office: Office = {
-    name,
-    fullName: name,
-    product: foco?.product ?? tema,
-    area: foco?.area ?? tema,
-    city: (p.city ?? "").trim(),
-    whatsapp: p.whatsapp ?? "",
-    whatsappDisplay: p.whatsappDisplay ?? "",
-    email: (p.email ?? "").trim(),
-    address: (p.address ?? "").trim(),
-    mapsUrl: (p.mapsUrl ?? "").trim(),
-    extraAddresses: p.extraAddresses ?? [],
-    about: (p.about ?? "").trim(),
-    diferenciais: (p.diferenciais ?? []).map((d) => d.trim()).filter(Boolean),
-    logoSrc: p.logoSrc ?? "",
-    logoBg: p.logoBg ?? { type: "transparent", color: theme.brand },
-    lawyers: p.lawyers ?? [],
-    socials: Array.isArray(p.socials)
-      ? p.socials
-          .map((s) => ({ ...s, url: (s.url ?? "").trim() }))
-          .filter((s) => s.url)
-      : [],
-    sectionImages: images,
-    metrics: [],
-  };
+  const office = buildOfficeFromGerarLpPayload(
+    {
+      name,
+      tema,
+      city: (p.city ?? "").trim(),
+      whatsapp: p.whatsapp ?? "",
+      whatsappDisplay: p.whatsappDisplay ?? "",
+      email: (p.email ?? "").trim(),
+      address: (p.address ?? "").trim(),
+      mapsUrl: (p.mapsUrl ?? "").trim(),
+      extraAddresses: p.extraAddresses,
+      about: (p.about ?? "").trim(),
+      diferenciais: (p.diferenciais ?? []).map((d) => d.trim()).filter(Boolean),
+      videoId: (p.videoId ?? "").trim(),
+      logoSrc: p.logoSrc ?? "",
+      logoBg: p.logoBg ?? { type: "transparent", color: theme.brand },
+      theme,
+      lawyers: p.lawyers ?? [],
+      socials: p.socials ?? [],
+      copy,
+      images,
+      layout: p.layout ?? DEFAULT_LAYOUT,
+    },
+    images,
+  );
 
   const videoId = (p.videoId ?? "").trim();
 

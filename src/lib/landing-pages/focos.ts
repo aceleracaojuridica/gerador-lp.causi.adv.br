@@ -688,10 +688,6 @@ export function focoGenerico(): FocoCopy {
   };
 }
 
-export function getFoco(id: string): Foco | undefined {
-  return FOCOS.find((f) => f.id === id);
-}
-
 // Palavras-chave para casar o TEMA livre digitado com um foco de copy rica.
 const FOCO_KEYWORDS: Record<string, string[]> = {
   trabalhista: [

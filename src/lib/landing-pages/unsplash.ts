@@ -1,3 +1,5 @@
+import "server-only";
+
 /*
   Busca de imagens temáticas na Unsplash (server-only).
 

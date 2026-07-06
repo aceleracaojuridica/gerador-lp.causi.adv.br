@@ -1,3 +1,5 @@
+import "server-only";
+
 /*
   Lógica compartilhada de geração de copy via OpenAI, usada pelos endpoints
   /api/gerar-copy (preview sem salvar) e /api/gerar-lp (geração completa).
