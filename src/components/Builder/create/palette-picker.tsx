@@ -78,9 +78,9 @@ export function PalettePicker({
                     p.theme.accent,
                     p.theme.accentSoft,
                     p.theme.cream,
-                  ].map((c) => (
+                  ].map((c, i) => (
                     <span
-                      key={c}
+                      key={`${i}-${c}`}
                       className="h-4 w-2.5 rounded-sm border border-black/5"
                       style={{ backgroundColor: c }}
                     />

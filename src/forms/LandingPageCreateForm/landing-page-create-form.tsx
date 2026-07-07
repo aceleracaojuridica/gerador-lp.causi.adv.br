@@ -958,9 +958,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                                 theme.accent,
                                 theme.accentSoft,
                                 theme.cream,
-                              ].map((c) => (
+                              ].map((c, i) => (
                                 <span
-                                  key={c}
+                                  key={`${i}-${c}`}
                                   className="h-6 w-6 rounded-full border border-gray-200"
                                   style={{ backgroundColor: c }}
                                   title={c}

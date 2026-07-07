@@ -80,40 +80,35 @@ export async function POST(request: Request) {
     .select("id, storage_path")
     .eq("account_id", ctx.accountId);
 
-  // Buscar usos atuais
-  const { data: usages } = await db
-    .from("lp_image_usages")
-    .select("slot, image_id");
-
-  const usageMap = new Map((usages || []).map((u) => [u.slot, u.image_id]));
-  const galleryMap = new Map(
-    (galleryImages || []).map((img) => [img.id, img.storage_path]),
-  );
   const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
 
-  const getSlotImage = (slot: string, liveUrl: string, bankUrl: string) => {
-    // 1. Matched slot
-    const matchedImageId = usageMap.get(slot);
-    if (matchedImageId) {
-      const path = galleryMap.get(matchedImageId);
-      if (path) return getPublicMediaUrl(path);
+  console.log("[gerar-copy] galleryPaths.length:", galleryPaths.length);
+  console.log("[gerar-copy] galleryPaths:", galleryPaths);
+  console.log("[gerar-copy] live images:", live);
+  console.log("[gerar-copy] bank images:", bank);
+
+  const SLOTS = ["hero", "dor", "sobre", "solucao"] as const;
+
+  /**
+   * Cada slot recebe uma imagem diferente da galeria (por índice).
+   * Se a galeria tiver menos imagens do que slots, os slots excedentes
+   * caem no Unsplash / banco curado — nunca repetem a mesma foto.
+   */
+  const getSlotImage = (slotIndex: number, liveUrl: string, bankUrl: string) => {
+    if (slotIndex < galleryPaths.length) {
+      return getPublicMediaUrl(galleryPaths[slotIndex]);
     }
-    // 2. Qualquer imagem da galeria (com índice para distribuir)
-    if (galleryPaths.length > 0) {
-      const slotIndex = ["hero", "dor", "sobre", "solucao"].indexOf(slot);
-      const path = galleryPaths[slotIndex % galleryPaths.length];
-      return getPublicMediaUrl(path);
-    }
-    // 3. Unsplash / Banco
     return liveUrl || bankUrl;
   };
 
   const images = {
-    hero: getSlotImage("hero", live.hero, bank.hero),
-    dor: getSlotImage("dor", live.dor, bank.dor),
-    sobre: getSlotImage("sobre", live.sobre, bank.sobre),
-    solucao: getSlotImage("solucao", live.solucao, bank.solucao),
+    hero: getSlotImage(SLOTS.indexOf("hero"), live.hero, bank.hero),
+    dor: getSlotImage(SLOTS.indexOf("dor"), live.dor, bank.dor),
+    sobre: getSlotImage(SLOTS.indexOf("sobre"), live.sobre, bank.sobre),
+    solucao: getSlotImage(SLOTS.indexOf("solucao"), live.solucao, bank.solucao),
   };
+
+  console.log("[gerar-copy] images resolvidas:", images);
 
   return Response.json({ copy, images });
 }

@@ -140,31 +140,16 @@ export async function POST(request: Request) {
       .select("id, storage_path")
       .eq("account_id", ctx.accountId);
 
-    // Buscar usos atuais
-    const { data: usages } = await db
-      .from("lp_image_usages")
-      .select("slot, image_id");
-
-    const usageMap = new Map((usages || []).map((u) => [u.slot, u.image_id]));
-    const galleryMap = new Map(
-      (galleryImages || []).map((img) => [img.id, img.storage_path]),
-    );
     const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
 
     const getSlotImage = (slot: string, liveUrl: string, bankUrl: string) => {
-      // 1. Matched slot
-      const matchedImageId = usageMap.get(slot);
-      if (matchedImageId) {
-        const path = galleryMap.get(matchedImageId);
-        if (path) return getPublicMediaUrl(path);
-      }
-      // 2. Qualquer imagem da galeria (com índice para distribuir)
+      // 1. Qualquer imagem da galeria (com índice para distribuir)
       if (galleryPaths.length > 0) {
         const slotIndex = ["hero", "dor", "sobre", "solucao"].indexOf(slot);
         const path = galleryPaths[slotIndex % galleryPaths.length];
         return getPublicMediaUrl(path);
       }
-      // 3. Unsplash / Banco
+      // 2. Unsplash / Banco
       return liveUrl || bankUrl;
     };
 

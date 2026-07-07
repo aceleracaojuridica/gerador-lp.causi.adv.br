@@ -78,7 +78,12 @@ Responda com este JSON EXATO (sem comentários):
   "imageQueries": { "hero": "termo em INGLÊS p/ FOTO de cenário", "dor": "termo em INGLÊS", "sobre": "termo em INGLÊS de ambiente de escritório", "solucao": "termo em INGLÊS de advogado atendendo/orientando cliente" }
 }
 
-REGRAS "imageQueries" (buscam FOTOS no Unsplash): 2-5 palavras em INGLÊS, CENA/AMBIENTE ligado ao tema e ao público (ex: previdenciário → hero "elderly brazilian couple at home"). "sobre" sempre ambiente de escritório. NUNCA texto/logo/bandeira/martelo/balança nem retrato de pessoa específica.
+REGRAS "imageQueries" (buscam FOTOS no Unsplash): 2-5 palavras em INGLÊS, CENA/AMBIENTE emocionalmente ligado ao tema e ao PÚBLICO BRASILEIRO.
+• "hero": cena que REPRESENTA A DOR ou o contexto do público-alvo (ex: previdenciário → "elderly couple worried about retirement"; família → "couple discussing documents at table"; trabalhista → "stressed worker with papers"). NÃO usar imagem de tribunal ou escritório no hero.
+• "dor": momento de tensão ou incerteza que o público vivencia antes de buscar ajuda (ex: "person stressed reading legal documents", "worried family at home").
+• "sobre": interior de escritório de advocacia MODERNO, DISCRETO e BRASILEIRO — sem símbolos americanos (sem Capitólio, sem bandeira americana, sem plenário). Use termos como "modern law office interior south america", "brazilian law firm office", "professional office meeting room".
+• "solucao": cena de ACOLHIMENTO ou orientação, advogado e cliente (ex: "lawyer consulting client at desk", "attorney meeting with couple"). Nada de poses de triunfo ou martelo.
+NUNCA: texto, logo, bandeira, martelo, balança, retrato de pessoa específica, prédios históricos americanos.
 
 REGRAS "seo": title com a keyword do TEMA no início (mesmo termo do anúncio pago), separador " | ", nome curto do escritório. Máximo 60 chars. description: benefício principal que o visitante obtém + CTA suave (ex: "Analise seu caso."). 140-155 chars. Sem promessa de resultado.
 

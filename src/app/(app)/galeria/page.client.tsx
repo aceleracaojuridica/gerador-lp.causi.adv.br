@@ -175,19 +175,26 @@ export function GalleryPageClient() {
                       {inUse ? (
                         <>
                           Usado em:{" "}
-                          {img.usages.map((u, index) => (
-                            <span key={u.landingPageId}>
-                              {index > 0 ? ", " : null}
-                              <Link
-                                href={publicLpUrl(u.officeSubdomain, u.slug)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-foreground underline-offset-2 hover:underline"
-                              >
-                                {u.name || u.slug}
-                              </Link>
-                            </span>
-                          ))}
+                          {img.usages
+                            .filter(
+                              (u, i, self) =>
+                                self.findIndex(
+                                  (x) => x.landingPageId === u.landingPageId,
+                                ) === i,
+                            )
+                            .map((u, index) => (
+                              <span key={u.landingPageId}>
+                                {index > 0 ? ", " : null}
+                                <Link
+                                  href={publicLpUrl(u.officeSubdomain, u.slug)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-foreground underline-offset-2 hover:underline"
+                                >
+                                  {publicLpUrl(u.officeSubdomain, u.slug)}
+                                </Link>
+                              </span>
+                            ))}
                         </>
                       ) : (
                         "Não utilizada"

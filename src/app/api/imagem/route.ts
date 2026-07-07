@@ -1,41 +1,48 @@
 import { NextResponse } from "next/server";
-import {
-  categoriaDoTema,
-  imagemAleatoria,
-} from "@/lib/landing-pages/image-bank";
-import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
-import { buscarUmaImagem } from "@/lib/landing-pages/unsplash";
+import { imagemAleatoria } from "@/lib/landing-pages/image-bank";
+import { buscarImagemAleatoria } from "@/lib/landing-pages/unsplash";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
-import {
-  createLpUserClient,
-  sessionToLpContext,
-} from "@/lib/supabase/lp-client";
 
 export const dynamic = "force-dynamic";
 
 // Intenção de cada seção (termos em inglês — Unsplash responde melhor).
 const SECTION_INTENT: Record<string, string> = {
-  hero: "law office consultation meeting",
-  dor: "worried person reading documents",
+  hero: "law office professional consultation",
+  dor: "worried person stressed documents problem",
   sobre: "modern law firm office interior",
-  solucao: "lawyer advising client handshake",
+  solucao: "lawyer advising client handshake success",
 };
 
 // Termos da área jurídica (refina a busca conforme o tema).
 const AREA_TERMS: Record<string, string> = {
-  trabalhista: "worker labor",
-  previdenciario: "elderly retirement",
-  familia: "family together",
-  consumidor: "finance debt bills",
+  trabalhista: "worker labor employment",
+  previdenciario: "elderly retirement social security",
+  familia: "family together home",
+  consumidor: "finance debt consumer",
   generico: "law justice professional",
 };
 
 const KEYS = ["hero", "dor", "sobre", "solucao"] as const;
 type Key = (typeof KEYS)[number];
 
+function categoriaDoTema(tema: string): string {
+  const t = (tema || "").toLowerCase();
+  if (["trabalh", "clt", "rescis", "demiss", "hora extra", "fgts"].some((k) => t.includes(k)))
+    return "trabalhista";
+  if (["previden", "inss", "aposentad", "auxílio", "auxilio", "benefíci", "benefici"].some((k) => t.includes(k)))
+    return "previdenciario";
+  if (["famíli", "famili", "divórc", "divorc", "guarda", "pensão", "aliment"].some((k) => t.includes(k)))
+    return "familia";
+  if (["consumidor", "negativ", "dívida", "divida", "banco", "abusiv", "contrato"].some((k) => t.includes(k)))
+    return "consumidor";
+  return "generico";
+}
+
 /**
- * "IA escolhe" imagem: busca no banco de imagens da conta, depois Unsplash, depois banco curado.
+ * "IA escolhe" imagem no editor: usa exclusivamente o endpoint /photos/random
+ * da Unsplash para garantir uma foto diferente a cada clique.
+ * Fallback: banco de imagens local curado.
  */
 export async function POST(req: Request) {
   let session: Session;
@@ -49,6 +56,9 @@ export async function POST(req: Request) {
     );
   }
 
+  // session necessária apenas para autenticação — não buscamos galeria aqui.
+  void session;
+
   const body = (await req.json().catch(() => ({}))) as {
     tema?: string;
     sectionKey?: string;
@@ -59,57 +69,28 @@ export async function POST(req: Request) {
     ? (body.sectionKey as Key)
     : "hero";
 
-  const ctx = sessionToLpContext(session);
-  const db = createLpUserClient(session);
+  const cat = categoriaDoTema(tema);
+  const query = `${AREA_TERMS[cat] ?? AREA_TERMS.generico} ${SECTION_INTENT[key]}`;
 
-  let url = null;
+  console.log("[imagem] key:", key, "| tema:", tema, "| cat:", cat);
+  console.log("[imagem] query Unsplash:", query);
+  console.log("[imagem] current:", body.current);
 
-  // 1. Prioridade: Imagem da galeria com uso no mesmo slot para esta conta
-  const { data: usageMatch } = await db
-    .from("lp_image_usages")
-    .select("image_id")
-    .eq("slot", key)
-    .limit(1)
-    .maybeSingle();
+  // Unsplash /photos/random — retorna uma foto diferente a cada chamada.
+  let url = await buscarImagemAleatoria(query);
 
-  if (usageMatch?.image_id) {
-    const { data: img } = await db
-      .from("lp_account_images")
-      .select("storage_path")
-      .eq("id", usageMatch.image_id)
-      .eq("account_id", ctx.accountId)
-      .maybeSingle();
-
-    if (img) {
-      url = getPublicMediaUrl(img.storage_path);
-    }
+  // Se por acaso caiu na mesma imagem (improvável com random), tenta mais uma vez.
+  if (url && url === body.current) {
+    console.log("[imagem] mesma imagem, tentando novamente...");
+    url = await buscarImagemAleatoria(query);
   }
 
-  // 2. Prioridade: Qualquer imagem da galeria da conta
+  // Fallback: banco de imagens local curado (garante algo mesmo sem API key).
   if (!url) {
-    const { data: anyImage } = await db
-      .from("lp_account_images")
-      .select("storage_path")
-      .eq("account_id", ctx.accountId)
-      .limit(1)
-      .maybeSingle();
-
-    if (anyImage) {
-      url = getPublicMediaUrl(anyImage.storage_path);
-    }
-  }
-
-  // 3. Prioridade: Unsplash
-  if (!url) {
-    const cat = categoriaDoTema(tema);
-    const query = `${AREA_TERMS[cat] ?? AREA_TERMS.generico} ${SECTION_INTENT[key]}`;
-    url = await buscarUmaImagem(query);
-  }
-
-  // 4. Prioridade: Fallback (Banco de imagens local)
-  if (!url) {
+    console.log("[imagem] Unsplash vazio, usando banco local");
     url = imagemAleatoria(key, body.current);
   }
 
+  console.log("[imagem] url final:", url);
   return NextResponse.json({ url });
 }

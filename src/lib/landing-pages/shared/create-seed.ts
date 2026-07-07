@@ -41,6 +41,7 @@ export type GerarLpPayload = {
 export function createGerarLpPayloadFromWizard(
   values: LandingPageCreateFormValues,
   extras: {
+    name: string;
     copy: FocoCopy;
     images: GerarLpPayload["images"];
     layout: Layout;
@@ -48,7 +49,6 @@ export function createGerarLpPayloadFromWizard(
   },
 ): GerarLpPayload {
   const {
-    name,
     tema,
     about,
     diferenciais,
@@ -66,7 +66,7 @@ export function createGerarLpPayloadFromWizard(
   } = values;
 
   return {
-    name: name.trim(),
+    name: extras.name.trim(),
     tema: tema.trim(),
     city: showAddress
       ? [addresses[0]?.cidade, addresses[0]?.uf].filter(Boolean).join("/")

@@ -28,17 +28,17 @@ export const EMPTY_SECTION_IMAGES: SectionImages = {
 
 // Consultas-base (inglês) quando a IA não sugere termos.
 const FALLBACK_QUERIES: SectionImages = {
-  hero: "law office consultation",
-  dor: "worried person reading documents",
-  sobre: "modern law firm interior",
-  solucao: "lawyer advising client",
+  hero: "worried person reading legal documents at home",
+  dor: "stressed person with papers financial problem",
+  sobre: "modern law office interior professional meeting room",
+  solucao: "lawyer consulting client at desk professional",
 };
 
 async function buscarUma(query: string, accessKey: string): Promise<string> {
   const url =
     "https://api.unsplash.com/search/photos" +
     `?query=${encodeURIComponent(query)}` +
-    "&orientation=landscape&per_page=1&content_filter=high";
+    "&orientation=landscape&per_page=10&content_filter=high";
 
   const res = await fetch(url, {
     headers: {
@@ -52,7 +52,11 @@ async function buscarUma(query: string, accessKey: string): Promise<string> {
   const data = (await res.json()) as {
     results?: { urls?: { regular?: string } }[];
   };
-  return data.results?.[0]?.urls?.regular ?? "";
+  const results = data.results ?? [];
+  if (!results.length) return "";
+  // Pega aleatoriamente entre os primeiros resultados para maior variedade
+  const pick = results[Math.floor(Math.random() * results.length)];
+  return pick?.urls?.regular ?? "";
 }
 
 /**
@@ -84,6 +88,48 @@ export async function buscarUmaImagem(query: string): Promise<string> {
     const pick = results[Math.floor(Math.random() * results.length)];
     return pick?.urls?.regular ?? "";
   } catch {
+    return "";
+  }
+}
+
+/**
+ * Busca uma imagem aleatória usando o endpoint /photos/random da Unsplash.
+ * Cada chamada retorna uma foto diferente — ideal para o botão "IA escolhe"
+ * no editor, onde queremos variação garantida sem repetição.
+ */
+export async function buscarImagemAleatoria(query: string): Promise<string> {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) return "";
+
+  const url =
+    "https://api.unsplash.com/photos/random" +
+    `?query=${encodeURIComponent(query)}` +
+    "&orientation=landscape&content_filter=high&count=1";
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Client-ID ${accessKey}`,
+        "Accept-Version": "v1",
+      },
+      cache: "no-store",
+    });
+
+    console.log("[unsplash/random] status:", res.status, "query:", query);
+
+    if (!res.ok) {
+      console.log("[unsplash/random] erro:", await res.text());
+      return "";
+    }
+
+    const data = (await res.json()) as { urls?: { regular?: string } }[];
+    const photo = Array.isArray(data) ? data[0] : data;
+    const photoUrl = (photo as { urls?: { regular?: string } })?.urls?.regular ?? "";
+
+    console.log("[unsplash/random] url retornada:", photoUrl);
+    return photoUrl;
+  } catch (err) {
+    console.error("[unsplash/random] exce\u00e7\u00e3o:", err);
     return "";
   }
 }

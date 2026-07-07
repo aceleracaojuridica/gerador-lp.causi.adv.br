@@ -2,6 +2,7 @@ import type {
   CaptchaConfig,
   ConversionTags,
   Office,
+  SocialNetwork,
   TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
 
@@ -21,7 +22,7 @@ export type GlobalConfig = {
     whatsappDisplay: string;
     email: string;
   };
-  socials?: { network: string; url: string }[];
+  socials?: { network: SocialNetwork; url: string }[];
 };
 
 export const DEFAULT_TRACKING: TrackingProviderConfig = {

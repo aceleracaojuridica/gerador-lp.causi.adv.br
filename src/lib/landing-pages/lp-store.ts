@@ -311,6 +311,154 @@ export async function saveLp(session: Session, lp: StoredLp): Promise<void> {
   if (error) throwDbError(error);
 
   await syncImageUsagesFromSchema(db, saved.id as string, schema);
+
+  // Sincronizar contatos, endereços e redes sociais para reutilização global
+  if (schema?.office) {
+    const office = schema.office;
+
+    // 1. Sincronizar contato principal
+    if (office.whatsapp || office.email) {
+      const whatsapp = office.whatsapp ?? "";
+      const email = (office.email ?? "").trim();
+      const whatsappDisplay = office.whatsappDisplay ?? "";
+
+      const { data: existingContact } = await db
+        .from("lp_account_contacts")
+        .select("id")
+        .eq("account_id", ctx.accountId)
+        .eq("whatsapp", whatsapp)
+        .eq("email", email)
+        .maybeSingle();
+
+      if (!existingContact) {
+        await db.from("lp_account_contacts").insert({
+          account_id: ctx.accountId,
+          whatsapp,
+          whatsapp_display: whatsappDisplay,
+          email,
+          is_primary: false, // O trigger do banco cuidará de promover para true se for o único/primeiro
+        });
+      }
+    }
+
+    // Sincronizar contatos extras
+    if (Array.isArray(office.extraContacts)) {
+      for (const c of office.extraContacts) {
+        if (c.whatsapp || c.email) {
+          const whatsapp = c.whatsapp ?? "";
+          const email = (c.email ?? "").trim();
+          const whatsappDisplay = c.whatsappDisplay ?? "";
+
+          const { data: existingExtraContact } = await db
+            .from("lp_account_contacts")
+            .select("id")
+            .eq("account_id", ctx.accountId)
+            .eq("whatsapp", whatsapp)
+            .eq("email", email)
+            .maybeSingle();
+
+          if (!existingExtraContact) {
+            await db.from("lp_account_contacts").insert({
+              account_id: ctx.accountId,
+              whatsapp,
+              whatsapp_display: whatsappDisplay,
+              email,
+              is_primary: false,
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Sincronizar endereço principal
+    if (office.address || office.city) {
+      const address = (office.address ?? "").trim();
+      const [cidade = "", uf = ""] = (office.city ?? "")
+        .split("/")
+        .map((s) => s.trim());
+      const mapsUrl = (office.mapsUrl ?? "").trim();
+
+      const { data: existingAddr } = await db
+        .from("lp_account_addresses")
+        .select("id")
+        .eq("account_id", ctx.accountId)
+        .eq("address", address)
+        .eq("cidade", cidade)
+        .eq("uf", uf)
+        .maybeSingle();
+
+      if (!existingAddr) {
+        await db.from("lp_account_addresses").insert({
+          account_id: ctx.accountId,
+          address,
+          cidade,
+          uf,
+          maps_url: mapsUrl || null,
+          is_primary: false, // O trigger do banco cuidará de promover para true se for o único/primeiro
+        });
+      }
+    }
+
+    // Sincronizar endereços extras
+    if (Array.isArray(office.extraAddresses)) {
+      for (const a of office.extraAddresses) {
+        if (a.address || a.city) {
+          const address = (a.address ?? "").trim();
+          const [cidade = "", uf = ""] = (a.city ?? "")
+            .split("/")
+            .map((s) => s.trim());
+          const mapsUrl = (a.mapsUrl ?? "").trim();
+
+          const { data: existingExtraAddr } = await db
+            .from("lp_account_addresses")
+            .select("id")
+            .eq("account_id", ctx.accountId)
+            .eq("address", address)
+            .eq("cidade", cidade)
+            .eq("uf", uf)
+            .maybeSingle();
+
+          if (!existingExtraAddr) {
+            await db.from("lp_account_addresses").insert({
+              account_id: ctx.accountId,
+              address,
+              cidade,
+              uf,
+              maps_url: mapsUrl || null,
+              is_primary: false,
+            });
+          }
+        }
+      }
+    }
+
+    // 3. Sincronizar redes sociais
+    if (Array.isArray(office.socials)) {
+      for (const s of office.socials) {
+        if (s.url) {
+          const url = s.url.trim();
+          const network = s.network;
+
+          const { data: existingSocial } = await db
+            .from("lp_account_socials")
+            .select("id")
+            .eq("account_id", ctx.accountId)
+            .eq("network", network)
+            .eq("url", url)
+            .maybeSingle();
+
+          if (!existingSocial) {
+            await db.from("lp_account_socials").insert({
+              account_id: ctx.accountId,
+              network,
+              url,
+              is_primary: false, // O trigger do banco cuidará de promover para true se for o único/primeiro daquela rede
+            });
+          }
+        }
+      }
+    }
+  }
 }
 
 export async function publishLp(session: Session, slug: string): Promise<void> {

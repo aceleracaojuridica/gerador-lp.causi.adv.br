@@ -234,20 +234,24 @@ export async function deleteOrphanedImages(session: Session): Promise<void> {
   const db = createLpUserClient(session);
 
   // Seleciona imagens sem usos
-  const { data: orphaned, error: fetchError } = await db
+  const { data: allImages, error: fetchError } = await db
     .from("lp_account_images")
     .select(`
       id,
       storage_path,
-      lp_image_usages!left (
+      lp_image_usages (
         id
       )
     `)
-    .eq("account_id", ctx.accountId)
-    .is("lp_image_usages.id", null);
+    .eq("account_id", ctx.accountId);
 
   if (fetchError) throwDbError(fetchError);
-  if (!orphaned || orphaned.length === 0) return;
+  if (!allImages) return;
+
+  const orphaned = allImages.filter(
+    (img) => !img.lp_image_usages || img.lp_image_usages.length === 0,
+  );
+  if (orphaned.length === 0) return;
 
   const ids = orphaned.map((img) => img.id as string);
   const paths = orphaned.map((img) => img.storage_path as string);
