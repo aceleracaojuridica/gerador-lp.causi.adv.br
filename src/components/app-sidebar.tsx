@@ -104,7 +104,7 @@ export function AppSidebar({
       action: () => setSupportModalOpen(true),
     },
     {
-      href: "/",
+      href: "https://app.causi.com.br",
       icon: Home,
       label: "Voltar ao Causi",
     },

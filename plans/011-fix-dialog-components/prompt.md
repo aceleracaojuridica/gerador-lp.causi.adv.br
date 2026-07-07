@@ -1,6 +1,0 @@
-Quero que da forma mais simples e eficiente possível seja resolvido o problema de renderizar um combobox ou popover dentro de um dialog. Atualmente quando coloco um item que abre um combobox ou popover dentro de um modal ocorre os seguintes problemas ao abrir um deles de dentro de um dialog:
-1. Não consigo clicar nos itens
-2. Não consigo scrollar
-3. Não consigo focar no input de pesquisa do combobox
-
-Parece que esse já é um problema bem comum. Atualmente tenho um component chamado entity combobox que resolvo isso adicionando um prop modal e com isso faz algumas alterações na forma como é renderizado o combobox, mas acredito que tenha alguma forma mais prática de resolver esse problema, talvez tratando diretamente no dialog, não sei. Gostaria que você fizesse uma pesquisa sobre o problema e encontrasse a solução mais prática e eficiente, de preferência alguma que eu não precise ficar modificando e adicionando props a todos componentes que vão ser inseridos dentro de um dialog, pq isso da mt mais trabalho e manutenção.

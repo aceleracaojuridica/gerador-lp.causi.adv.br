@@ -22,9 +22,6 @@ export function ConfigFormFooter({
         Desfazer alteracoes
       </Button>
       <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <Button asChild variant="ghost">
-          <Link href="/lp">Voltar para landing pages</Link>
-        </Button>
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Salvando..." : "Salvar configuracoes"}
         </Button>

@@ -28,7 +28,6 @@ supabase/
 | `public.landing_pages` | Gerador | LPs do CRM (`schema` jsonb); `profile_id` opcional → `profiles.id` |
 | `storage.gerador-lp-assets` | Gerador | Mídias das LPs (logo, advogados, seções) |
 | `public.leads` | Lovable + Gerador | `nome`, `telefone`, `page_url`, `subdomain` |
-| `public.user_settings` | Gerador | Configurações globais (`causi_user_id` text, sem FK para `users`) |
 
 **Removidas após migration 3:** `public.lps`, `public.leads_gerador`, `public.users`, coluna `profiles.pages`
 
