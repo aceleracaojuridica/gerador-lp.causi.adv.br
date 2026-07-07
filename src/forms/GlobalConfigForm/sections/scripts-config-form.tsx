@@ -7,7 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Form, FormControl, FormField } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import type { GlobalConfigFormProps } from "../global-config-form.types";
 import { ConfigFormFooter } from "../shared/config-form-footer";
@@ -30,6 +35,15 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
+            <div className="rounded-lg border border-yellow-200/50 bg-yellow-500/10 p-3 text-xs leading-relaxed text-yellow-600 dark:text-yellow-400">
+              ⚠️ <strong>Políticas de Segurança Ativa:</strong> Para proteger as
+              páginas, apenas scripts de origens autorizadas (como Google
+              Analytics, GTM, Meta Pixel, TikTok, LinkedIn, Cloudflare e Google
+              Calendar) são permitidos. Scripts de domínios desconhecidos ou
+              chamadas perigosas (como eval e acesso a cookies/storage) serão
+              rejeitados na validação.
+            </div>
+
             <FormField
               control={form.control}
               name="tags.head"
@@ -39,11 +53,14 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   description="HTML/JS avancado injetado no head da landing page publicada."
                 >
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      className="min-h-28 font-mono text-xs"
-                      placeholder="<script>...</script>"
-                    />
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <Textarea
+                        {...field}
+                        className="min-h-28 font-mono text-xs"
+                        placeholder="<script>...</script>"
+                      />
+                      <FormMessage />
+                    </div>
                   </FormControl>
                 </FieldRow>
               )}
@@ -58,11 +75,14 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   description="Snippets renderizados no inicio do body."
                 >
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      className="min-h-28 font-mono text-xs"
-                      placeholder="<script>...</script>"
-                    />
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <Textarea
+                        {...field}
+                        className="min-h-28 font-mono text-xs"
+                        placeholder="<script>...</script>"
+                      />
+                      <FormMessage />
+                    </div>
                   </FormControl>
                 </FieldRow>
               )}
@@ -78,11 +98,14 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   borderless
                 >
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      className="min-h-28 font-mono text-xs"
-                      placeholder="<script>...</script>"
-                    />
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <Textarea
+                        {...field}
+                        className="min-h-28 font-mono text-xs"
+                        placeholder="<script>...</script>"
+                      />
+                      <FormMessage />
+                    </div>
                   </FormControl>
                 </FieldRow>
               )}

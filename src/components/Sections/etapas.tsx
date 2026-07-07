@@ -64,15 +64,24 @@ function Numerado({
         <Reveal>
           <Header content={content} dark={dark} centered />
         </Reveal>
-        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Linha conectora horizontal no desktop */}
+          <div
+            aria-hidden
+            className="absolute left-0 right-0 top-6 hidden h-0.5 bg-lp-accent/20 lg:block z-0"
+          />
           {content.steps.map((s, i) => (
-            <Reveal key={`${s.title}-${s.text}`} delay={i * 80}>
-              <div className="text-center sm:text-left">
-                <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-lp-accent font-display text-xl font-bold text-[var(--color-lp-accent-ink)] sm:mx-0">
+            <Reveal
+              key={`${s.title}-${s.text}`}
+              delay={i * 80}
+              className="relative z-10"
+            >
+              <div className="text-center lg:text-left">
+                <span className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-lp-accent bg-white font-display text-lg font-bold text-lp-brand shadow-sm lg:mx-0">
                   {i + 1}
                 </span>
                 <h3
-                  className={`font-display text-xl font-bold ${dark ? "text-white" : "text-lp-brand"}`}
+                  className={`font-display text-lg font-semibold leading-snug ${dark ? "text-white" : "text-lp-brand"}`}
                 >
                   {s.title}
                 </h3>

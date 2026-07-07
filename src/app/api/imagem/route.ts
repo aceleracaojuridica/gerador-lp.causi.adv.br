@@ -28,13 +28,47 @@ type Key = (typeof KEYS)[number];
 
 function categoriaDoTema(tema: string): string {
   const t = (tema || "").toLowerCase();
-  if (["trabalh", "clt", "rescis", "demiss", "hora extra", "fgts"].some((k) => t.includes(k)))
+  if (
+    ["trabalh", "clt", "rescis", "demiss", "hora extra", "fgts"].some((k) =>
+      t.includes(k),
+    )
+  )
     return "trabalhista";
-  if (["previden", "inss", "aposentad", "auxílio", "auxilio", "benefíci", "benefici"].some((k) => t.includes(k)))
+  if (
+    [
+      "previden",
+      "inss",
+      "aposentad",
+      "auxílio",
+      "auxilio",
+      "benefíci",
+      "benefici",
+    ].some((k) => t.includes(k))
+  )
     return "previdenciario";
-  if (["famíli", "famili", "divórc", "divorc", "guarda", "pensão", "aliment"].some((k) => t.includes(k)))
+  if (
+    [
+      "famíli",
+      "famili",
+      "divórc",
+      "divorc",
+      "guarda",
+      "pensão",
+      "aliment",
+    ].some((k) => t.includes(k))
+  )
     return "familia";
-  if (["consumidor", "negativ", "dívida", "divida", "banco", "abusiv", "contrato"].some((k) => t.includes(k)))
+  if (
+    [
+      "consumidor",
+      "negativ",
+      "dívida",
+      "divida",
+      "banco",
+      "abusiv",
+      "contrato",
+    ].some((k) => t.includes(k))
+  )
     return "consumidor";
   return "generico";
 }

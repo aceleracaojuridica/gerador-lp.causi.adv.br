@@ -121,7 +121,7 @@ export function Dor({
   image,
 }: DorProps) {
   const dark = tone === "dark";
-  const sectionBg = dark ? "bg-lp-brand" : "bg-white";
+  const sectionBg = dark ? "bg-lp-brand" : "bg-lp-cream";
 
   return (
     <section className={`relative overflow-hidden py-20 md:py-28 ${sectionBg}`}>
@@ -136,7 +136,7 @@ export function Dor({
       ) : (
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-32 top-10 h-72 w-[34rem] rounded-full bg-lp-cream-deep/50"
+          className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full border border-lp-accent/[0.08]"
         />
       )}
 
@@ -217,23 +217,23 @@ function CardGrid({ content, dark }: { content: DorContent; dark: boolean }) {
         return (
           <Reveal key={`${d.title}-${d.text}`} delay={i * 90}>
             <div
-              className={`h-full rounded-2xl p-7 transition hover:-translate-y-1 ${
+              className={`h-full rounded-xl p-7 transition hover:-translate-y-0.5 hover:shadow-sm ${
                 dark
-                  ? "bg-white/[0.06] ring-1 ring-white/10 hover:bg-white/[0.09]"
-                  : "bg-lp-cream hover:shadow-lg"
+                  ? "bg-white/[0.06] ring-1 ring-white/10"
+                  : "bg-white ring-1 ring-lp-ink-soft/10"
               }`}
             >
               <span
-                className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${
+                className={`mb-5 flex h-11 w-11 items-center justify-center rounded-full border ${
                   dark
-                    ? "bg-lp-accent text-lp-brand-dark"
-                    : "bg-lp-brand text-lp-accent-soft"
+                    ? "border-lp-accent-soft text-lp-accent-soft"
+                    : "border-lp-accent text-lp-accent"
                 }`}
               >
                 <IconForKey iconKey={d.icon} size={28} />
               </span>
               <h3
-                className={`font-display text-2xl font-bold ${dark ? "text-white" : "text-lp-brand"}`}
+                className={`font-display text-xl font-semibold leading-snug ${dark ? "text-white" : "text-lp-brand"}`}
               >
                 {d.title}
               </h3>

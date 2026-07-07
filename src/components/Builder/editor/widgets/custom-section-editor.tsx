@@ -2,10 +2,13 @@
 
 import {
   Add,
+  CalendarMonth,
   Close,
   Dashboard,
   Delete,
   GridView,
+  HomePin,
+  Movie,
   Notes,
 } from "@material-symbols-svg/react";
 import { useState } from "react";
@@ -13,8 +16,9 @@ import { AutoTextarea } from "@/components/auto-textarea";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import type { CustomSection } from "@/lib/landing-pages/schema";
+import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { BuilderField } from "../../shared/fields";
-import { Accordion, ToneToggle } from "../controls/editor-controls";
+import { Accordion, Segmented, ToneToggle } from "../controls/editor-controls";
 
 export function AddSectionButton({
   onAdd,
@@ -45,7 +49,7 @@ export function AddSectionButton({
             onAdd("cards");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
         >
           <GridView size={20} className="text-slate-500" />
           Com cards
@@ -56,10 +60,43 @@ export function AddSectionButton({
             onAdd("texto");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
         >
           <Notes size={20} className="text-slate-500" />
           Com texto
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onAdd("youtube");
+            setChoosing(false);
+          }}
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+        >
+          <Movie size={20} className="text-slate-500" />
+          Vídeo YouTube
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onAdd("calendar");
+            setChoosing(false);
+          }}
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+        >
+          <CalendarMonth size={20} className="text-slate-500" />
+          Agendamento
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onAdd("maps");
+            setChoosing(false);
+          }}
+          className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+        >
+          <HomePin size={20} className="text-slate-500" />
+          Mapa Google Maps
         </button>
       </div>
     </div>
@@ -76,15 +113,37 @@ export function CustomSectionEditor({
   onScroll: () => void;
 }) {
   const titulo = section.title.trim() || "Nova seção";
-  const tipo = section.kind === "cards" ? "cards" : "texto";
+  const tipo = section.kind;
   return (
     <Accordion
       title={titulo}
       domId={`acc-custom-${section.id}`}
       onOpen={onScroll}
       target={`sec-custom-${section.id}`}
-      icon={tipo === "cards" ? <Dashboard size={22} /> : <Notes size={22} />}
-      subtitle={`Seção personalizada · ${tipo === "cards" ? "com cards" : "com texto"}`}
+      icon={
+        tipo === "cards" ? (
+          <Dashboard size={22} />
+        ) : tipo === "youtube" ? (
+          <Movie size={22} />
+        ) : tipo === "calendar" ? (
+          <CalendarMonth size={22} />
+        ) : tipo === "maps" ? (
+          <HomePin size={22} />
+        ) : (
+          <Notes size={22} />
+        )
+      }
+      subtitle={`Seção personalizada · ${
+        tipo === "cards"
+          ? "com cards"
+          : tipo === "youtube"
+            ? "vídeo do YouTube"
+            : tipo === "calendar"
+              ? "Agendamento Google Calendar"
+              : tipo === "maps"
+                ? "Mapa Google Maps"
+                : "com texto"
+      }`}
     >
       <BuilderField label="Título de cima (opcional)">
         <Input
@@ -120,6 +179,47 @@ export function CustomSectionEditor({
             placeholder="Escreva o conteúdo desta seção..."
           />
         </BuilderField>
+      ) : section.kind === "youtube" ? (
+        <BuilderField
+          label="Link do vídeo do YouTube"
+          hint="Cole o link completo do vídeo ou o ID de 11 caracteres."
+        >
+          <Input
+            value={section.youtubeId ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              const extracted = extractYouTubeId(val);
+              form.setCustomField(section.id, "youtubeId", extracted || val);
+            }}
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+        </BuilderField>
+      ) : section.kind === "calendar" ? (
+        <BuilderField
+          label="Link de incorporação do Google Calendar"
+          hint="Abra o Google Calendar → Configurar agendamento → Incorporar → copie o código HTML ou só o link src do iframe."
+        >
+          <Input
+            value={section.calendarUrl ?? ""}
+            onChange={(e) => {
+              form.setCustomField(section.id, "calendarUrl", e.target.value);
+            }}
+            placeholder="https://calendar.google.com/calendar/embed?src=..."
+          />
+        </BuilderField>
+      ) : section.kind === "maps" ? (
+        <BuilderField
+          label="Link de incorporação do Google Maps"
+          hint="Abra o Google Maps → Compartilhar → Incorporar mapa → copie o código HTML ou só o link src do iframe."
+        >
+          <Input
+            value={section.mapsUrl ?? ""}
+            onChange={(e) => {
+              form.setCustomField(section.id, "mapsUrl", e.target.value);
+            }}
+            placeholder="<iframe src='https://www.google.com/maps/embed...'></iframe>"
+          />
+        </BuilderField>
       ) : (
         <div>
           <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
@@ -128,7 +228,7 @@ export function CustomSectionEditor({
           <div className="space-y-2">
             {section.cards.map((c, i) => (
               <div
-                key={i}
+                key={`card_${i}_${c.title.toLowerCase().replaceAll(" ", "_").trim()}`}
                 className="space-y-2 rounded-lg border border-slate-200 p-2.5"
               >
                 <div className="flex items-center justify-between">
@@ -181,6 +281,22 @@ export function CustomSectionEditor({
           >
             <Add size={13} /> Adicionar card
           </button>
+        </div>
+      )}
+
+      {(section.kind === "youtube" ||
+        section.kind === "calendar" ||
+        section.kind === "maps") && (
+        <div className="mb-4">
+          <Segmented
+            label="Layout da seção"
+            value={section.variant ?? "boxed"}
+            onChange={(v) => form.setCustomField(section.id, "variant", v)}
+            options={[
+              { id: "boxed", label: "Borda" },
+              { id: "fullWidth", label: "Preenchido" },
+            ]}
+          />
         </div>
       )}
 

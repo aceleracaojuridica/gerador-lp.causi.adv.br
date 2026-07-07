@@ -157,8 +157,8 @@ export function LandingPreview({
       >
         {children}
         {control ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-20">
-            <div className="pointer-events-auto">
+          <div className="pointer-events-none absolute inset-y-0 right-3 z-20">
+            <div className="sticky top-3 pointer-events-auto">
               <SectionVariantControls
                 label={control.label}
                 variants={control.options.map((option) => option.id)}
@@ -198,7 +198,7 @@ export function LandingPreview({
                 accentRgb={accentRgb}
                 brandRgb={brandRgb}
                 brandDarkRgb={brandDarkRgb}
-                image={schema.office.sectionImages.dor}
+                image={schema.office.sectionImages?.dor}
               />,
             )}
           </div>

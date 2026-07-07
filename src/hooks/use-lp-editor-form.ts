@@ -460,19 +460,56 @@ export function useLpEditorForm(seed?: LpSeed) {
             text: "Escreva aqui o conteúdo desta seção.",
             cards: [],
           }
-        : {
-            id,
-            kind,
-            tone: "light",
-            eyebrow: "",
-            title: "Nova seção",
-            text: "",
-            cards: [
-              { title: "Item 1", text: "Descrição do primeiro item." },
-              { title: "Item 2", text: "Descrição do segundo item." },
-              { title: "Item 3", text: "Descrição do terceiro item." },
-            ],
-          };
+        : kind === "youtube"
+          ? {
+              id,
+              kind,
+              tone: "light",
+              eyebrow: "",
+              title: "Vídeo",
+              text: "",
+              cards: [],
+              youtubeId: "",
+              variant: "boxed",
+            }
+          : kind === "calendar"
+            ? {
+                id,
+                kind,
+                tone: "light",
+                eyebrow: "Agendamento",
+                title: "Reserve seu horário",
+                text: "",
+                cards: [],
+                calendarUrl: "",
+                variant: "boxed",
+              }
+            : kind === "maps"
+              ? {
+                  id,
+                  kind,
+                  tone: "light",
+                  eyebrow: "Localização",
+                  title: "Como nos encontrar",
+                  text: "",
+                  cards: [],
+                  mapsUrl: "",
+                  variant: "boxed",
+                }
+              : {
+                  id,
+                  kind,
+                  tone: "light",
+                  eyebrow: "",
+                  title: "Nova seção",
+                  text: "",
+                  cards: [
+                    { title: "Item 1", text: "Descrição do primeiro item." },
+                    { title: "Item 2", text: "Descrição do segundo item." },
+                    { title: "Item 3", text: "Descrição do terceiro item." },
+                  ],
+                };
+
     form.setValue(
       "customSections",
       [...form.getValues("customSections"), base],
@@ -481,7 +518,14 @@ export function useLpEditorForm(seed?: LpSeed) {
   }
   function setCustomField(
     id: string,
-    key: "eyebrow" | "title" | "text",
+    key:
+      | "eyebrow"
+      | "title"
+      | "text"
+      | "youtubeId"
+      | "calendarUrl"
+      | "mapsUrl"
+      | "variant",
     v: string,
   ) {
     form.setValue(

@@ -105,17 +105,23 @@ export type PopupQuestion = {
 };
 
 /**
- * Seção criada pelo usuário no editor. Dois formatos: "cards" (grade numerada)
- * ou "texto" (bloco de escrita, como o Sobre). Sempre com tom claro ou escuro.
+ * Seção criada pelo usuário no editor. Formatos: "cards" (grade numerada),
+ * "texto" (bloco de escrita), "youtube" (vídeo), "calendar" (agendamento
+ * Google Calendar incorporado) e "maps" (mapa Google Maps incorporado).
+ * Sempre com tom claro ou escuro.
  */
 export type CustomSection = {
   id: string;
-  kind: "cards" | "texto";
+  kind: "cards" | "texto" | "youtube" | "calendar" | "maps";
   tone: Tone;
   eyebrow: string;
   title: string;
   text: string; // usado no formato "texto" (parágrafos separados por linha)
   cards: CustomCard[]; // usado no formato "cards"
+  youtubeId?: string; // usado no formato "youtube"
+  calendarUrl?: string; // usado no formato "calendar" (src do iframe do Google Calendar)
+  mapsUrl?: string; // usado no formato "maps" (src do iframe do Google Maps)
+  variant?: "boxed" | "fullWidth"; // variação visual para youtube, calendar e maps
 };
 
 /** Endereço adicional no rodapé (além do principal). */

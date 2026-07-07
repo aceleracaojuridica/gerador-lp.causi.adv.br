@@ -124,7 +124,8 @@ export async function buscarImagemAleatoria(query: string): Promise<string> {
 
     const data = (await res.json()) as { urls?: { regular?: string } }[];
     const photo = Array.isArray(data) ? data[0] : data;
-    const photoUrl = (photo as { urls?: { regular?: string } })?.urls?.regular ?? "";
+    const photoUrl =
+      (photo as { urls?: { regular?: string } })?.urls?.regular ?? "";
 
     console.log("[unsplash/random] url retornada:", photoUrl);
     return photoUrl;

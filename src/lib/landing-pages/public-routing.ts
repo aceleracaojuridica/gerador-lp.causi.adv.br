@@ -31,6 +31,7 @@ const RESERVED_SEGMENTS = new Set([
   "escritorio",
   "perfil",
   "usuarios",
+  "templates",
 ]);
 
 function hostWithoutPort(host: string): string {

@@ -23,6 +23,7 @@ import {
   SOLUCAO_VARIANTS,
 } from "@/lib/landing-pages/variants";
 import {
+  customScriptTagSchema,
   extraAddressSchema,
   extraContactSchema,
   heroFeatureSchema,
@@ -132,9 +133,9 @@ const officeSchema = z.object({
   extraContacts: z.array(extraContactSchema).optional(),
   tags: z
     .object({
-      head: z.string(),
-      body: z.string(),
-      footer: z.string(),
+      head: customScriptTagSchema,
+      body: customScriptTagSchema,
+      footer: customScriptTagSchema,
     })
     .optional(),
   tracking: z
@@ -220,12 +221,16 @@ const layoutSchema = z.object({
 
 const customSectionSchema = z.object({
   id: z.string(),
-  kind: z.enum(["cards", "texto"]),
+  kind: z.enum(["cards", "texto", "youtube", "calendar", "maps"]),
   tone: z.enum(["light", "dark"]),
   eyebrow: z.string(),
   title: z.string(),
   text: z.string(),
   cards: z.array(z.object({ title: z.string(), text: z.string() })),
+  youtubeId: z.string().optional(),
+  calendarUrl: z.string().optional(),
+  mapsUrl: z.string().optional(),
+  variant: z.enum(["boxed", "fullWidth"]).optional(),
 });
 
 /** Schema permissivo do editor — validação estrita só ao salvar/publicar. */

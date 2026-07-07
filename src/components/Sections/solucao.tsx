@@ -219,29 +219,29 @@ function Cards({
         return (
           <Reveal key={`${c.title}-${c.text}`} delay={i * 80}>
             <div
-              className={`relative h-full overflow-hidden rounded-2xl p-7 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
+              className={`relative h-full overflow-hidden rounded-xl p-7 transition hover:-translate-y-0.5 ${
                 hl
-                  ? "bg-lp-brand text-white shadow-2xl shadow-lp-brand/30"
-                  : "border-t-4 border-lp-accent bg-white"
+                  ? "bg-lp-brand text-white shadow-md shadow-lp-brand/20 ring-1 ring-lp-accent/20"
+                  : "bg-white border-t-2 border-lp-accent ring-1 ring-lp-ink-soft/10"
               }`}
             >
               {hl ? (
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-lp-accent/15"
+                  className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-lp-accent/10"
                 />
               ) : null}
               <span
-                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${
+                className={`relative mb-5 flex h-11 w-11 items-center justify-center rounded-full border ${
                   hl
-                    ? "bg-lp-accent text-lp-brand-dark"
-                    : "bg-lp-brand text-lp-accent-soft"
+                    ? "border-lp-accent-soft text-lp-accent-soft"
+                    : "border-lp-accent text-lp-accent"
                 }`}
               >
                 <IconForKey iconKey={c.icon} size={28} />
               </span>
               <h3
-                className={`relative font-display text-xl font-bold ${hl ? "text-white" : "text-lp-brand"}`}
+                className={`relative font-display text-lg font-semibold leading-snug ${hl ? "text-white" : "text-lp-brand"}`}
               >
                 {c.title}
               </h3>
@@ -250,11 +250,6 @@ function Cards({
               >
                 {c.text}
               </p>
-              {hl ? (
-                <p className="relative mt-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-lp-accent-soft">
-                  {i === 0 ? "Onde tudo começa" : "Próximo passo"}
-                </p>
-              ) : null}
             </div>
           </Reveal>
         );

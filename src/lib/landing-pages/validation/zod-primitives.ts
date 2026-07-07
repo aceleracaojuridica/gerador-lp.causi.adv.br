@@ -1,4 +1,14 @@
 import { z } from "zod";
+import { validateCustomScript } from "./script-validator";
+
+export const customScriptTagSchema = z.string().superRefine((val, ctx) => {
+  const res = validateCustomScript(val);
+  if (!res.valid) {
+    for (const err of res.errors) {
+      ctx.addIssue({ code: "custom", message: err });
+    }
+  }
+});
 
 export const socialNetworkSchema = z.enum([
   "instagram",

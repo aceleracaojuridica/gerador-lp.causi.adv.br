@@ -18,10 +18,7 @@ import { Input } from "@/components/ui/input";
 import { InputMask } from "@/components/ui/input-mask";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import { maskPhone } from "@/lib/landing-pages/phone";
-import type {
-  GlobalConfigFormProps,
-  GlobalConfigFormValues,
-} from "../global-config-form.types";
+import type { GlobalConfigFormProps } from "../global-config-form.types";
 import { ConfigFormFooter } from "../shared/config-form-footer";
 import { FieldRow } from "../shared/field-row";
 import { FontSelect } from "../shared/font-select";

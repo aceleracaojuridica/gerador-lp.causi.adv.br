@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateCustomScript } from "@/lib/landing-pages/validation/script-validator";
 
 const ga4MeasurementIdSchema = z
   .string()
@@ -84,9 +85,30 @@ export const globalConfigFormSchema = z
       googleAdsLabel: z.string().trim(),
     }),
     tags: z.object({
-      head: z.string(),
-      body: z.string(),
-      footer: z.string(),
+      head: z.string().superRefine((val, ctx) => {
+        const res = validateCustomScript(val);
+        if (!res.valid) {
+          for (const err of res.errors) {
+            ctx.addIssue({ code: "custom", message: err });
+          }
+        }
+      }),
+      body: z.string().superRefine((val, ctx) => {
+        const res = validateCustomScript(val);
+        if (!res.valid) {
+          for (const err of res.errors) {
+            ctx.addIssue({ code: "custom", message: err });
+          }
+        }
+      }),
+      footer: z.string().superRefine((val, ctx) => {
+        const res = validateCustomScript(val);
+        if (!res.valid) {
+          for (const err of res.errors) {
+            ctx.addIssue({ code: "custom", message: err });
+          }
+        }
+      }),
     }),
     captcha: z.object({
       provider: z.enum(["none", "turnstile"]),

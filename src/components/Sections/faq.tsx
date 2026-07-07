@@ -56,9 +56,43 @@ function FaqAccordion({
   dark: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  // Estilo condicional para item aberto (brand bg no modo claro)
+  const itemBg = open
+    ? dark
+      ? "bg-white/[0.1] ring-1 ring-lp-accent"
+      : "bg-lp-brand text-white shadow-md"
+    : dark
+      ? "bg-white/[0.06] ring-1 ring-white/10"
+      : "bg-lp-cream text-lp-brand";
+
+  const questionColor = open
+    ? dark
+      ? "text-white"
+      : "text-white"
+    : dark
+      ? "text-white"
+      : "text-lp-brand";
+
+  const answerColor = open
+    ? dark
+      ? "text-white/80"
+      : "text-white/85"
+    : dark
+      ? "text-white/75"
+      : "text-lp-ink-soft";
+
+  const chevronColor = open
+    ? dark
+      ? "text-lp-accent-soft"
+      : "text-lp-accent-soft"
+    : dark
+      ? "text-lp-accent-soft"
+      : "text-lp-accent";
+
   return (
     <div
-      className={`overflow-hidden rounded-2xl ${dark ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-lp-cream"}`}
+      className={`overflow-hidden rounded-xl transition-all duration-200 ${itemBg}`}
     >
       <button
         type="button"
@@ -67,23 +101,19 @@ function FaqAccordion({
         aria-expanded={open}
       >
         <span
-          className={`font-display text-lg font-bold ${dark ? "text-white" : "text-lp-brand"}`}
+          className={`font-display text-lg font-semibold leading-snug ${questionColor}`}
         >
           {item.q}
         </span>
         <KeyboardArrowDown
           size={20}
-          className={`shrink-0 transition-transform ${dark ? "text-lp-accent-soft" : "text-lp-accent"} ${
+          className={`shrink-0 transition-transform ${chevronColor} ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
       {open ? (
-        <p
-          className={`px-6 pb-6 leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
-        >
-          {item.a}
-        </p>
+        <p className={`px-6 pb-6 leading-relaxed ${answerColor}`}>{item.a}</p>
       ) : null}
     </div>
   );

@@ -157,14 +157,21 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
           }
         >
           {content.cards.map((a, i) => {
+            const isBand = variant === AREAS_VARIANT_LIST_BANDS;
             return (
               <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
-                <div className="flex h-full items-start gap-5 rounded-2xl bg-white p-7 transition hover:-translate-y-1 hover:shadow-xl">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-lp-brand text-lp-accent-soft">
+                <div
+                  className={`flex h-full items-start gap-5 rounded-xl bg-white p-7 transition hover:-translate-y-0.5 ring-1 ring-lp-ink-soft/10 ${
+                    isBand ? "border-l-2 border-lp-accent" : ""
+                  }`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-lp-accent text-lp-accent`}
+                  >
                     <IconForKey iconKey={a.icon} size={28} />
                   </span>
                   <div>
-                    <h3 className="font-display text-2xl font-bold text-lp-brand">
+                    <h3 className="font-display text-lg font-semibold leading-snug text-lp-brand">
                       {a.title}
                     </h3>
                     <p className="mt-2 text-[1.05rem] leading-relaxed text-lp-ink-soft">

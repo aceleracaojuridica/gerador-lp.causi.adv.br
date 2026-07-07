@@ -94,7 +94,11 @@ export async function POST(request: Request) {
    * Se a galeria tiver menos imagens do que slots, os slots excedentes
    * caem no Unsplash / banco curado — nunca repetem a mesma foto.
    */
-  const getSlotImage = (slotIndex: number, liveUrl: string, bankUrl: string) => {
+  const getSlotImage = (
+    slotIndex: number,
+    liveUrl: string,
+    bankUrl: string,
+  ) => {
     if (slotIndex < galleryPaths.length) {
       return getPublicMediaUrl(galleryPaths[slotIndex]);
     }

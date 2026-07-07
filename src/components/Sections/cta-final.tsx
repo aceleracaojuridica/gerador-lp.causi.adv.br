@@ -1,4 +1,3 @@
-import { Chat } from "@material-symbols-svg/react";
 import { CTAButton } from "@/components/ui/cta-button";
 import { Reveal } from "@/components/ui/reveal";
 import type { CtaFinalContent, Tone } from "@/lib/landing-pages/schema";
@@ -31,9 +30,13 @@ export function CtaFinal({
 
       <div className="relative mx-auto max-w-2xl px-6 text-center">
         <Reveal>
-          <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-lp-accent text-lp-brand-dark">
-            <Chat size={30} />
-          </span>
+          {/* Eyebrow de Editorial / Fale Conosco */}
+          <p
+            className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+          >
+            Contato
+          </p>
+          <div className="mx-auto mb-8 h-[1px] w-12 bg-lp-accent" />
           <h2
             className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
           >
@@ -47,7 +50,7 @@ export function CtaFinal({
           >
             {content.sub}
           </p>
-          <div className="mt-8">
+          <div className="mt-9">
             <CTAButton variant="primary">{content.cta}</CTAButton>
           </div>
         </Reveal>
