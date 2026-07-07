@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import type { Office } from "@/lib/landing-pages/schema";
 import { FieldGroup } from "../controls/editor-controls";
+import { useStableListKeys } from "../use-stable-list-keys";
 
 type FooterDetailPanelProps = {
   form: LpEditorForm;
@@ -19,6 +20,17 @@ type FooterDetailPanelProps = {
 /** Rodapé: contato, endereços, redes e política de privacidade. */
 export function FooterDetailPanel({ form, office }: FooterDetailPanelProps) {
   const rhf = form.form;
+  const extraContactKeys = useStableListKeys(
+    office.extraContacts ?? [],
+    (contact) => `${contact.whatsappDisplay}\u0000${contact.email}`,
+    "footer-contact",
+  );
+  const extraAddressKeys = useStableListKeys(
+    office.extraAddresses ?? [],
+    (address) =>
+      `${address.address}\u0000${address.city}\u0000${address.mapsUrl}`,
+    "footer-address",
+  );
 
   return (
     <div className="space-y-3">
@@ -55,7 +67,7 @@ export function FooterDetailPanel({ form, office }: FooterDetailPanelProps) {
         />
         {(office.extraContacts ?? []).map((c, i) => (
           <div
-            key={i}
+            key={extraContactKeys[i]}
             className="flex flex-col gap-2 rounded-lg border border-border p-2.5"
           >
             <div className="flex items-center justify-between">
@@ -160,7 +172,7 @@ export function FooterDetailPanel({ form, office }: FooterDetailPanelProps) {
         />
         {(office.extraAddresses ?? []).map((a, i) => (
           <div
-            key={i}
+            key={extraAddressKeys[i]}
             className="flex flex-col gap-2 rounded-lg border border-border p-2.5"
           >
             <div className="flex items-center justify-between">

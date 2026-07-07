@@ -189,7 +189,7 @@ export function IntegracoesPanel({
         >
           Restaurar padrão da conta
         </Button>
-        <Button asChild type="button" variant="secondary" size="sm">
+        <Button asChild variant="secondary" size="sm">
           <Link href="/configuracoes">Abrir configuracoes globais</Link>
         </Button>
       </div>

@@ -53,7 +53,6 @@ import {
   getTemplate,
   TEMPLATES,
 } from "@/lib/landing-pages/templates";
-import { createGerarLpPayloadFromWizard } from "@/lib/landing-pages/shared/create-seed";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";

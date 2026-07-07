@@ -11,6 +11,7 @@ import {
   CTA_SECONDARY,
   GENERIC_ETAPAS,
 } from "@/lib/landing-pages/focos";
+import { useStableListKeys } from "../use-stable-list-keys";
 
 function EyebrowField({
   value,
@@ -90,6 +91,12 @@ function PairList({
   addLabel?: string;
   minItems?: number;
 }) {
+  const itemKeys = useStableListKeys(
+    items,
+    (item) => `${item.a}\u0000${item.b}`,
+    "pair-list-item",
+  );
+
   return (
     <div>
       <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
@@ -98,7 +105,7 @@ function PairList({
       <div className="flex flex-col gap-2">
         {items.map((it, i) => (
           <div
-            key={i}
+            key={itemKeys[i]}
             className="flex flex-col gap-2 rounded-lg border border-slate-200 p-2.5"
           >
             <div>
