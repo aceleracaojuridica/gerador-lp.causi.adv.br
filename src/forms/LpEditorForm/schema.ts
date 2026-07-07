@@ -14,6 +14,15 @@ import {
   refineRequiredWhatsapp,
 } from "@/lib/landing-pages/validation/contact";
 import {
+  AREAS_VARIANTS,
+  DOR_VARIANTS,
+  EQUIPE_VARIANTS,
+  ETAPAS_VARIANTS,
+  HERO_VARIANTS,
+  SOBRE_VARIANTS,
+  SOLUCAO_VARIANTS,
+} from "@/lib/landing-pages/variants";
+import {
   extraAddressSchema,
   extraContactSchema,
   heroFeatureSchema,
@@ -128,6 +137,22 @@ const officeSchema = z.object({
       footer: z.string(),
     })
     .optional(),
+  tracking: z
+    .object({
+      ga4MeasurementId: z.string(),
+      gtmContainerId: z.string(),
+      metaPixelId: z.string(),
+      googleAdsId: z.string(),
+      googleAdsLabel: z.string(),
+    })
+    .optional(),
+  captcha: z
+    .object({
+      provider: z.enum(["none", "turnstile"]),
+      siteKey: z.string(),
+      widgetTheme: z.enum(["auto", "light", "dark"]),
+    })
+    .optional(),
   domain: z.string().optional(),
   privacyPolicy: z.string().optional(),
   fonts: z.object({ heading: z.string(), body: z.string() }).optional(),
@@ -167,13 +192,13 @@ const officeSchema = z.object({
 });
 
 const layoutSchema = z.object({
-  hero: z.enum(["split", "video", "centered", "stats"]),
-  dor: z.enum(["comImagem", "soCards"]),
-  solucao: z.enum(["comImagem", "soCards", "destaque"]),
-  sobre: z.enum(["overlay", "duasColunas", "fotoLista"]),
-  equipe: z.enum(["splitAlternado", "retratoElegante"]).optional(),
-  areas: z.enum(["grid", "lista"]),
-  etapas: z.enum(["numerado", "timeline"]),
+  hero: z.enum(HERO_VARIANTS),
+  dor: z.enum(DOR_VARIANTS),
+  solucao: z.enum(SOLUCAO_VARIANTS),
+  sobre: z.enum(SOBRE_VARIANTS),
+  equipe: z.enum(EQUIPE_VARIANTS).optional(),
+  areas: z.enum(AREAS_VARIANTS),
+  etapas: z.enum(ETAPAS_VARIANTS),
   tones: z.object({
     hero: z.enum(["light", "dark"]),
     dor: z.enum(["light", "dark"]),
@@ -241,6 +266,18 @@ export const EMPTY_OFFICE: LpEditorFormValues["office"] = {
   extraAddresses: [],
   extraContacts: [],
   tags: { head: "", body: "", footer: "" },
+  tracking: {
+    ga4MeasurementId: "",
+    gtmContainerId: "",
+    metaPixelId: "",
+    googleAdsId: "",
+    googleAdsLabel: "",
+  },
+  captcha: {
+    provider: "none",
+    siteKey: "",
+    widgetTheme: "auto",
+  },
   domain: "",
   fonts: { heading: "", body: "" },
   cardRadius: "square",
@@ -277,6 +314,8 @@ export function lpEditorDefaultValues(
           extraAddresses: seed.office.extraAddresses ?? [],
           extraContacts: seed.office.extraContacts ?? [],
           tags: seed.office.tags ?? { head: "", body: "", footer: "" },
+          tracking: seed.office.tracking ?? EMPTY_OFFICE.tracking,
+          captcha: seed.office.captcha ?? EMPTY_OFFICE.captcha,
           domain: seed.office.domain ?? "",
           fonts: seed.office.fonts ?? { heading: "", body: "" },
           cardRadius: seed.office.cardRadius ?? "square",

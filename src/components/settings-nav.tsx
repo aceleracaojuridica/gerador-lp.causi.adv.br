@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  CurrencyExchange,
-  Domain,
-  Group,
-  Lock,
-  ManageAccounts,
+  AdsClick,
+  Analytics,
+  Code,
+  Palette,
+  Shield,
 } from "@material-symbols-svg/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,34 +20,34 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    href: "/perfil",
-    label: "Perfil",
-    description: "Gerencie seu perfil de usuário",
-    icon: ManageAccounts,
+    href: "/configuracoes",
+    label: "Visual",
+    description: "Fontes e dominio padrao das landing pages",
+    icon: Palette,
   },
   {
-    href: "/seguranca",
-    label: "Segurança",
-    description: "Gerencie a segurança da conta",
-    icon: Lock,
+    href: "/configuracoes/trackeamento",
+    label: "Trackeamento",
+    description: "GA4 e Google Tag Manager das landing pages",
+    icon: Analytics,
   },
   {
-    href: "/escritorio",
-    label: "Escritório",
-    description: "Gerencie as configurações do escritório",
-    icon: Domain,
+    href: "/configuracoes/pixels",
+    label: "Pixels",
+    description: "Meta Pixel e Google Ads das landing pages",
+    icon: AdsClick,
   },
   {
-    href: "/usuarios",
-    label: "Usuários",
-    description: "Gerencie e adicione usuários do sistema",
-    icon: Group,
+    href: "/configuracoes/scripts",
+    label: "Scripts avancados",
+    description: "HTML/JS customizado das landing pages",
+    icon: Code,
   },
   {
-    href: "/assinatura",
-    label: "Assinatura",
-    description: "Gerencie detalhes da sua assinatura ou altere seu plano",
-    icon: CurrencyExchange,
+    href: "/configuracoes/captcha",
+    label: "Captcha",
+    description: "Protecao dos formularios das landing pages",
+    icon: Shield,
   },
 ];
 
@@ -76,7 +76,7 @@ export function SettingsNav() {
             <Icon
               className={`
               w-8 h-8 md:w-9 md:h-9 mt-0.5 shrink-0 p-1 rounded-sm border border-text-muted bg-background
-              ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"} 
+              ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}
             `}
             />
             <div className="min-w-0 flex-1">

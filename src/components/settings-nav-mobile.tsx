@@ -1,12 +1,11 @@
 "use client";
 
 import {
-  CurrencyExchange,
-  Domain,
-  Group,
-  Lock,
-  ManageAccounts,
+  AdsClick,
+  Analytics,
+  Code,
   Palette,
+  Shield,
 } from "@material-symbols-svg/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,34 +20,29 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    href: "/perfil",
-    label: "Perfil",
-    icon: ManageAccounts,
-  },
-  {
-    href: "/seguranca",
-    label: "Segurança",
-    icon: Lock,
-  },
-  {
-    href: "/escritorio",
-    label: "Escritório",
-    icon: Domain,
-  },
-  {
-    href: "/usuarios",
-    label: "Usuários",
-    icon: Group,
-  },
-  {
-    href: "/assinatura",
-    label: "Assinatura",
-    icon: CurrencyExchange,
-  },
-  {
-    href: "/preferencias",
-    label: "Preferências",
+    href: "/configuracoes",
+    label: "Visual",
     icon: Palette,
+  },
+  {
+    href: "/configuracoes/trackeamento",
+    label: "Trackeamento",
+    icon: Analytics,
+  },
+  {
+    href: "/configuracoes/pixels",
+    label: "Pixels",
+    icon: AdsClick,
+  },
+  {
+    href: "/configuracoes/scripts",
+    label: "Scripts",
+    icon: Code,
+  },
+  {
+    href: "/configuracoes/captcha",
+    label: "Captcha",
+    icon: Shield,
   },
 ];
 

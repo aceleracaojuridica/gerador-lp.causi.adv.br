@@ -4,324 +4,296 @@ Documentação da feature de criação, edição e publicação de landing pages
 
 ## Visão geral
 
-O advogado preenche um formulário, a IA gera a copy e o advogado escolhe **variações por seção** no passo Layout. O sistema salva um **snapshot JSON** (`LpSchema`). O editor e o site publicado usam o **mesmo renderer React** (`LandingPreview`). Não há HTML no banco.
+Cada landing page é um snapshot JSON serializável (`LpSchema`) salvo em `landing_pages.schema`.
 
-**Centro da feature:** a LP é composta por **seções com variações**. Cada seção (Hero, Dor, Solução, etc.) tem variantes de layout independentes. O template (`lib/landing-pages/templates.ts`) é apenas um preset que copia valores iniciais para `schema.layout` — ver [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
+O produto não persiste HTML. O que o banco guarda é:
 
-Cada escritório pode criar **N landing pages** sem limite.
+- identidade e configuração do escritório
+- copy das seções
+- tema ativo
+- estado de layout por seção em `schema.layout`
 
----
+O preview do editor e a página publicada usam o mesmo renderer React: `src/components/Preview/landing-preview.tsx`.
 
-## Conceitos fundamentais
+## Núcleo da feature
 
-### Seções
+A landing page é montada por seções fixas e seções opcionais.
 
-Blocos fixos da página. Cada seção tem conteúdo (copy gerada pela IA) e uma variação de layout selecionável.
+Cada seção pode depender de:
 
-| Seção | Tipo | Obrigatória |
-|-------|------|-------------|
-| `Hero` | Com variação | Sim (sempre a primeira) |
-| `Dor` | Com variação | Sim |
-| `Solução` | Com variação | Sim |
-| `Sobre` | Com variação | Sim |
-| `Equipe` | Com variação | Sim (se houver advogados cadastrados) |
-| `Áreas` | Com variação | Opcional (toggle) |
-| `Etapas` | Com variação | Opcional (toggle) |
-| `FAQ` | Sem variação | Opcional (toggle) |
-| `CTA Final` | Sem variação | Opcional (toggle, oculto por padrão) |
-| `Footer` | Sem variação | Sim (sempre a última) |
-| `LeadPopup` | Sem variação | Configurável |
-| `Seções customizadas` | `cards` ou `texto` | Opcional (criadas no editor) |
+- conteúdo textual
+- imagens do escritório
+- tom claro ou escuro
+- variant visual específica
 
-**Ordem:** Hero e Footer são fixos; as seções do meio têm ordem configurável (`schema.layout.order`).
+A fonte da verdade para variants é `src/lib/landing-pages/variants.ts`.
 
----
+## Seções da LP
 
-### Variações
+| Seção | Tipo | Observação |
+|---|---|---|
+| `hero` | com variant | sempre no topo |
+| `dor` | com variant | parte fixa do miolo |
+| `solucao` | com variant | parte fixa do miolo |
+| `sobre` | com variant | parte fixa do miolo |
+| `equipe` | com variant | controlada por toggle e por regra de elegibilidade |
+| `areas` | com variant | opcional por toggle |
+| `etapas` | com variant | opcional por toggle |
+| `faq` | sem variant | opcional por toggle |
+| `ctaFinal` | sem variant | opcional por toggle, default oculto |
+| `footer` | sem variant | sempre no fim |
+| `customSections` | cards ou texto | opcionais, criadas no editor |
 
-Alternativas visuais de layout para uma seção. O mesmo conteúdo (copy) é renderizado de formas distintas. A variação ativa fica registrada em `schema.layout`.
+Hero e Footer são fixos. A ordem do miolo vive em `schema.layout.order`.
 
-#### Hero — `HeroVariant`
+## Variants atuais
 
-| Variação | Descrição |
-|----------|-----------|
-| `centered` | Texto centralizado com imagem de fundo (padrão do template Clássico) |
-| `split` | Texto à esquerda, imagem à direita (50/50) |
-| `video` | Texto à esquerda, vídeo YouTube incorporado à direita |
-| `stats` | Texto com métricas em destaque (ícone + número + legenda) |
+As variants persistidas usam ids semânticos com prefixo `causi_`.
 
-#### Dor — `DorVariant`
+### Hero
 
-| Variação | Descrição |
-|----------|-----------|
-| `comImagem` | Imagem de cena + cards de dores na parte inferior |
-| `soCards` | Apenas cards de dores, sem imagem (layout mais compacto) |
+| Label | ID |
+|---|---|
+| Centralizado | `causi_lp_section_hero_centered_focus` |
+| Split 50/50 | `causi_lp_section_hero_split_media` |
+| Vídeo + Foto | `causi_lp_section_hero_video_embedded` |
+| Com métricas | `causi_lp_section_hero_stats_authority` |
+| Recorte | `causi_lp_section_hero_cutout_portrait` |
 
-#### Solução — `SolucaoVariant`
+### Dor
 
-| Variação | Descrição |
-|----------|-----------|
-| `comImagem` | Imagem de cena + cards da solução |
-| `soCards` | Apenas cards da solução |
-| `destaque` | Cards alternando entre destaque accent e neutro |
+| Label | ID |
+|---|---|
+| Com imagem | `causi_lp_section_dor_with_image_cards` |
+| Só cards | `causi_lp_section_dor_cards_compact` |
 
-#### Sobre — `SobreVariant`
+### Solução
 
-| Variação | Descrição |
-|----------|-----------|
-| `fotoLista` | Foto do advogado à esquerda + lista de diferenciais à direita |
-| `overlay` | Foto de fundo em fullbleed com texto e foto do advogado sobrepostos |
-| `duasColunas` | Foto full-height à esquerda, texto à direita (duas colunas) |
+| Label | ID |
+|---|---|
+| Com imagem | `causi_lp_section_solucao_with_image_cards` |
+| Só cards | `causi_lp_section_solucao_cards_compact` |
+| Com destaque | `causi_lp_section_solucao_cards_highlight` |
 
-#### Áreas — `AreasVariant`
+### Sobre
 
-| Variação | Descrição |
-|----------|-----------|
-| `grid` | Grade de cards com ícone e título (2 colunas) |
-| `lista` | Faixas horizontais expansíveis |
+| Label | ID |
+|---|---|
+| Foto + lista | `causi_lp_section_sobre_photo_list` |
+| Imagem + overlay | `causi_lp_section_sobre_overlay_portrait` |
+| Duas colunas | `causi_lp_section_sobre_two_columns_portrait` |
 
-#### Etapas — `EtapasVariant`
+### Equipe
 
-| Variação | Descrição |
-|----------|-----------|
-| `numerado` | Passos numerados em linha horizontal com ícone circular dourado |
-| `timeline` | Linha do tempo vertical com guia lateral e pontos de marcação |
+| Label | ID |
+|---|---|
+| Split alternado | `causi_lp_section_equipe_split_alternating` |
+| Retrato elegante | `causi_lp_section_equipe_portrait_grid` |
+| Retrato solo | `causi_lp_section_equipe_solo_portrait` |
 
-#### Equipe — `EquipeVariant`
+### Áreas
 
-| Variação | Descrição |
-|----------|-----------|
-| `splitAlternado` | Foto grande alternando lado a lado com texto (1–3 sócios) |
-| `retratoElegante` | Grid de retratos verticais com gradiente e nome na base (4–6 sócios) |
+| Label | ID |
+|---|---|
+| Grade | `causi_lp_section_areas_grid_icon_cards` |
+| Lista | `causi_lp_section_areas_list_bands` |
 
-> Se `equipe` não for definida no layout, a variação é escolhida automaticamente: ≤3 advogados → `splitAlternado`; ≥4 → `retratoElegante`.
+### Etapas
 
----
+| Label | ID |
+|---|---|
+| Numerado | `causi_lp_section_etapas_numbered_steps` |
+| Linha do tempo | `causi_lp_section_etapas_timeline_flow` |
 
-### Tom (tone)
+## Regra especial da seção `equipe`
 
-Cada seção tem um tom independente de fundo: `light` (creme/branco) ou `dark` (cor da marca). Configurado em `schema.layout.tones`.
+`Equipe` é a única seção cujo layout depende também da quantidade de advogados.
 
-```typescript
+Regras atuais:
+
+| Advogados | Variants liberadas | Fallback automático com `layout.equipe` vazio |
+|---|---|---|
+| `0` | nenhuma | nenhum |
+| `1` | `causi_lp_section_equipe_solo_portrait` | nenhum |
+| `2-3` | `split_alternating`, `portrait_grid` | `split_alternating` |
+| `4+` | `split_alternating`, `portrait_grid` | `portrait_grid` |
+
+Comportamento do editor:
+
+- ao ativar `equipe` com `1` advogado, o editor aplica `Retrato solo`
+- ao ativar `equipe` com `0` advogados, o editor bloqueia a ação e mostra toast
+- se a section ficar incompatível com a quantidade atual de advogados, o editor oculta a seção automaticamente
+- o painel lateral mostra um bloco de avisos discretos para estados incompatíveis
+
+Comportamento do renderer:
+
+- `src/components/Sections/equipe.tsx` só renderiza quando a combinação `lawyerCount + variant` for válida
+- se `layout.equipe` vier vazio, o auto só vale para `2+`
+- o caso solo exige variant explícita
+
+## Tom por seção
+
+Cada seção usa um `tone` independente em `schema.layout.tones`.
+
+```ts
 type SectionTones = {
-  hero: Tone;
-  dor: Tone;
-  solucao: Tone;
-  sobre: Tone;
-  equipe: Tone;
-  areas: Tone;
-  etapas: Tone;
-  faq: Tone;
-  ctaFinal: Tone;
+  hero: "light" | "dark";
+  dor: "light" | "dark";
+  solucao: "light" | "dark";
+  sobre: "light" | "dark";
+  equipe: "light" | "dark";
+  areas: "light" | "dark";
+  etapas: "light" | "dark";
+  faq: "light" | "dark";
+  ctaFinal: "light" | "dark";
 };
 ```
 
-Tom e variação são independentes: a mesma variação de layout pode ter fundo claro ou escuro.
+Tom e variant são independentes.
 
----
+## Templates
 
-### Templates
+Templates são presets de layout definidos em `src/lib/landing-pages/templates.ts`.
 
-Grupos pré-definidos de variações + paleta de cores. O advogado escolhe um template na criação, mas pode alterar cada seção individualmente no editor após a criação.
+Templates disponíveis hoje:
 
-**Papel do template:** ponto de partida visual, não um molde fixo. Ele pré-seleciona variações e define a paleta; tudo é editável depois.
+| Nome | `id` |
+|---|---|
+| Clássico | `classic-light` |
+| Moderno | `modern-dark` |
+| Autoridade | `autoridade` |
+| Acolhedor | `warm-neutral` |
 
-#### Templates disponíveis (`lib/templates.ts`)
+Cada template traz:
 
-**Clássico** (`classic-light`) — Azul marinho com dourado. Sóbrio e profissional.
+- combinação de variants por seção
+- tons por seção
+- `hidden` inicial
+- `theme` usado nas prévias estáticas do template
 
-| Seção | Variação | Tom |
-|-------|----------|-----|
-| Hero | `centered` | light |
-| Dor | `comImagem` | light |
-| Solução | `soCards` | dark |
-| Sobre | `fotoLista` | light |
-| Áreas | `grid` | dark |
-| Etapas | `numerado` | light |
+Na feature, o papel do template é:
 
-**Moderno** (`modern-dark`) — Tons escuros com destaque dourado. Elegante e marcante.
+- no wizard: fornecer o layout inicial
+- no editor: reaplicar uma composição de layouts
 
-| Seção | Variação | Tom |
-|-------|----------|-----|
-| Hero | `split` | dark |
-| Dor | `soCards` | dark |
-| Solução | `comImagem` | light |
-| Sobre | `overlay` | dark |
-| Áreas | `lista` | light |
-| Etapas | `timeline` | dark |
+No editor, `applyTemplate()` reaplica apenas `layout`, preservando `order` e mesclando `hidden`. Textos, imagens e `theme` não são trocados nessa ação.
 
-**Acolhedor** (`warm-neutral`) — Tons de caramelo e bege. Próximo e humano.
+## Criação da LP
 
-| Seção | Variação | Tom |
-|-------|----------|-----|
-| Hero | `stats` | light |
-| Dor | `comImagem` | light |
-| Solução | `destaque` | dark |
-| Sobre | `duasColunas` | light |
-| Áreas | `grid` | light |
-| Etapas | `numerado` | dark |
+Arquivos centrais:
 
----
+- `src/app/api/gerar-copy/route.ts`
+- `src/app/api/gerar-lp/route.ts`
 
-## Identificador e URL pública
+Fluxo:
 
-Cada escritório tem um **subdomínio fixo**; cada landing page tem um **slug** (path). A URL pública é:
+1. o wizard coleta dados do escritório, contato, imagens e template opcional
+2. `POST /api/gerar-copy` produz a copy e sugestões de imagem
+3. `POST /api/gerar-lp` monta o `Office`, resolve slug, resolve subdomínio e gera o `LpSchema`
+4. o schema é salvo como draft
+5. o usuário é redirecionado para `/lp/[slug]`
 
-`https://{office_subdomain}.{NEXT_PUBLIC_APP_DOMAIN}/{slug}` — ex.: `darlley-dev.causi.adv.br/previdenciario`
+Detalhes do `POST /api/gerar-lp`:
 
-| Campo | Origem | Escopo | Exemplo |
-|-------|--------|--------|---------|
-| `office_subdomain` | Nome da conta Causi (`session.account.name` → kebab-case) | Fixo por conta, persistido em `landing_pages` | `darlley-dev` |
-| `slug` | Tema da LP na criação (`slugFromOfficeName(tema)`) | Único por `account_id` | `previdenciario` |
+- usa `layout` recebido ou `DEFAULT_LAYOUT`
+- se houver `videoId`, força `hero = causi_lp_section_hero_video_embedded`
+- monta o schema com `buildSchema()`
+- normaliza SEO com `normalizeSeo()`
 
-A raiz do subdomínio (`darlley-dev.causi.adv.br/`) redireciona para `https://causi.adv.br`. O app do gerador **não** serve LPs em `causi.adv.br/{slug}` (404).
+## Editor
 
-### Quando é definido
+Arquivos centrais:
 
-| Momento | O que acontece |
-|---------|----------------|
-| **Wizard `/nova`** | Advogado informa escritório e tema — ainda **não** há slug de LP |
-| **`POST /api/gerar-lp`** | Servidor deriva `slug` do tema e `office_subdomain` do nome da conta; grava na primeira persistência |
-| **Editor `/lp/[slug]`** | Slug de LP já existe; botão "Ver site" usa `{office_subdomain}.{domain}/{slug}` |
-| **Publicação** | Mesmos identificadores; apenas muda `status` para `published` |
+- `src/components/Builder/editor/editor-shell.tsx`
+- `src/hooks/use-lp-editor-form.ts`
+- `src/forms/LpEditorForm/schema.ts`
 
-O slug da LP **não é editável** pelo advogado. Nasce uma vez na geração e permanece fixo.
+O editor permite:
 
-### Estratégia de unicidade
+- trocar variant por seção
+- trocar tone por seção
+- ligar e desligar seções opcionais
+- reordenar o miolo em `layout.order`
+- aplicar template
+- editar textos e imagens
+- configurar paleta, tipografia, botões, popup, tracking, domínio e SEO
 
-**Slug da LP (por conta):**
+Os catálogos de options do editor vêm de `src/components/Builder/editor/constants.ts`, que reexporta o catálogo de `variants.ts`.
 
-| Passo | Regra |
-|-------|-------|
-| 1. Base | Tema → kebab-case (`slugFromOfficeName`) |
-| 2. Colisão na conta | Sufixo `-2`, `-3`, … até `LP_SLUG_MAX_SUFFIX` |
-| 3. Banco | `UNIQUE (account_id, slug)` |
+## Preview e publicação
 
-**Subdomínio do escritório (global entre contas):**
+`LandingPreview` é o renderer compartilhado entre:
 
-| Passo | Regra |
-|-------|-------|
-| 1. Base | Nome da conta → kebab-case |
-| 2. Colisão entre contas | Sufixo numérico incremental |
-| 3. Persistência | Mesmo valor em todas as LPs da conta (`landing_pages.office_subdomain`) |
+- preview no editor
+- página publicada
 
----
+Fluxo da publicação:
 
-## Fluxo do usuário
+1. a LP é marcada como `published`
+2. o acesso público resolve `office_subdomain + slug`
+3. `getLpPublic()` carrega a LP
+4. `migrate()` normaliza variants legadas para ids canônicos
+5. `LandingPreview` renderiza o schema já migrado
 
-```mermaid
-flowchart TD
-  A[Galeria /] --> B[/nova — wizard 3 passos]
-  B --> C[Escritório Contato Imagens + preset opcional]
-  C --> D[POST /api/gerar-copy]
-  D --> E[POST /api/gerar-lp]
-  E --> F[Editor /lp/slug]
-  F --> G[VariantPicker + saveLpAction]
-  G --> H[Publicar — status=published]
-  H --> I[escritorio.causi.adv.br/slug]
+Isso mantém editor e produção alinhados.
+
+## Compatibilidade retroativa
+
+O projeto mantém compatibilidade com ids legados por meio de:
+
+- `legacyIds` em `src/lib/landing-pages/variants.ts`
+- normalizadores como `normalizeHeroVariant()`
+- `migrate()` em `src/lib/landing-pages/lp-store.ts`
+
+LPs antigas com valores como `split`, `fotoLista`, `timeline` ou `retratoElegante` continuam sendo lidas e convertidas para os ids canônicos atuais.
+
+## Persistência e identificação pública
+
+A URL pública segue:
+
+```text
+https://{office_subdomain}.{NEXT_PUBLIC_APP_DOMAIN}/{slug}
 ```
 
-Ver também [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md).
+Exemplo:
 
----
+```text
+https://garcia-e-kleeman.causi.adv.br/previdenciario
+```
 
-## Geração por IA
+Regras:
 
-### Wizard: copy e criação
+- `slug` é derivado do tema e precisa ser único por conta
+- `office_subdomain` é derivado do nome da conta e precisa ser único globalmente entre contas
+- ambos são resolvidos no servidor na criação
 
-**Arquivo:** `app/api/gerar-copy/route.ts`
+## Estrutura do schema
 
-No passo final (Imagens), ao clicar em **Criar e editar**, o wizard chama `POST /api/gerar-copy` e em seguida `POST /api/gerar-lp`. O advogado pode escolher um preset opcional de layout; as cores vêm da logo.
+O contrato principal vive em `src/lib/landing-pages/schema.ts`.
 
-### Persistência final
+Trechos principais:
 
-**Arquivo:** `app/api/gerar-lp/route.ts`
-
-### Pipeline
-
-1. **Slug da LP** — `slugFromOfficeName(tema)` + `allocateUniqueLpSlug()` escopado à conta.
-2. **office_subdomain** — `resolveOfficeSubdomain(session)` a partir do nome da conta.
-3. **Layout** — Usa `layout` explícito do wizard (copiado do preset escolhido ou default). Sobrescreve `hero: "video"` se houver `videoId`.
-4. **Theme** — Paleta enviada pelo wizard (extraída da logo ou padrão).
-5. **Copy** — Reutiliza copy pré-gerada (`/api/gerar-copy`) ou chama GPT-4o inline.
-6. **Imagens** — Reutiliza imagens do wizard ou Unsplash + `imageBank`.
-7. **Schema** — `buildSchema(office, theme, tema, layout, …)` monta o JSON completo.
-8. **Persistência** — `saveLp(session, { slug, officeSubdomain, name, tema, schema })`.
-
----
-
-## Editor (`/lp/[slug]`)
-
-**Arquivos:** `app/(app)/lp/[slug]/page.tsx`, `page.client.tsx`, `forms/LpEditorForm/use-lp-editor-form.ts`, `components/builder/editor/editor-shell.tsx`
-
-Ver também: [lp-editor-architecture.md](lp-editor-architecture.md)
-
-### Controles por seção
-
-O editor expõe para cada seção:
-
-| Controle | Componente | Persiste em |
-|----------|------------|-------------|
-| Variação de layout | `VariantPicker` | `schema.layout.<seção>` |
-| Tom claro/escuro | Toggle | `schema.layout.tones.<seção>` |
-| Textos (copy) | campos inline | `schema.<seção>.*` |
-| Imagem de cena | upload/Unsplash | `schema.office.sectionImages.<seção>` |
-
-### `VariantPicker`
-
-Componente central do editor. Exibe miniaturas esquemáticas (wireframes) de cada variação disponível para a seção ativa. Ao selecionar, atualiza `schema.layout` e o preview ao vivo reflete a mudança imediatamente.
-
-### Preview = publicação
-
-`LandingPreview` recebe `LpSchema` e renderiza todas as seções com as variações registradas em `schema.layout`. O preview no editor **é** o que o visitante verá — mesma árvore de componentes, mesmas variações.
-
-### Outros recursos do editor
-
-| Recurso | Onde |
-|---------|------|
-| Simples / Avançado | `editor-shell.tsx` |
-| Reordenar seções | drag & drop sobre `schema.layout.order` |
-| Ligar/desligar seções | toggle de `schema.layout.hidden` |
-| Adicionar seção customizada | cria item em `schema.customSections` |
-| Trocar template | reaplica `layout` + `theme` do novo template; mantém copy |
-| Paleta de cores | `PalettePicker` → `schema.theme` |
-| Tipografia | `schema.office.fonts` (heading + body) |
-| Cantos dos cards/botões | `schema.office.cardRadius`, `schema.office.buttons.radius` |
-| Popup de lead | configura `schema.office.buttons.popup.questions` |
-| Tags de conversão | `schema.office.tags` (GTM, Pixel) |
-| Domínio personalizado | `schema.office.domain` |
-| Política de privacidade | `schema.office.privacyPolicy` |
-| Salvar | `saveLpAction` → `lps.schema` |
-
----
-
-## Schema JSON (`lib/landing-pages/schema/`)
-
-### `Layout` — estado atual das variações
-
-```typescript
+```ts
 type Layout = {
-  hero: HeroVariant;       // "centered" | "split" | "video" | "stats"
-  dor: DorVariant;         // "comImagem" | "soCards"
-  solucao: SolucaoVariant; // "comImagem" | "soCards" | "destaque"
-  sobre: SobreVariant;     // "fotoLista" | "overlay" | "duasColunas"
-  equipe?: EquipeVariant;  // "splitAlternado" | "retratoElegante" | auto
-  areas: AreasVariant;     // "grid" | "lista"
-  etapas: EtapasVariant;   // "numerado" | "timeline"
-  tones: SectionTones;     // light | dark por seção
+  hero: HeroVariant;
+  dor: DorVariant;
+  solucao: SolucaoVariant;
+  sobre: SobreVariant;
+  equipe?: EquipeVariant;
+  areas: AreasVariant;
+  etapas: EtapasVariant;
+  tones: SectionTones;
   hidden?: Partial<Record<ToggleableSection, boolean>>;
-  order?: string[];        // ordem das seções do meio
+  order?: string[];
 };
 ```
 
-### `LpSchema` — o que vai no banco
-
-```typescript
+```ts
 type LpSchema = {
-  theme: Theme;              // paleta de cores ativa
-  office: Office;            // dados do escritório
-  layout: Layout;            // variações e tons por seção (snapshot)
-  videoId?: string;          // YouTube (usado pelo hero "video")
+  theme: Theme;
+  office: Office;
+  layout: Layout;
+  videoId?: string;
   hero: HeroContent;
   dor: DorContent;
   solucao: SolucaoContent;
@@ -329,131 +301,44 @@ type LpSchema = {
   etapas: EtapasContent;
   faq: FaqContent;
   ctaFinal: CtaFinalContent;
-  seo?: SeoMeta;             // gerado pela IA na criação
+  seo?: SeoMeta;
   customSections?: CustomSection[];
 };
 ```
 
-`schema.layout` é a **fonte da verdade** para as variações ativas. Apenas o schema completo é persistido — nenhum id de preset.
+`schema.layout` é a fonte da verdade para o layout ativo.
 
----
+## Onde cada peça vive
 
-## Galeria (`/`)
+| Responsabilidade | Arquivo |
+|---|---|
+| Contrato principal da feature | `src/lib/landing-pages/schema.ts` |
+| Defaults espelhados | `src/lib/landing-pages/schema/defaults.ts` |
+| Catálogo de variants | `src/lib/landing-pages/variants.ts` |
+| Templates | `src/lib/landing-pages/templates.ts` |
+| Persistência e migração | `src/lib/landing-pages/lp-store.ts` |
+| Validação do editor | `src/forms/LpEditorForm/schema.ts` |
+| Estado e ações do editor | `src/hooks/use-lp-editor-form.ts` |
+| Shell do editor | `src/components/Builder/editor/editor-shell.tsx` |
+| Renderer compartilhado | `src/components/Preview/landing-preview.tsx` |
 
-**Arquivo:** `app/page.tsx`
-
-- Lista LPs via `listLps(session.user.id)`.
-- Exibe nome, tema e thumbnail de cada LP.
-- Links: Nova página, Contatos, configurações globais.
-- Guard: `requireLpAccess`.
-
----
-
-## Formulário multi-step (`/nova`)
-
-**Arquivos:** `app/(app)/nova/page.tsx`, `forms/LandingPageCreateForm/`, `components/builder/create/template-card.tsx`
-
-### Passos
-
-| # | Nome | Campos principais |
-|---|------|-------------------|
-| 1 | Escritório | Tema jurídico, nome, sobre, diferenciais |
-| 2 | Contato | WhatsApp, e-mail, endereço, redes sociais |
-| 3 | Imagens | Logo, fotos, vídeo YouTube, paleta, preset opcional de layout |
-
-### Submissão
-
-1. Passo 3: **Criar e editar** → `POST /api/gerar-copy` e `POST /api/gerar-lp` com `layout` do preset escolhido (default `classic-light`).
-2. Redirect → `/lp/{slug}`.
-
----
-
-## Publicação e subdomínio (MVP)
-
-### Modelo multi-tenant simples
-
-Uma LP publicada = uma linha em `lps`. Multi-tenancy por **`slug`**, não por deploy separado.
-
-### Fluxo de publicação
+## Fluxo resumido
 
 ```mermaid
-sequenceDiagram
-  participant Advogado
-  participant Editor
-  participant DB as landing_pages
-  participant Proxy as src/proxy.ts
-  participant Page as subdomains/escritorio/slug
-
-  Advogado->>Editor: Publicar
-  Editor->>DB: status=published
-  Note over Proxy,Page: Visitante acessa escritorio.causi.adv.br/previdenciario
-  Proxy->>Proxy: host → office_subdomain; path → slug
-  Proxy->>Page: rewrite /escritorio/previdenciario
-  Page->>DB: getLpPublic(office_subdomain, slug)
-  DB-->>Page: LpSchema
-  Page->>Page: LandingPreview(schema)
+flowchart TD
+  A[Galeria] --> B[Wizard /nova]
+  B --> C[gerar-copy]
+  C --> D[gerar-lp]
+  D --> E[Editor /lp/[slug]]
+  E --> F[saveLpAction]
+  F --> G[Publicação]
+  G --> H[getLpPublic]
+  H --> I[migrate]
+  I --> J[LandingPreview]
 ```
-
-1. **Proxy:** `{office}.causi.adv.br/{slug}` → rewrite interno `/{office}/{slug}` (sem auth). Raiz do subdomínio → redirect `causi.adv.br`.
-2. **Query:** `landing_pages WHERE office_subdomain = ? AND slug = ? AND status = 'published'`.
-3. **Render:** Server Component + `LandingPreview` — `schema.layout` define as variações.
-4. **Leads:** `POST /api/lead` na mesma origem do subdomínio.
-
----
-
-## Persistência
-
-**Arquivo:** `lib/lpStore.ts`
-
-| Função | Operação |
-|--------|----------|
-| `listLps` | slug, officeSubdomain, name, tema |
-| `getLp` | LP completa + `migrate()` |
-| `saveLp` | upsert `(account_id, slug)` com `office_subdomain` |
-| `deleteLp` | remove por slug (RLS por conta) |
-| `getLpPublic` | LP por `office_subdomain` + `slug` sem autenticação |
-| `resolveOfficeSubdomain` | subdomínio fixo do escritório a partir do nome da conta |
-
----
-
-## Componentes de seção (`components/Sections/`)
-
-O renderer despacha para a variação correta dentro de cada componente de seção:
-
-```typescript
-// Exemplo: Hero despacha pela variação em schema.layout.hero
-function Hero({ schema }) {
-  switch (schema.layout.hero) {
-    case "centered":  return <HeroCentered ... />;
-    case "split":     return <HeroSplit ... />;
-    case "video":     return <HeroVideo ... />;
-    case "stats":     return <HeroStats ... />;
-  }
-}
-```
-
-Mesmo padrão em `Dor`, `Solucao`, `Sobre`, `Areas`, `Etapas`, `Equipe`.
-
----
-
-## Gaps conhecidos
-
-| Gap | Nota |
-|-----|------|
-| "Trocar template" no editor | Re-aplicar layout de preset ainda parcial |
-| `POST /api/lead` | Popup demo funciona; captura real não implementada |
-
----
 
 ## Referências
 
-- [lp-editor-architecture.md](lp-editor-architecture.md) — camadas do editor e mapa de pastas
-- [../guides/templates-vs-variants.md](../guides/templates-vs-variants.md) — template vs `schema.layout` (referência canônica)
-- [prd.md](../prd.md) — requisitos RF-04, RF-06
-- [database.md](../database.md) — schema `lps`
-- [api.md](../api.md) — `POST /api/gerar-lp`
-- [server-actions.md](../server-actions.md) — CRUD `lps` via Server Actions
-- [features/leads.md](leads.md) — popup e captura
-- `lib/landing-pages/schema/` — tipos `Layout`, `LpSchema`, variantes
-- `lib/landing-pages/templates.ts` — templates e `getTemplate()`
-- `components/builder/shared/variant-picker.tsx` — `VariantPicker` e miniaturas
+- [templates-vs-variants.md](../guides/templates-vs-variants.md)
+- [create-variant.md](../guides/create-variant.md)
+- [lp-editor-architecture.md](lp-editor-architecture.md)

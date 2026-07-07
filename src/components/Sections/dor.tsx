@@ -32,6 +32,7 @@ import {
 import { Reveal } from "@/components/ui/reveal";
 import { cardImageOverlay } from "@/lib/landing-pages/colors";
 import type { DorContent, DorVariant, Tone } from "@/lib/landing-pages/schema";
+import { DOR_VARIANT_WITH_IMAGE_CARDS } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -140,7 +141,7 @@ export function Dor({
       )}
 
       <div className="relative mx-auto max-w-7xl px-6 md:px-10">
-        {variant === "comImagem" ? (
+        {variant === DOR_VARIANT_WITH_IMAGE_CARDS ? (
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
             <Reveal>
               <Header content={content} dark={dark} />

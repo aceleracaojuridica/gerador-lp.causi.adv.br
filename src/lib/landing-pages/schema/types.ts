@@ -1,3 +1,13 @@
+import type {
+  AreasVariant,
+  DorVariant,
+  EquipeVariant,
+  EtapasVariant,
+  HeroVariant,
+  SobreVariant,
+  SolucaoVariant,
+} from "../variants";
+
 /*
   Tipos do schema da Landing Page — contrato serializável (JSON).
   Defaults em ./defaults.ts; helpers (focalPos, waLink, themeToCssVars) em ./helpers.ts.
@@ -33,6 +43,18 @@ export type SocialNetwork =
 export type Social = { network: SocialNetwork; url: string };
 
 export type ConversionTags = { head: string; body: string; footer: string };
+export type TrackingProviderConfig = {
+  ga4MeasurementId: string;
+  gtmContainerId: string;
+  metaPixelId: string;
+  googleAdsId: string;
+  googleAdsLabel: string;
+};
+export type CaptchaConfig = {
+  provider: "none" | "turnstile";
+  siteKey: string;
+  widgetTheme: "auto" | "light" | "dark";
+};
 export type CustomCard = { title: string; text: string };
 
 export type PopupQuestion = {
@@ -75,6 +97,8 @@ export type Office = {
   extraAddresses?: ExtraAddress[];
   extraContacts?: ExtraContact[];
   tags?: ConversionTags;
+  tracking?: TrackingProviderConfig;
+  captcha?: CaptchaConfig;
   domain?: string;
   privacyPolicy?: string;
   fonts?: { heading: string; body: string };
@@ -154,13 +178,15 @@ export type EtapasContent = {
   steps: EtapaItem[];
 };
 
-export type HeroVariant = "split" | "video" | "centered" | "stats";
-export type DorVariant = "comImagem" | "soCards";
-export type SolucaoVariant = "comImagem" | "soCards" | "destaque";
-export type SobreVariant = "overlay" | "duasColunas" | "fotoLista";
-export type AreasVariant = "grid" | "lista";
-export type EtapasVariant = "numerado" | "timeline";
-export type EquipeVariant = "splitAlternado" | "retratoElegante";
+export type {
+  AreasVariant,
+  DorVariant,
+  EquipeVariant,
+  EtapasVariant,
+  HeroVariant,
+  SobreVariant,
+  SolucaoVariant,
+} from "../variants";
 
 export type SectionTones = {
   hero: Tone;

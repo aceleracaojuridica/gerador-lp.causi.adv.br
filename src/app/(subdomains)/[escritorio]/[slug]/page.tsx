@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { LandingPageTracking } from "@/components/landing-page-tracking";
 import { LandingPreview } from "@/components/Preview/landing-preview";
 import { getLpPublic } from "@/lib/landing-pages/lp-store";
 import type { LpSchema } from "@/lib/landing-pages/schema";
@@ -105,6 +106,7 @@ export default async function PublicLpPage({ params }: Props) {
       <script type="application/ld+json" suppressHydrationWarning>
         {jsonLd}
       </script>
+      <LandingPageTracking office={lp.schema.office} />
       <LandingPreview schema={lp.schema} demo={false} />
     </>
   );

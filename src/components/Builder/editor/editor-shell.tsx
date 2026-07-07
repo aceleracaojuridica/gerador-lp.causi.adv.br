@@ -14,6 +14,8 @@ import {
   Groups,
   Help,
   Image,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
   Lightbulb,
   Movie,
   OpenInNew,
@@ -31,6 +33,8 @@ import {
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PanelImperativeHandle } from "react-resizable-panels";
+import { toast } from "sonner";
 import {
   publishLpAction,
   saveLpAction,
@@ -47,11 +51,20 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { applyLpEditorSaveErrorsToForm } from "@/forms/LpEditorForm/schema";
 import { useIsLgUp } from "@/hooks/use-media-query";
 import { isAccessDeniedError } from "@/lib/errors";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
+import {
+  DEFAULT_CONFIG,
+  type GlobalConfig,
+} from "@/lib/landing-pages/global-config";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
 import {
   DEFAULT_LAYOUT,
@@ -61,6 +74,18 @@ import {
   type Tone,
 } from "@/lib/landing-pages/schema";
 import { TEMPLATES } from "@/lib/landing-pages/templates";
+import {
+  EQUIPE_VARIANT_SOLO_PORTRAIT,
+  getAutoEquipeVariant,
+  getAvailableEquipeVariants,
+  getToggleEquipeVariant,
+  HERO_VARIANT_CENTERED_FOCUS,
+  HERO_VARIANT_STATS_AUTHORITY,
+  HERO_VARIANT_VIDEO_EMBEDDED,
+  isEquipeVariantAllowed,
+  SOBRE_VARIANT_PHOTO_LIST,
+  SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
+} from "@/lib/landing-pages/variants";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -114,6 +139,7 @@ import {
   MetricsInput,
 } from "./panels/hero-inputs";
 import { IdentidadePanel } from "./panels/identidade-panel";
+import { IntegracoesPanel } from "./panels/integracoes-panel";
 import {
   ImagensPanel,
   ModeloPicker,
@@ -142,6 +168,15 @@ type WorkspaceSectionMeta = Omit<EditorSectionMeta, "id"> & {
   enabled: boolean;
 };
 
+const PANEL_COLLAPSED_THRESHOLD_PX = 24;
+const LEFT_PANEL_DEFAULT_SIZE = "22rem";
+const LEFT_PANEL_MIN_SIZE = "18rem";
+const LEFT_PANEL_COLLAPSED_SIZE = "0px";
+const RIGHT_PANEL_DEFAULT_SIZE = "24rem";
+const RIGHT_PANEL_MIN_SIZE = "20rem";
+const RIGHT_PANEL_COLLAPSED_SIZE = "0px";
+const PREVIEW_PANEL_MIN_SIZE = "26rem";
+
 function getSectionDescription(sectionId: DetailSectionId): string {
   switch (sectionId) {
     case "identidade":
@@ -152,6 +187,8 @@ function getSectionDescription(sectionId: DetailSectionId): string {
       return "Combinação visual base para a landing page";
     case "aparencia":
       return "Tipografia, botões e detalhes visuais";
+    case "integracoes":
+      return "Tracking, scripts, domínio e captcha";
     case "seo":
       return "Título, descrição e indexação";
     case "hero":
@@ -174,6 +211,8 @@ function getSectionDescription(sectionId: DetailSectionId): string {
       return "Convite final para conversão";
     case "footer":
       return "Contato, endereço e privacidade";
+    default:
+      return "";
   }
 }
 
@@ -183,20 +222,24 @@ export function Editor({
   officeSubdomain,
   name,
   status: initialStatus,
+  initialAccountConfig,
 }: {
   form: LpEditorForm;
   slug: string;
   officeSubdomain: string;
   name: string;
   status?: "draft" | "published";
+  initialAccountConfig: GlobalConfig;
 }) {
   const router = useRouter();
   const { office, set, layout } = form;
   const tones = layout.tones ?? DEFAULT_LAYOUT.tones;
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const leftPanelRef = useRef<PanelImperativeHandle>(null);
+  const rightPanelRef = useRef<PanelImperativeHandle>(null);
   const isLgUp = useIsLgUp();
   const [mobileTab, setMobileTab] = useState<"navigation" | "preview" | "cms">(
-    "preview",
+    "navigation",
   );
   const showNavigationPanel = isLgUp || mobileTab === "navigation";
   const showPreviewPanel = isLgUp || mobileTab === "preview";
@@ -221,24 +264,82 @@ export function Editor({
   const [publishState, setPublishState] = useState<"idle" | "saving" | "error">(
     "idle",
   );
+  const accountConfig = initialAccountConfig ?? DEFAULT_CONFIG;
+  const [restoreDefaultsOpen, setRestoreDefaultsOpen] = useState(false);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const isPublishing = publishState === "saving";
+  const lawyerCount = office.lawyers?.length ?? 0;
 
-  const needsVideo = layout.hero === "video";
-  const needsMetrics = layout.hero === "stats";
+  const needsVideo = layout.hero === HERO_VARIANT_VIDEO_EMBEDDED;
+  const needsMetrics = layout.hero === HERO_VARIANT_STATS_AUTHORITY;
   // Só o Hero centralizado mostra os mini-cards de destaque (ícone + texto).
-  const needsCards = layout.hero === "centered";
+  const needsCards = layout.hero === HERO_VARIANT_CENTERED_FOCUS;
 
   const heroOptions = useMemo(
     () =>
       form.videoId
         ? HERO_OPTIONS
-        : HERO_OPTIONS.filter((o) => o.id !== "video"),
+        : HERO_OPTIONS.filter((o) => o.id !== HERO_VARIANT_VIDEO_EMBEDDED),
     [form.videoId],
   );
 
-  const equipeVariant =
-    layout.equipe ??
-    ((office.lawyers?.length ?? 0) <= 3 ? "splitAlternado" : "retratoElegante");
+  const availableEquipeOptions = useMemo(
+    () =>
+      EQUIPE_OPTIONS.filter((option) =>
+        getAvailableEquipeVariants(lawyerCount).includes(
+          option.id as EquipeVariant,
+        ),
+      ),
+    [lawyerCount],
+  );
+
+  const equipeVariant = useMemo(() => {
+    if (isEquipeVariantAllowed(lawyerCount, layout.equipe)) {
+      return layout.equipe ?? getAutoEquipeVariant(lawyerCount);
+    }
+    return (
+      getAutoEquipeVariant(lawyerCount) ??
+      (availableEquipeOptions[0]?.id as EquipeVariant | undefined)
+    );
+  }, [availableEquipeOptions, lawyerCount, layout.equipe]);
+
+  const editorNotices = useMemo(() => {
+    if (lawyerCount === 0) {
+      return [
+        {
+          id: "equipe-empty",
+          title: "Equipe indisponível",
+          description:
+            "Adicione ao menos um advogado para liberar a seção Equipe no editor.",
+        },
+      ];
+    }
+
+    if (lawyerCount === 1 && layout.equipe !== EQUIPE_VARIANT_SOLO_PORTRAIT) {
+      return [
+        {
+          id: "equipe-solo-only",
+          title: "Somente Retrato solo",
+          description:
+            "Com um advogado, a seção Equipe só pode usar a variação Retrato solo.",
+        },
+      ];
+    }
+
+    if (lawyerCount >= 2 && layout.equipe === EQUIPE_VARIANT_SOLO_PORTRAIT) {
+      return [
+        {
+          id: "equipe-multi-only",
+          title: "Variação solo incompatível",
+          description:
+            "Com dois ou mais advogados, use Split alternado ou Retrato elegante.",
+        },
+      ];
+    }
+
+    return [];
+  }, [lawyerCount, layout.equipe]);
 
   // Detecta qual template está aplicado no momento (match parcial por variantes).
   const currentTemplateId = useMemo(() => {
@@ -284,6 +385,14 @@ export function Editor({
         label: "Aparência",
         previewTarget: "sec-hero",
         description: getSectionDescription("aparencia"),
+        stage: "foundation",
+        enabled: true,
+      },
+      {
+        id: "integracoes",
+        label: "Integrações",
+        previewTarget: "sec-hero",
+        description: getSectionDescription("integracoes"),
         stage: "foundation",
         enabled: true,
       },
@@ -344,10 +453,9 @@ export function Editor({
         description: getSectionDescription("equipe"),
         stage: "content",
         enabled: !layout.hidden?.equipe,
-        variantLabel:
-          (office.lawyers?.length ?? 0) >= 2
-            ? EQUIPE_VARIANT_LABELS[equipeVariant]
-            : undefined,
+        variantLabel: layout.equipe
+          ? EQUIPE_VARIANT_LABELS[layout.equipe]
+          : undefined,
       },
       {
         id: "areas",
@@ -397,7 +505,7 @@ export function Editor({
       },
     ];
     return items;
-  }, [layout, office.lawyers?.length, equipeVariant]);
+  }, [layout]);
 
   const currentDetail =
     detailSection === null
@@ -479,20 +587,19 @@ export function Editor({
           }));
         },
       },
-      equipe:
-        office.lawyers.length >= 2
-          ? {
-              label: "Equipe",
-              options: EQUIPE_OPTIONS,
-              value: equipeVariant,
-              onChange: (id) => {
-                form.setLayout((currentLayout) => ({
-                  ...currentLayout,
-                  equipe: id as EquipeVariant,
-                }));
-              },
-            }
-          : undefined,
+      equipe: availableEquipeOptions.length
+        ? {
+            label: "Equipe",
+            options: availableEquipeOptions,
+            value: equipeVariant ?? availableEquipeOptions[0].id,
+            onChange: (id) => {
+              form.setLayout((currentLayout) => ({
+                ...currentLayout,
+                equipe: id as EquipeVariant,
+              }));
+            },
+          }
+        : undefined,
       areas: {
         label: "Áreas",
         options: AREAS_OPTIONS,
@@ -517,6 +624,7 @@ export function Editor({
       },
     }),
     [
+      availableEquipeOptions,
       heroOptions,
       layout.hero,
       layout.dor,
@@ -524,11 +632,38 @@ export function Editor({
       layout.sobre,
       layout.areas,
       layout.etapas,
-      office.lawyers.length,
       equipeVariant,
       form,
     ],
   );
+
+  function toggleLeftPanel() {
+    const panel = leftPanelRef.current;
+    if (!panel) return;
+
+    if (panel.isCollapsed()) {
+      panel.expand();
+      setLeftPanelCollapsed(false);
+      return;
+    }
+
+    panel.collapse();
+    setLeftPanelCollapsed(true);
+  }
+
+  function toggleRightPanel() {
+    const panel = rightPanelRef.current;
+    if (!panel) return;
+
+    if (panel.isCollapsed()) {
+      panel.expand();
+      setRightPanelCollapsed(false);
+      return;
+    }
+
+    panel.collapse();
+    setRightPanelCollapsed(true);
+  }
 
   function goToDetailSection(id: DetailSectionId) {
     setDetailSection(id);
@@ -544,7 +679,41 @@ export function Editor({
       case "equipe":
         return {
           on: !layout.hidden?.equipe,
-          onChange: (on: boolean) => form.setSectionHidden("equipe", !on),
+          onChange: (on: boolean) => {
+            if (!on) {
+              form.setSectionHidden("equipe", true);
+              return;
+            }
+
+            const nextVariant =
+              (isEquipeVariantAllowed(lawyerCount, layout.equipe)
+                ? layout.equipe
+                : getToggleEquipeVariant(lawyerCount)) ?? undefined;
+
+            if (!nextVariant) {
+              toast.error("A seção Equipe ainda não pode ser ativada.", {
+                description:
+                  "Adicione pelo menos um advogado para liberar essa seção.",
+              });
+              return;
+            }
+
+            if (layout.equipe !== nextVariant) {
+              form.setLayout((currentLayout) => ({
+                ...currentLayout,
+                equipe: nextVariant,
+              }));
+
+              toast("Variant da Equipe ajustada", {
+                description:
+                  nextVariant === EQUIPE_VARIANT_SOLO_PORTRAIT
+                    ? "A variação Retrato solo foi aplicada para apresentar um único advogado."
+                    : "A variação da Equipe foi ajustada para a quantidade atual de advogados.",
+              });
+            }
+
+            form.setSectionHidden("equipe", false);
+          },
         };
       case "areas":
         return {
@@ -579,6 +748,21 @@ export function Editor({
       setDetailSection(sec);
     }
   }, []);
+
+  useEffect(() => {
+    if (layout.hidden?.equipe) return;
+    if (isEquipeVariantAllowed(lawyerCount, layout.equipe)) return;
+
+    form.setSectionHidden("equipe", true);
+    toast("Seção Equipe ocultada", {
+      description:
+        lawyerCount === 1
+          ? "Com um advogado, a seção Equipe exige a variação Retrato solo."
+          : lawyerCount === 0
+            ? "Adicione ao menos um advogado para habilitar a seção Equipe."
+            : "A variação atual da Equipe não é compatível com a quantidade de advogados.",
+    });
+  }, [form, lawyerCount, layout.equipe, layout.hidden?.equipe]);
 
   // Ao abrir um accordeon, rola o preview até a seção correspondente. O preview
   // vive dentro de um <iframe>, então busca-se a seção no documento do iframe.
@@ -628,6 +812,12 @@ export function Editor({
       setSaveState("error");
       return false;
     }
+  }
+
+  function restoreAccountDefaults() {
+    form.applyAccountDefaults(accountConfig, true);
+    setRestoreDefaultsOpen(false);
+    toast.success("Padrão da conta aplicado nesta página.");
   }
 
   async function publicar() {
@@ -694,6 +884,8 @@ export function Editor({
         return <GridView size={18} />;
       case "aparencia":
         return <Tune size={18} />;
+      case "integracoes":
+        return <Campaign size={18} />;
       case "seo":
         return <Search size={18} />;
       case "hero":
@@ -743,36 +935,39 @@ export function Editor({
   }
 
   function renderNavigationGroup({
+    step,
     title,
-    description,
     sections,
   }: {
+    step: string;
     title: string;
-    description: string;
     sections: WorkspaceSectionMeta[];
   }) {
     return (
-      <section className="space-y-3">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">{title}</p>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </p>
+      <section className="space-y-1.5">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+              {step}
+            </span>
+            <p className="truncate text-xs font-semibold text-foreground">
+              {title}
+            </p>
+          </div>
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {sections.length}
+          </span>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="space-y-0.5">
           {sections.map((section) => (
             <EditorSectionMenuRow
               key={section.id}
               title={section.label}
-              subtitle={
-                section.variantLabel
-                  ? `${section.description} · ${section.variantLabel}`
-                  : section.description
-              }
+              meta={section.variantLabel}
               icon={
                 <span
                   className={cn(
-                    "inline-flex size-10 items-center justify-center rounded-lg",
+                    "inline-flex size-7 items-center justify-center rounded-md",
                     section.enabled
                       ? "bg-muted text-muted-foreground"
                       : "bg-muted text-muted-foreground/50",
@@ -791,9 +986,615 @@ export function Editor({
     );
   }
 
+  const navigationPanel = (
+    <aside
+      className={cn(
+        "min-h-0 flex-col overflow-hidden border-border bg-card",
+        isLgUp
+          ? cn(
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              leftPanelCollapsed
+                ? "border-r-0 opacity-0"
+                : "border-r opacity-100",
+            )
+          : showNavigationPanel
+            ? "flex border-b"
+            : "hidden border-b",
+      )}
+    >
+      <div className="border-b border-border px-3 py-2.5">
+        <div className="space-y-2">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">
+              Navegação
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Clique em um item para editar à direita.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+        {reorderMode ? (
+          <ReorderPanel form={form} onClose={() => setReorderMode(false)} />
+        ) : (
+          <div className="space-y-4">
+            {renderNavigationGroup({
+              step: "1",
+              title: "Recursos da página",
+              sections: resourceSections,
+            })}
+
+            {renderNavigationGroup({
+              step: "2",
+              title: "Seções principais",
+              sections: contentSections,
+            })}
+
+            {renderNavigationGroup({
+              step: "3",
+              title: "Conversão e fechamento",
+              sections: conversionSections,
+            })}
+
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 px-1">
+                  <p className="text-xs font-semibold text-foreground">
+                    Seções personalizadas
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setReorderMode(true)}
+                >
+                  <SwapVert size={14} />
+                  Reordenar
+                </Button>
+              </div>
+
+              {form.customSections.length ? (
+                <div className="space-y-0.5">
+                  {form.customSections.map((sec) => (
+                    <CustomSectionEditor
+                      key={sec.id}
+                      form={form}
+                      section={sec}
+                      onScroll={() => scrollToSection(`sec-custom-${sec.id}`)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-background px-3 py-3 text-xs text-muted-foreground">
+                  Nenhuma seção personalizada adicionada.
+                </div>
+              )}
+
+              <AddSectionButton onAdd={form.addCustomSection} />
+            </section>
+
+            {editorNotices.length ? (
+              <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                <div>
+                  <p className="text-xs font-semibold text-amber-900">
+                    Avisos da página
+                  </p>
+                  <p className="text-[11px] text-amber-800/80">
+                    Regras aplicadas automaticamente para evitar preview vazio.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {editorNotices.map((notice) => (
+                    <div key={notice.id} className="space-y-1">
+                      <p className="text-xs font-medium text-amber-950">
+                        {notice.title}
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-amber-900/80">
+                        {notice.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+
+  const previewPanel = (
+    <main
+      className={cn(
+        "min-h-0 flex-col overflow-hidden border-border bg-card",
+        isLgUp
+          ? "flex h-full min-w-0 border-r"
+          : showPreviewPanel
+            ? "flex border-b"
+            : "hidden border-b",
+      )}
+    >
+      <div className="border-b border-border px-5 py-3">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+          <div className="flex items-center gap-2">
+            {isLgUp ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={toggleLeftPanel}
+                title={
+                  leftPanelCollapsed
+                    ? "Mostrar navegação"
+                    : "Esconder navegação"
+                }
+              >
+                {leftPanelCollapsed ? (
+                  <KeyboardArrowRight size={18} />
+                ) : (
+                  <KeyboardArrowLeft size={18} />
+                )}
+                <span className="sr-only">
+                  {leftPanelCollapsed
+                    ? "Mostrar navegação"
+                    : "Esconder navegação"}
+                </span>
+              </Button>
+            ) : null}
+            <div className="min-w-0 space-y-1">
+              <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <Visibility size={13} />
+                Preview interativo
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
+              {(
+                [
+                  { id: "desktop", label: "Desktop", Icon: DesktopWindows },
+                  { id: "tablet", label: "Tablet", Icon: Tablet },
+                  { id: "mobile", label: "Mobile", Icon: Devices },
+                ] as const
+              ).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setViewport(id)}
+                  aria-pressed={viewport === id}
+                  title={label}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
+                    viewport === id
+                      ? "bg-ui-soft text-ui"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon size={14} />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            {isLgUp ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={toggleRightPanel}
+                title={rightPanelCollapsed ? "Mostrar CMS" : "Esconder CMS"}
+              >
+                {rightPanelCollapsed ? (
+                  <KeyboardArrowLeft size={18} />
+                ) : (
+                  <KeyboardArrowRight size={18} />
+                )}
+                <span className="sr-only">
+                  {rightPanelCollapsed ? "Mostrar CMS" : "Esconder CMS"}
+                </span>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <DevicePreview ref={previewRef} mode={viewport}>
+          <LandingPreview
+            schema={form.schema}
+            editor={{ variantControls: previewVariantControls }}
+          />
+        </DevicePreview>
+      </div>
+    </main>
+  );
+
+  const cmsPanel = (
+    <aside
+      className={cn(
+        "min-h-0 flex-col overflow-hidden bg-card",
+        isLgUp
+          ? cn(
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              rightPanelCollapsed ? "opacity-0" : "opacity-100",
+            )
+          : showCmsPanel
+            ? "flex"
+            : "hidden",
+      )}
+    >
+      <div className="border-b border-border px-4 py-4">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {currentDetail?.variantLabel ? (
+              <UiBadge variant="secondary">
+                {currentDetail.variantLabel}
+              </UiBadge>
+            ) : null}
+            {!currentDetail?.enabled && currentDetail ? (
+              <UiBadge variant="muted">Oculta na página</UiBadge>
+            ) : null}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {currentDetail?.label ?? "Campos editáveis"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {currentDetail
+                ? currentDetail.id === "hero" ||
+                  currentDetail.id === "dor" ||
+                  currentDetail.id === "solucao" ||
+                  currentDetail.id === "sobre" ||
+                  currentDetail.id === "equipe" ||
+                  currentDetail.id === "areas" ||
+                  currentDetail.id === "etapas"
+                  ? `${currentDetail.description}. Use as setas no topo do preview para mostrar ou esconder os painéis laterais e o seletor abaixo para mudar o layout.`
+                  : currentDetail.description
+                : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+        {!detailSection ? (
+          <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">
+                Selecione um bloco para editar
+              </p>
+              <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                Use a navegação da esquerda para abrir os campos. O seletor de
+                variação de cada bloco já aparece flutuando no canto do preview,
+                a qualquer momento.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="min-w-0 max-w-full space-y-3">
+            {detailSection === "identidade" && <IdentidadePanel form={form} />}
+            {detailSection === "imagens" && <ImagensPanel form={form} />}
+            {detailSection === "modelo" && (
+              <ModeloPicker form={form} currentId={currentTemplateId} />
+            )}
+            {detailSection === "seo" && <SeoPanel form={form} />}
+            {detailSection === "integracoes" && (
+              <IntegracoesPanel
+                form={form}
+                accountConfig={accountConfig}
+                onRestoreDefaults={() => setRestoreDefaultsOpen(true)}
+              />
+            )}
+            {detailSection === "hero" && (
+              <>
+                {renderSectionSettings(previewVariantControls.hero, {
+                  value: tones.hero ?? "light",
+                  onChange: (t) => form.setTone("hero", t),
+                })}
+                <SectionImageInput form={form} sectionKey="hero" />
+                <FieldGroup title="Textos">
+                  <HeroTexts form={form} />
+                </FieldGroup>
+                {needsVideo ? (
+                  <FieldGroup title="Vídeo">
+                    <BuilderField
+                      label="Link do vídeo do YouTube"
+                      hint="Cole o link do YouTube — a gente identifica o vídeo."
+                    >
+                      <div className="flex items-center gap-2">
+                        <Movie size={16} className="shrink-0 text-slate-400" />
+                        <Input
+                          aria-label="Link do vídeo do YouTube"
+                          value={form.videoId}
+                          onChange={(e) =>
+                            form.setVideoId(extractYouTubeId(e.target.value))
+                          }
+                          placeholder="Cole o link (ex: youtube.com/watch?v=...)"
+                        />
+                      </div>
+                    </BuilderField>
+                  </FieldGroup>
+                ) : null}
+                {needsMetrics ? (
+                  <FieldGroup title="Métricas">
+                    <MetricsInput form={form} />
+                  </FieldGroup>
+                ) : null}
+                {needsCards ? (
+                  <FieldGroup title="Mini-cards">
+                    <HeroFeaturesInput form={form} />
+                  </FieldGroup>
+                ) : null}
+              </>
+            )}
+            {detailSection === "aparencia" && (
+              <>
+                <div>
+                  <p className="mb-2 text-sm font-medium text-slate-700">
+                    Cantos (arredondado ou quadrado)
+                  </p>
+                  <div className="space-y-2">
+                    <Segmented
+                      label="Cards"
+                      value={office.cardRadius ?? "square"}
+                      onChange={(v) => set("cardRadius", v)}
+                      options={CORNER_OPTIONS}
+                    />
+                    <Segmented
+                      label="Botões"
+                      value={office.buttons?.radius ?? "square"}
+                      onChange={(v) => form.setButtonField("radius", v)}
+                      options={CORNER_OPTIONS}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <BuilderField
+                    label="O que acontece ao clicar num botão"
+                    hint="Vale para todos os botões de chamada da página."
+                  >
+                    <select
+                      aria-label="Ação dos botões"
+                      className={inputCls}
+                      value={office.buttons?.action ?? "popup"}
+                      onChange={(e) =>
+                        form.setButtonField("action", e.target.value)
+                      }
+                    >
+                      <option value="popup">Abrir popup de formulário</option>
+                      <option value="whatsapp">Abrir WhatsApp</option>
+                      <option value="link">Abrir link personalizado</option>
+                    </select>
+                  </BuilderField>
+                  {(office.buttons?.action ?? "popup") === "link" ? (
+                    <BuilderField
+                      label="Link do botão"
+                      hint="Endereço completo (ex.: https://...)."
+                    >
+                      <Input
+                        value={office.buttons?.link ?? ""}
+                        onChange={(e) =>
+                          form.setButtonField("link", e.target.value)
+                        }
+                        placeholder="https://..."
+                        inputMode="url"
+                      />
+                    </BuilderField>
+                  ) : (office.buttons?.action ?? "popup") === "whatsapp" ? (
+                    <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
+                      Os botões abrem o WhatsApp informado no{" "}
+                      <strong>Rodapé</strong>.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                      <p className="text-xs leading-relaxed text-slate-500">
+                        Abre um formulário que termina sempre com{" "}
+                        <strong>nome</strong> e <strong>telefone</strong>. Você
+                        pode adicionar perguntas antes desse passo.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setBuilderOpen(true)}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
+                      >
+                        <Tune size={15} /> Personalizar formulário
+                        {office.buttons?.popup?.questions.length
+                          ? ` (${office.buttons.popup.questions.length})`
+                          : ""}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Tipografia
+                  </p>
+                  <BuilderField
+                    label="Títulos e destaques"
+                    hint="Fonte usada nos títulos de seção e manchetes."
+                  >
+                    <select
+                      aria-label="Fonte dos títulos"
+                      className={inputCls}
+                      value={office.fonts?.heading ?? ""}
+                      onChange={(e) => form.setFont("heading", e.target.value)}
+                    >
+                      <option value="">Padrão do site</option>
+                      {HEADING_FONTS.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </BuilderField>
+                  <BuilderField
+                    label="Textos e parágrafos"
+                    hint="Fonte usada nos parágrafos e textos de apoio."
+                  >
+                    <select
+                      aria-label="Fonte dos textos"
+                      className={inputCls}
+                      value={office.fonts?.body ?? ""}
+                      onChange={(e) => form.setFont("body", e.target.value)}
+                    >
+                      <option value="">Padrão do site</option>
+                      {BODY_FONTS.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </BuilderField>
+                </div>
+              </>
+            )}
+            {detailSection === "dor" && (
+              <>
+                {renderSectionSettings(previewVariantControls.dor, {
+                  value: tones.dor,
+                  onChange: (t) => form.setTone("dor", t),
+                })}
+                <SectionImageInput form={form} sectionKey="dor" />
+                <FieldGroup title="Textos">
+                  <DorTexts form={form} />
+                </FieldGroup>
+                <FieldGroup title="Cards">
+                  <DorCards form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "solucao" && (
+              <>
+                {renderSectionSettings(previewVariantControls.solucao, {
+                  value: tones.solucao,
+                  onChange: (t) => form.setTone("solucao", t),
+                })}
+                <SectionImageInput form={form} sectionKey="solucao" />
+                <FieldGroup title="Textos">
+                  <SolucaoTexts form={form} />
+                </FieldGroup>
+                <FieldGroup title="Cards">
+                  <SolucaoCards form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "sobre" && (
+              <>
+                {renderSectionSettings(previewVariantControls.sobre, {
+                  value: tones.sobre,
+                  onChange: (t) => form.setTone("sobre", t),
+                })}
+                <SectionImageInput form={form} sectionKey="sobre" />
+                <FieldGroup title="Texto">
+                  <BuilderField
+                    label="Apresentação"
+                    hint="Pule linha para separar em parágrafos."
+                  >
+                    <AutoTextarea
+                      aria-label="Texto do Sobre"
+                      className={`${inputCls} min-h-[140px] resize-y`}
+                      value={office.about}
+                      onChange={(e) => set("about", e.target.value)}
+                      placeholder="Atuamos com dedicação na defesa de quem trabalha..."
+                    />
+                  </BuilderField>
+                </FieldGroup>
+                {layout.sobre === SOBRE_VARIANT_PHOTO_LIST ||
+                layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
+                  <FieldGroup title="Diferenciais">
+                    <DiferenciaisInput form={form} />
+                  </FieldGroup>
+                ) : null}
+              </>
+            )}
+            {detailSection === "equipe" && (
+              <>
+                {renderSectionSettings(
+                  previewVariantControls.equipe,
+                  availableEquipeOptions.length
+                    ? {
+                        value: tones.equipe,
+                        onChange: (t) => form.setTone("equipe", t),
+                      }
+                    : undefined,
+                )}
+                <LawyerPhotosInput form={form} />
+              </>
+            )}
+            {detailSection === "areas" && (
+              <>
+                {renderSectionSettings(previewVariantControls.areas, {
+                  value: tones.areas,
+                  onChange: (t) => form.setTone("areas", t),
+                })}
+                <FieldGroup title="Textos">
+                  <AreasTexts form={form} />
+                </FieldGroup>
+                <FieldGroup title="Cards">
+                  <AreasCards form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "etapas" && (
+              <>
+                {renderSectionSettings(previewVariantControls.etapas, {
+                  value: tones.etapas,
+                  onChange: (t) => form.setTone("etapas", t),
+                })}
+                <FieldGroup title="Textos">
+                  <EtapasTexts form={form} />
+                </FieldGroup>
+                <FieldGroup title="Passos">
+                  <EtapasCards form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "faq" && (
+              <>
+                {renderSectionSettings(undefined, {
+                  value: tones.faq,
+                  onChange: (t) => form.setTone("faq", t),
+                })}
+                <FieldGroup title="Textos">
+                  <FaqTexts form={form} />
+                </FieldGroup>
+                <FieldGroup title="Perguntas">
+                  <FaqPerguntas form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "ctaFinal" && (
+              <>
+                {renderSectionSettings(undefined, {
+                  value: tones.ctaFinal,
+                  onChange: (t) => form.setTone("ctaFinal", t),
+                })}
+                <FieldGroup title="Textos">
+                  <CtaFinalTexts form={form} />
+                </FieldGroup>
+              </>
+            )}
+            {detailSection === "footer" && (
+              <FooterDetailPanel form={form} office={office} />
+            )}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+
   return (
     <Form {...form.form}>
-      <div className="app-ui flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
+      <div className="app-ui flex h-[100dvh] min-h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
         <ConfirmDialog
           open={leaveOpen}
           onOpenChange={setLeaveOpen}
@@ -802,6 +1603,15 @@ export function Editor({
           confirmLabel="Sair sem salvar"
           variant="destructive"
           onConfirm={() => router.push("/")}
+        />
+        <ConfirmDialog
+          open={restoreDefaultsOpen}
+          onOpenChange={setRestoreDefaultsOpen}
+          title="Restaurar padrão da conta"
+          description="Isso substitui o tracking, os scripts, o captcha e o domínio desta página pelos valores padrão da conta. Continuar?"
+          confirmLabel="Restaurar"
+          variant="destructive"
+          onConfirm={restoreAccountDefaults}
         />
         <div className="shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5">
           <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4">
@@ -901,556 +1711,73 @@ export function Editor({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 lg:grid lg:grid-cols-12">
-          <aside
-            className={cn(
-              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-3 lg:border-b-0 lg:border-r",
-              showNavigationPanel ? "flex" : "hidden",
-            )}
+        {isLgUp ? (
+          <ResizablePanelGroup
+            id="lp-editor-panels"
+            orientation="horizontal"
+            className="min-h-0 flex-1"
           >
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              {reorderMode ? (
-                <ReorderPanel
-                  form={form}
-                  onClose={() => setReorderMode(false)}
-                />
-              ) : (
-                <div className="space-y-5">
-                  {renderNavigationGroup({
-                    title: "Recursos da página",
-                    description:
-                      "Marca, imagens, template, aparência geral e metadados.",
-                    sections: resourceSections,
-                  })}
-
-                  {renderNavigationGroup({
-                    title: "Seções principais",
-                    description:
-                      "Blocos centrais da narrativa visíveis no preview.",
-                    sections: contentSections,
-                  })}
-
-                  {renderNavigationGroup({
-                    title: "Conversão e fechamento",
-                    description: "FAQ, CTA final e rodapé da landing page.",
-                    sections: conversionSections,
-                  })}
-
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          Seções personalizadas
-                        </p>
-                        <p className="text-xs leading-relaxed text-muted-foreground">
-                          Reordene a composição da landing page ou adicione
-                          novos blocos entre as seções padrão.
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setReorderMode(true)}
-                      >
-                        <SwapVert size={16} />
-                        Reordenar
-                      </Button>
-                    </div>
-
-                    {form.customSections.length ? (
-                      <div className="overflow-hidden rounded-2xl border border-border bg-background">
-                        {form.customSections.map((sec) => (
-                          <CustomSectionEditor
-                            key={sec.id}
-                            form={form}
-                            section={sec}
-                            onScroll={() =>
-                              scrollToSection(`sec-custom-${sec.id}`)
-                            }
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm text-muted-foreground">
-                        Nenhuma seção personalizada adicionada.
-                      </div>
-                    )}
-
-                    <AddSectionButton onAdd={form.addCustomSection} />
-                  </section>
-                </div>
+            <ResizablePanel
+              id="editor-navigation"
+              panelRef={leftPanelRef}
+              defaultSize={LEFT_PANEL_DEFAULT_SIZE}
+              minSize={LEFT_PANEL_MIN_SIZE}
+              collapsedSize={LEFT_PANEL_COLLAPSED_SIZE}
+              collapsible
+              groupResizeBehavior="preserve-pixel-size"
+              className="min-w-0"
+              onResize={(panelSize) =>
+                setLeftPanelCollapsed(
+                  panelSize.inPixels <= PANEL_COLLAPSED_THRESHOLD_PX,
+                )
+              }
+            >
+              {navigationPanel}
+            </ResizablePanel>
+            <ResizableHandle
+              withHandle
+              className={cn(
+                leftPanelCollapsed && "pointer-events-none opacity-0",
               )}
-            </div>
-          </aside>
-
-          <main
-            className={cn(
-              "min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:col-span-6 lg:border-b-0 lg:border-r",
-              showPreviewPanel ? "flex" : "hidden",
-            )}
-          >
-            <div className="border-b border-border px-5 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    <Visibility size={13} />
-                    Preview interativo
-                  </p>
-                </div>
-
-                <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
-                  {(
-                    [
-                      { id: "desktop", label: "Desktop", Icon: DesktopWindows },
-                      { id: "tablet", label: "Tablet", Icon: Tablet },
-                      { id: "mobile", label: "Mobile", Icon: Devices },
-                    ] as const
-                  ).map(({ id, label, Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setViewport(id)}
-                      aria-pressed={viewport === id}
-                      title={label}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
-                        viewport === id
-                          ? "bg-ui-soft text-ui"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <Icon size={14} />
-                      <span className="hidden sm:inline">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="min-h-[min(70vh,640px)] min-h-0 flex-1 overflow-hidden">
-              <DevicePreview ref={previewRef} mode={viewport}>
-                <LandingPreview
-                  schema={form.schema}
-                  editor={{ variantControls: previewVariantControls }}
-                />
-              </DevicePreview>
-            </div>
-          </main>
-
-          <aside
-            className={cn(
-              "min-h-0 flex-col overflow-hidden bg-card lg:col-span-3",
-              showCmsPanel ? "flex" : "hidden",
-            )}
-          >
-            <div className="border-b border-border px-4 py-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {currentDetail?.variantLabel ? (
-                    <UiBadge variant="secondary">
-                      {currentDetail.variantLabel}
-                    </UiBadge>
-                  ) : null}
-                  {!currentDetail?.enabled && currentDetail ? (
-                    <UiBadge variant="muted">Oculta na página</UiBadge>
-                  ) : null}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {currentDetail?.label ?? "Campos editáveis"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {currentDetail
-                      ? currentDetail.id === "hero" ||
-                        currentDetail.id === "dor" ||
-                        currentDetail.id === "solucao" ||
-                        currentDetail.id === "sobre" ||
-                        currentDetail.id === "equipe" ||
-                        currentDetail.id === "areas" ||
-                        currentDetail.id === "etapas"
-                        ? `${currentDetail.description}. Use as setas no canto do preview (ou o seletor abaixo) para mudar o layout.`
-                        : currentDetail.description
-                      : "Texto, imagens, cores e conteúdo do bloco selecionado aparecem aqui."}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-              {!detailSection ? (
-                <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-foreground">
-                      Selecione um bloco para editar
-                    </p>
-                    <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                      Use a navegação da esquerda para abrir os campos. O
-                      seletor de variação de cada bloco já aparece flutuando no
-                      canto do preview, a qualquer momento.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="min-w-0 max-w-full space-y-3">
-                  {detailSection === "identidade" && (
-                    <IdentidadePanel form={form} />
-                  )}
-                  {detailSection === "imagens" && <ImagensPanel form={form} />}
-                  {detailSection === "modelo" && (
-                    <ModeloPicker form={form} currentId={currentTemplateId} />
-                  )}
-                  {detailSection === "seo" && <SeoPanel form={form} />}
-                  {detailSection === "hero" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.hero, {
-                        value: tones.hero ?? "light",
-                        onChange: (t) => form.setTone("hero", t),
-                      })}
-                      <SectionImageInput form={form} sectionKey="hero" />
-                      <FieldGroup title="Textos">
-                        <HeroTexts form={form} />
-                      </FieldGroup>
-                      {needsVideo ? (
-                        <FieldGroup title="Vídeo">
-                          <BuilderField
-                            label="Link do vídeo do YouTube"
-                            hint="Cole o link do YouTube — a gente identifica o vídeo."
-                          >
-                            <div className="flex items-center gap-2">
-                              <Movie
-                                size={16}
-                                className="shrink-0 text-slate-400"
-                              />
-                              <Input
-                                aria-label="Link do vídeo do YouTube"
-                                value={form.videoId}
-                                onChange={(e) =>
-                                  form.setVideoId(
-                                    extractYouTubeId(e.target.value),
-                                  )
-                                }
-                                placeholder="Cole o link (ex: youtube.com/watch?v=...)"
-                              />
-                            </div>
-                          </BuilderField>
-                        </FieldGroup>
-                      ) : null}
-                      {needsMetrics ? (
-                        <FieldGroup title="Métricas">
-                          <MetricsInput form={form} />
-                        </FieldGroup>
-                      ) : null}
-                      {needsCards ? (
-                        <FieldGroup title="Mini-cards">
-                          <HeroFeaturesInput form={form} />
-                        </FieldGroup>
-                      ) : null}
-                    </>
-                  )}
-                  {detailSection === "aparencia" && (
-                    <>
-                      <div>
-                        <p className="mb-2 text-sm font-medium text-slate-700">
-                          Cantos (arredondado ou quadrado)
-                        </p>
-                        <div className="space-y-2">
-                          <Segmented
-                            label="Cards"
-                            value={office.cardRadius ?? "square"}
-                            onChange={(v) => set("cardRadius", v)}
-                            options={CORNER_OPTIONS}
-                          />
-                          <Segmented
-                            label="Botões"
-                            value={office.buttons?.radius ?? "square"}
-                            onChange={(v) => form.setButtonField("radius", v)}
-                            options={CORNER_OPTIONS}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 border-t border-slate-100 pt-3">
-                        <BuilderField
-                          label="O que acontece ao clicar num botão"
-                          hint="Vale para todos os botões de chamada da página."
-                        >
-                          <select
-                            aria-label="Ação dos botões"
-                            className={inputCls}
-                            value={office.buttons?.action ?? "popup"}
-                            onChange={(e) =>
-                              form.setButtonField("action", e.target.value)
-                            }
-                          >
-                            <option value="popup">
-                              Abrir popup de formulário
-                            </option>
-                            <option value="whatsapp">Abrir WhatsApp</option>
-                            <option value="link">
-                              Abrir link personalizado
-                            </option>
-                          </select>
-                        </BuilderField>
-                        {(office.buttons?.action ?? "popup") === "link" ? (
-                          <BuilderField
-                            label="Link do botão"
-                            hint="Endereço completo (ex.: https://...)."
-                          >
-                            <Input
-                              value={office.buttons?.link ?? ""}
-                              onChange={(e) =>
-                                form.setButtonField("link", e.target.value)
-                              }
-                              placeholder="https://..."
-                              inputMode="url"
-                            />
-                          </BuilderField>
-                        ) : (office.buttons?.action ?? "popup") ===
-                          "whatsapp" ? (
-                          <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
-                            Os botões abrem o WhatsApp informado no{" "}
-                            <strong>Rodapé</strong>.
-                          </p>
-                        ) : (
-                          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                            <p className="text-xs leading-relaxed text-slate-500">
-                              Abre um formulário que termina sempre com{" "}
-                              <strong>nome</strong> e <strong>telefone</strong>.
-                              Você pode adicionar perguntas antes desse passo.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => setBuilderOpen(true)}
-                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
-                            >
-                              <Tune size={15} /> Personalizar formulário
-                              {office.buttons?.popup?.questions.length
-                                ? ` (${office.buttons.popup.questions.length})`
-                                : ""}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 border-t border-slate-100 pt-3">
-                        <p className="text-sm font-medium text-slate-700">
-                          Tipografia
-                        </p>
-                        <BuilderField
-                          label="Títulos e destaques"
-                          hint="Fonte usada nos títulos de seção e manchetes."
-                        >
-                          <select
-                            aria-label="Fonte dos títulos"
-                            className={inputCls}
-                            value={office.fonts?.heading ?? ""}
-                            onChange={(e) =>
-                              form.setFont("heading", e.target.value)
-                            }
-                          >
-                            <option value="">Padrão do site</option>
-                            {HEADING_FONTS.map((f) => (
-                              <option key={f.id} value={f.id}>
-                                {f.label}
-                              </option>
-                            ))}
-                          </select>
-                        </BuilderField>
-                        <BuilderField
-                          label="Textos e parágrafos"
-                          hint="Fonte usada nos parágrafos e textos de apoio."
-                        >
-                          <select
-                            aria-label="Fonte dos textos"
-                            className={inputCls}
-                            value={office.fonts?.body ?? ""}
-                            onChange={(e) =>
-                              form.setFont("body", e.target.value)
-                            }
-                          >
-                            <option value="">Padrão do site</option>
-                            {BODY_FONTS.map((f) => (
-                              <option key={f.id} value={f.id}>
-                                {f.label}
-                              </option>
-                            ))}
-                          </select>
-                        </BuilderField>
-                      </div>
-
-                      <FieldGroup title="Tags de rastreamento">
-                        <p className="text-xs leading-relaxed text-slate-500">
-                          Cole aqui os scripts do Google Analytics, Meta Pixel,
-                          Google Tag Manager ou qualquer outro código de
-                          tracking.
-                        </p>
-                        <BuilderField
-                          label="Código no <head>"
-                          hint="Carrega antes do conteúdo — ideal para GTM e gtag."
-                        >
-                          <AutoTextarea
-                            aria-label="Tags no head"
-                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                            value={office.tags?.head ?? ""}
-                            onChange={(e) =>
-                              form.setTag("head", e.target.value)
-                            }
-                            placeholder={
-                              "<script>\n  // seu código aqui\n</script>"
-                            }
-                          />
-                        </BuilderField>
-                        <BuilderField
-                          label="Código no <body>"
-                          hint="Logo após a abertura do body — para noscript do GTM."
-                        >
-                          <AutoTextarea
-                            aria-label="Tags no body"
-                            className={`${inputCls} min-h-[80px] resize-y font-mono text-xs`}
-                            value={office.tags?.body ?? ""}
-                            onChange={(e) =>
-                              form.setTag("body", e.target.value)
-                            }
-                            placeholder={"<noscript>...</noscript>"}
-                          />
-                        </BuilderField>
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "dor" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.dor, {
-                        value: tones.dor,
-                        onChange: (t) => form.setTone("dor", t),
-                      })}
-                      <SectionImageInput form={form} sectionKey="dor" />
-                      <FieldGroup title="Textos">
-                        <DorTexts form={form} />
-                      </FieldGroup>
-                      <FieldGroup title="Cards">
-                        <DorCards form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "solucao" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.solucao, {
-                        value: tones.solucao,
-                        onChange: (t) => form.setTone("solucao", t),
-                      })}
-                      <SectionImageInput form={form} sectionKey="solucao" />
-                      <FieldGroup title="Textos">
-                        <SolucaoTexts form={form} />
-                      </FieldGroup>
-                      <FieldGroup title="Cards">
-                        <SolucaoCards form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "sobre" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.sobre, {
-                        value: tones.sobre,
-                        onChange: (t) => form.setTone("sobre", t),
-                      })}
-                      <SectionImageInput form={form} sectionKey="sobre" />
-                      <FieldGroup title="Texto">
-                        <BuilderField
-                          label="Apresentação"
-                          hint="Pule linha para separar em parágrafos."
-                        >
-                          <AutoTextarea
-                            aria-label="Texto do Sobre"
-                            className={`${inputCls} min-h-[140px] resize-y`}
-                            value={office.about}
-                            onChange={(e) => set("about", e.target.value)}
-                            placeholder="Atuamos com dedicação na defesa de quem trabalha..."
-                          />
-                        </BuilderField>
-                      </FieldGroup>
-                      {layout.sobre === "fotoLista" ||
-                      layout.sobre === "duasColunas" ? (
-                        <FieldGroup title="Diferenciais">
-                          <DiferenciaisInput form={form} />
-                        </FieldGroup>
-                      ) : null}
-                    </>
-                  )}
-                  {detailSection === "equipe" && (
-                    <>
-                      {renderSectionSettings(
-                        previewVariantControls.equipe,
-                        office.lawyers.length >= 2
-                          ? {
-                              value: tones.equipe,
-                              onChange: (t) => form.setTone("equipe", t),
-                            }
-                          : undefined,
-                      )}
-                      <LawyerPhotosInput form={form} />
-                    </>
-                  )}
-                  {detailSection === "areas" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.areas, {
-                        value: tones.areas,
-                        onChange: (t) => form.setTone("areas", t),
-                      })}
-                      <FieldGroup title="Textos">
-                        <AreasTexts form={form} />
-                      </FieldGroup>
-                      <FieldGroup title="Cards">
-                        <AreasCards form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "etapas" && (
-                    <>
-                      {renderSectionSettings(previewVariantControls.etapas, {
-                        value: tones.etapas,
-                        onChange: (t) => form.setTone("etapas", t),
-                      })}
-                      <FieldGroup title="Textos">
-                        <EtapasTexts form={form} />
-                      </FieldGroup>
-                      <FieldGroup title="Passos">
-                        <EtapasCards form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "faq" && (
-                    <>
-                      {renderSectionSettings(undefined, {
-                        value: tones.faq,
-                        onChange: (t) => form.setTone("faq", t),
-                      })}
-                      <FieldGroup title="Textos">
-                        <FaqTexts form={form} />
-                      </FieldGroup>
-                      <FieldGroup title="Perguntas">
-                        <FaqPerguntas form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "ctaFinal" && (
-                    <>
-                      {renderSectionSettings(undefined, {
-                        value: tones.ctaFinal,
-                        onChange: (t) => form.setTone("ctaFinal", t),
-                      })}
-                      <FieldGroup title="Textos">
-                        <CtaFinalTexts form={form} />
-                      </FieldGroup>
-                    </>
-                  )}
-                  {detailSection === "footer" && (
-                    <FooterDetailPanel form={form} office={office} />
-                  )}
-                </div>
+            />
+            <ResizablePanel
+              id="editor-preview"
+              minSize={PREVIEW_PANEL_MIN_SIZE}
+              className="min-w-0"
+            >
+              {previewPanel}
+            </ResizablePanel>
+            <ResizableHandle
+              withHandle
+              className={cn(
+                rightPanelCollapsed && "pointer-events-none opacity-0",
               )}
-            </div>
-          </aside>
-        </div>
+            />
+            <ResizablePanel
+              id="editor-cms"
+              panelRef={rightPanelRef}
+              defaultSize={RIGHT_PANEL_DEFAULT_SIZE}
+              minSize={RIGHT_PANEL_MIN_SIZE}
+              collapsedSize={RIGHT_PANEL_COLLAPSED_SIZE}
+              collapsible
+              groupResizeBehavior="preserve-pixel-size"
+              className="min-w-0"
+              onResize={(panelSize) =>
+                setRightPanelCollapsed(
+                  panelSize.inPixels <= PANEL_COLLAPSED_THRESHOLD_PX,
+                )
+              }
+            >
+              {cmsPanel}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="min-h-0 flex-1">
+            {navigationPanel}
+            {previewPanel}
+            {cmsPanel}
+          </div>
+        )}
 
         {!isLgUp ? (
           <nav

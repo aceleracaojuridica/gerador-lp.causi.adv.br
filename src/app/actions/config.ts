@@ -2,14 +2,14 @@
 
 import { ACCESS_DENIED_ERROR } from "@/lib/errors";
 import {
-  DEFAULT_CONFIG,
   type GlobalConfig,
   getConfig,
   saveConfig,
 } from "@/lib/landing-pages/config";
+import { DEFAULT_CONFIG } from "@/lib/landing-pages/global-config";
 import { requireLpSession } from "@/lib/session";
 
-/** Lê a configuração global do usuário (Projeto B). */
+/** Lê a configuração global da conta para landing pages. */
 export async function getConfigAction(): Promise<GlobalConfig> {
   try {
     await requireLpSession();
@@ -21,7 +21,7 @@ export async function getConfigAction(): Promise<GlobalConfig> {
 
 export type SaveConfigResult = { ok: true } | { ok: false; error: string };
 
-/** Salva a configuração global do usuário (Projeto B). */
+/** Salva a configuração global da conta para landing pages. */
 export async function saveConfigAction(
   c: GlobalConfig,
 ): Promise<SaveConfigResult> {
@@ -41,6 +41,18 @@ export async function saveConfigAction(
         head: c.tags?.head ?? "",
         body: c.tags?.body ?? "",
         footer: c.tags?.footer ?? "",
+      },
+      tracking: {
+        ga4MeasurementId: c.tracking?.ga4MeasurementId ?? "",
+        gtmContainerId: c.tracking?.gtmContainerId ?? "",
+        metaPixelId: c.tracking?.metaPixelId ?? "",
+        googleAdsId: c.tracking?.googleAdsId ?? "",
+        googleAdsLabel: c.tracking?.googleAdsLabel ?? "",
+      },
+      captcha: {
+        provider: c.captcha?.provider ?? "none",
+        siteKey: c.captcha?.siteKey ?? "",
+        widgetTheme: c.captcha?.widgetTheme ?? "auto",
       },
       domain: c.domain ?? "",
     });

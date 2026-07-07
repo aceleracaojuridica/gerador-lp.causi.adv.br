@@ -36,6 +36,7 @@ import type {
   AreasVariant,
   Tone,
 } from "@/lib/landing-pages/schema";
+import { AREAS_VARIANT_LIST_BANDS } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -150,7 +151,7 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
 
         <div
           className={
-            variant === "lista"
+            variant === AREAS_VARIANT_LIST_BANDS
               ? "mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-4"
               : "mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6"
           }

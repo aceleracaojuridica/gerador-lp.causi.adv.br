@@ -35,7 +35,7 @@ export type PreviewEditableSectionId =
 
 export type PreviewVariantControl = {
   label: string;
-  options: Array<{ id: string; label: string }>;
+  options: ReadonlyArray<{ id: string; label: string }>;
   value: string;
   onChange: (id: string) => void;
 };

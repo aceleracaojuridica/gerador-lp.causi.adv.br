@@ -1,76 +1,28 @@
 "use client";
 
-export const HERO_OPTIONS = [
-  { id: "centered", label: "Centralizado" },
-  { id: "split", label: "Split 50/50" },
-  { id: "video", label: "Vídeo + Foto" },
-  { id: "stats", label: "Com métricas" },
-];
-export const DOR_OPTIONS = [
-  { id: "comImagem", label: "Com imagem" },
-  { id: "soCards", label: "Só cards" },
-];
-export const SOLUCAO_OPTIONS = [
-  { id: "comImagem", label: "Com imagem" },
-  { id: "soCards", label: "Só cards" },
-  { id: "destaque", label: "Com destaque" },
-];
-export const SOBRE_OPTIONS = [
-  { id: "fotoLista", label: "Foto + lista" },
-  { id: "overlay", label: "Imagem + overlay" },
-  { id: "duasColunas", label: "Duas colunas" },
-];
-export const AREAS_OPTIONS = [
-  { id: "grid", label: "Grade" },
-  { id: "lista", label: "Lista" },
-];
-export const ETAPAS_OPTIONS = [
-  { id: "numerado", label: "Numerado" },
-  { id: "timeline", label: "Linha do tempo" },
-];
-export const EQUIPE_OPTIONS = [
-  { id: "splitAlternado", label: "Split alternado" },
-  { id: "retratoElegante", label: "Retrato elegante" },
-];
-
-export const HERO_VARIANT_LABELS: Record<string, string> = {
-  centered: "Centralizado",
-  split: "Split 50/50",
-  video: "Vídeo + Foto",
-  stats: "Com métricas",
-};
-export const DOR_VARIANT_LABELS: Record<string, string> = {
-  comImagem: "Com imagem",
-  soCards: "Só cards",
-};
-export const SOLUCAO_VARIANT_LABELS: Record<string, string> = {
-  comImagem: "Com imagem",
-  soCards: "Só cards",
-  destaque: "Com destaque",
-};
-export const SOBRE_VARIANT_LABELS: Record<string, string> = {
-  fotoLista: "Foto + lista",
-  overlay: "Imagem + overlay",
-  duasColunas: "Duas colunas",
-};
-export const AREAS_VARIANT_LABELS: Record<string, string> = {
-  grid: "Grade",
-  lista: "Lista",
-};
-export const ETAPAS_VARIANT_LABELS: Record<string, string> = {
-  numerado: "Numerado",
-  timeline: "Linha do tempo",
-};
-export const EQUIPE_VARIANT_LABELS: Record<string, string> = {
-  splitAlternado: "Split alternado",
-  retratoElegante: "Retrato elegante",
-};
+export {
+  AREAS_VARIANT_LABELS,
+  AREAS_VARIANT_OPTIONS as AREAS_OPTIONS,
+  DOR_VARIANT_LABELS,
+  DOR_VARIANT_OPTIONS as DOR_OPTIONS,
+  EQUIPE_VARIANT_LABELS,
+  EQUIPE_VARIANT_OPTIONS as EQUIPE_OPTIONS,
+  ETAPAS_VARIANT_LABELS,
+  ETAPAS_VARIANT_OPTIONS as ETAPAS_OPTIONS,
+  HERO_VARIANT_LABELS,
+  HERO_VARIANT_OPTIONS as HERO_OPTIONS,
+  SOBRE_VARIANT_LABELS,
+  SOBRE_VARIANT_OPTIONS as SOBRE_OPTIONS,
+  SOLUCAO_VARIANT_LABELS,
+  SOLUCAO_VARIANT_OPTIONS as SOLUCAO_OPTIONS,
+} from "@/lib/landing-pages/variants";
 
 export type DetailSectionId =
   | "identidade"
   | "imagens"
   | "modelo"
   | "aparencia"
+  | "integracoes"
   | "seo"
   | "hero"
   | "dor"
@@ -88,6 +40,7 @@ export const DETAIL_SECTION_IDS: DetailSectionId[] = [
   "imagens",
   "modelo",
   "aparencia",
+  "integracoes",
   "seo",
   "hero",
   "dor",
@@ -123,7 +76,7 @@ export type PreviewEditableSectionId =
 
 export type PreviewVariantControl = {
   label: string;
-  options: Array<{
+  options: ReadonlyArray<{
     id: string;
     label: string;
   }>;

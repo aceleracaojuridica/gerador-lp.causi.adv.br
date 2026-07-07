@@ -185,6 +185,7 @@ export const Accordion = EditorSectionAccordion;
 export function EditorSectionMenuRow({
   title,
   subtitle,
+  meta,
   icon,
   toggle: sectionToggle,
   active = false,
@@ -192,6 +193,7 @@ export function EditorSectionMenuRow({
 }: {
   title: string;
   subtitle?: string;
+  meta?: string;
   icon?: React.ReactNode;
   toggle?: { on: boolean; onChange: (on: boolean) => void };
   active?: boolean;
@@ -202,8 +204,10 @@ export function EditorSectionMenuRow({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3 transition",
-        active ? "bg-primary/8" : "bg-card hover:bg-muted/50",
+        "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 transition",
+        active
+          ? "bg-primary/8 shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
+          : "bg-transparent hover:bg-muted/40",
       )}
     >
       <button
@@ -215,7 +219,7 @@ export function EditorSectionMenuRow({
       {icon ? (
         <span
           className={cn(
-            "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-lg",
+            "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-md",
             off
               ? "bg-muted text-muted-foreground/50"
               : active
@@ -227,7 +231,7 @@ export function EditorSectionMenuRow({
         </span>
       ) : null}
       <div className="relative z-10 min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 leading-none">
           <span
             className={cn(
               "truncate text-sm font-semibold",
@@ -240,11 +244,24 @@ export function EditorSectionMenuRow({
           >
             {title}
           </span>
+          {meta ? (
+            <Badge
+              variant="outline"
+              className={cn(
+                "hidden h-4 shrink-0 rounded-full px-1 text-[0.6rem] font-medium sm:inline-flex",
+                active
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "text-muted-foreground",
+              )}
+            >
+              {meta}
+            </Badge>
+          ) : null}
           {sectionToggle ? (
             <Badge
               variant="secondary"
               className={cn(
-                "pointer-events-auto shrink-0 cursor-pointer text-[0.7rem]",
+                "pointer-events-auto h-4 shrink-0 cursor-pointer rounded-full px-1.5 text-[0.6rem]",
                 sectionToggle.on
                   ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                   : "bg-muted text-muted-foreground",
@@ -258,19 +275,9 @@ export function EditorSectionMenuRow({
             </Badge>
           ) : null}
         </div>
-        {subtitle ? (
-          <p
-            className={cn(
-              "truncate text-xs",
-              off ? "text-muted-foreground/50" : "text-muted-foreground",
-            )}
-          >
-            {subtitle}
-          </p>
-        ) : null}
       </div>
       <ChevronRight
-        size={18}
+        size={15}
         className={cn(
           "pointer-events-none relative z-10 shrink-0",
           active ? "text-primary" : "text-muted-foreground",

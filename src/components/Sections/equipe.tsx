@@ -1,6 +1,12 @@
 import { Reveal } from "@/components/ui/reveal";
 import type { EquipeVariant, Lawyer, Tone } from "@/lib/landing-pages/schema";
 import { focalPos } from "@/lib/landing-pages/schema";
+import {
+  EQUIPE_VARIANT_SOLO_PORTRAIT,
+  EQUIPE_VARIANT_SPLIT_ALTERNATING,
+  getAutoEquipeVariant,
+  isEquipeVariantAllowed,
+} from "@/lib/landing-pages/variants";
 
 type EquipeProps = {
   lawyers: Lawyer[];
@@ -10,16 +16,16 @@ type EquipeProps = {
 };
 
 /**
- * Seção Equipe — só com 2+ advogados (1 = solo, aparece no Sobre). Dois temas:
- *  - splitAlternado: foto + texto alternando (imagem compacta para não esticar).
- *  - retratoElegante: grid de retratos com gradiente (2 = centralizado, 3 = 3 cols, 4 = 2×2).
- * Se variant não for definida, auto-seleciona pela quantidade.
+ * Seção Equipe — aceita uma variant solo para 1 advogado e mantém o auto apenas
+ * para equipes com 2+ profissionais.
  */
 export function Equipe({ lawyers, brandRgb, tone, variant }: EquipeProps) {
-  if (lawyers.length < 2) return null;
+  const resolvedVariant = variant ?? getAutoEquipeVariant(lawyers.length);
+  if (!resolvedVariant) return null;
+  if (!isEquipeVariantAllowed(lawyers.length, resolvedVariant)) return null;
+
   const dark = tone === "dark";
-  const tema =
-    variant ?? (lawyers.length <= 3 ? "splitAlternado" : "retratoElegante");
+  const isSolo = resolvedVariant === EQUIPE_VARIANT_SOLO_PORTRAIT;
 
   return (
     <section
@@ -30,12 +36,12 @@ export function Equipe({ lawyers, brandRgb, tone, variant }: EquipeProps) {
           <p
             className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
-            Nossa equipe
+            {isSolo ? "Atuação direta" : "Nossa equipe"}
           </p>
           <h2
             className={`section-title max-w-2xl ${dark ? "text-white" : "text-lp-brand"}`}
           >
-            Profissionais dedicados ao{" "}
+            {isSolo ? "Quem vai conduzir o " : "Profissionais dedicados ao "}
             <span
               style={{
                 color: dark ? "var(--lp-accent-soft)" : "var(--lp-accent)",
@@ -46,13 +52,57 @@ export function Equipe({ lawyers, brandRgb, tone, variant }: EquipeProps) {
           </h2>
         </Reveal>
 
-        {tema === "splitAlternado" ? (
+        {resolvedVariant === EQUIPE_VARIANT_SOLO_PORTRAIT ? (
+          <SoloPortrait lawyer={lawyers[0]} dark={dark} />
+        ) : resolvedVariant === EQUIPE_VARIANT_SPLIT_ALTERNATING ? (
           <SplitAlternado lawyers={lawyers} dark={dark} />
         ) : (
           <RetratoElegante lawyers={lawyers} brandRgb={brandRgb} />
         )}
       </div>
     </section>
+  );
+}
+
+function SoloPortrait({ lawyer, dark }: { lawyer: Lawyer; dark: boolean }) {
+  return (
+    <Reveal className="mt-10">
+      <div className="grid items-center gap-8 lg:grid-cols-[42%_58%] lg:gap-12">
+        <div
+          className="h-[26rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand shadow-md md:h-[30rem]"
+          style={
+            lawyer.photo
+              ? {
+                  backgroundImage: `url('${lawyer.photo}')`,
+                  backgroundPosition: focalPos(lawyer.focal),
+                  backgroundSize: "cover",
+                }
+              : undefined
+          }
+        />
+        <div>
+          <span className="mb-3 block h-1 w-12 rounded-full bg-lp-accent" />
+          <h3
+            className={`font-display text-3xl font-semibold leading-tight md:text-4xl ${dark ? "text-white" : "text-lp-brand"}`}
+          >
+            {lawyer.name || "Advogado(a)"}
+          </h3>
+          {lawyer.role ? (
+            <p
+              className={`mt-3 text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+            >
+              {lawyer.role}
+            </p>
+          ) : null}
+          <p
+            className={`mt-5 max-w-xl text-lg leading-relaxed ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
+          >
+            Atendimento conduzido de forma direta, com acompanhamento próximo e
+            leitura clara de cada etapa do caso.
+          </p>
+        </div>
+      </div>
+    </Reveal>
   );
 }
 

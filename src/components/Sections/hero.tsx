@@ -45,6 +45,12 @@ import type {
   Tone,
 } from "@/lib/landing-pages/schema";
 import { focalPos } from "@/lib/landing-pages/schema";
+import {
+  HERO_VARIANT_CUTOUT_PORTRAIT as HERO_CUTOUT_PORTRAIT_ID,
+  HERO_VARIANT_SPLIT_MEDIA as HERO_SPLIT_MEDIA_ID,
+  HERO_VARIANT_STATS_AUTHORITY as HERO_STATS_AUTHORITY_ID,
+  HERO_VARIANT_VIDEO_EMBEDDED as HERO_VIDEO_EMBEDDED_ID,
+} from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -131,13 +137,13 @@ type HeroProps = {
 
 export function Hero(props: HeroProps) {
   switch (props.variant) {
-    case "split":
+    case HERO_SPLIT_MEDIA_ID:
       return <HeroSplit {...props} />;
-    case "video":
+    case HERO_VIDEO_EMBEDDED_ID:
       return <HeroVideo {...props} />;
-    case "stats":
+    case HERO_STATS_AUTHORITY_ID:
       return <HeroStats {...props} />;
-    case "recorte":
+    case HERO_CUTOUT_PORTRAIT_ID:
       return <HeroRecorte {...props} />;
     default:
       return <HeroCentered {...props} />;
@@ -512,9 +518,9 @@ function HeroStats({
                 dark ? "border-white/15" : "border-lp-ink-soft/15"
               }`}
             >
-              {office.metrics.slice(0, 3).map((m, i) => {
+              {office.metrics.slice(0, 3).map((m) => {
                 return (
-                  <div key={i} className="flex items-center gap-3">
+                  <div key={m.label} className="flex items-center gap-3">
                     <span
                       className={
                         dark ? "text-lp-accent-soft" : "text-lp-accent"
@@ -698,10 +704,10 @@ function FeatureCards({
   return (
     <div className={`relative z-20 mx-auto -mt-24 px-6 md:-mt-28 ${widthCls}`}>
       <div className={`grid grid-cols-1 gap-4 md:gap-6 ${colsCls}`}>
-        {features.map((f, i) => {
+        {features.map((f) => {
           return (
             <div
-              key={i}
+              key={`${f.icon}-${f.text}`}
               className={`flex items-center gap-4 rounded-2xl bg-white p-6 ${cardShadow}`}
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lp-brand text-lp-accent-soft">

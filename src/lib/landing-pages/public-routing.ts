@@ -27,6 +27,7 @@ const RESERVED_SEGMENTS = new Set([
   "etiquetas",
   "assinatura",
   "seguranca",
+  "configuracoes",
   "escritorio",
   "perfil",
   "usuarios",

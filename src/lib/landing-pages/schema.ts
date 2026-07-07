@@ -1,3 +1,21 @@
+import type {
+  AreasVariant,
+  DorVariant,
+  EquipeVariant,
+  EtapasVariant,
+  HeroVariant,
+  SobreVariant,
+  SolucaoVariant,
+} from "./variants";
+import {
+  AREAS_VARIANT_GRID_ICON_CARDS,
+  DOR_VARIANT_WITH_IMAGE_CARDS,
+  ETAPAS_VARIANT_NUMBERED_STEPS,
+  HERO_VARIANT_CENTERED_FOCUS,
+  SOBRE_VARIANT_PHOTO_LIST,
+  SOLUCAO_VARIANT_CARDS_COMPACT,
+} from "./variants";
+
 /*
   Schema da Landing Page — o contrato único do projeto.
 
@@ -56,6 +74,22 @@ export type Social = { network: SocialNetwork; url: string };
 /** Scripts/tags de conversão injetados na página publicada (GTM, Pixel, gtag). */
 export type ConversionTags = { head: string; body: string; footer: string };
 
+/** IDs/configuração estruturada dos provedores de tracking suportados. */
+export type TrackingProviderConfig = {
+  ga4MeasurementId: string;
+  gtmContainerId: string;
+  metaPixelId: string;
+  googleAdsId: string;
+  googleAdsLabel: string;
+};
+
+/** Configuração pública do captcha exibido no formulário da LP. */
+export type CaptchaConfig = {
+  provider: "none" | "turnstile";
+  siteKey: string;
+  widgetTheme: "auto" | "light" | "dark";
+};
+
 /** Card simples de uma seção personalizada (sem ícone — numeração automática). */
 export type CustomCard = { title: string; text: string };
 
@@ -111,6 +145,8 @@ export type Office = {
   // Configurações técnicas (painel "Configurações" do editor). Opcionais p/
   // compatibilidade com LPs salvas antes desses campos.
   tags?: ConversionTags; // scripts no <head>, início do <body> e rodapé
+  tracking?: TrackingProviderConfig; // ids de GA4, GTM, Meta Pixel e Google Ads
+  captcha?: CaptchaConfig; // config pública do Turnstile/captcha da LP
   domain?: string; // domínio personalizado (conectado na publicação)
   privacyPolicy?: string; // texto da Política de Privacidade (link no rodapé)
   // Tipografia escolhida no editor (ids de lib/fonts). "" = padrão do site.
@@ -208,22 +244,15 @@ export type EtapasContent = {
   steps: EtapaItem[]; // 4 etapas
 };
 
-/* ===== Variantes de layout por seção (espelham os PRDs da skill) ===== */
-
-/** Headline: 1 Split 50/50 · 2 Vídeo+Foto · 3 Centralizado · 4 Hero com Stats · 5 Recorte (foto sem fundo sobre cena borrada) */
-export type HeroVariant = "split" | "video" | "centered" | "stats" | "recorte";
-/** Dor (LAYOUT, independente do tom): com imagem + cards · só cards */
-export type DorVariant = "comImagem" | "soCards";
-/** Solução (LAYOUT): com imagem + cards · só cards · cards com destaque */
-export type SolucaoVariant = "comImagem" | "soCards" | "destaque";
-/** Sobre (PRD): overlay (Tema 1) · duasColunas (Tema 2) · fotoLista (Tema 3) */
-export type SobreVariant = "overlay" | "duasColunas" | "fotoLista";
-/** Áreas: grid (2 colunas) · lista (faixas) */
-export type AreasVariant = "grid" | "lista";
-/** Etapas: numerado (horizontal) · timeline (guia com linha do tempo) */
-export type EtapasVariant = "numerado" | "timeline";
-/** Equipe: splitAlternado (Tema 1 · 1–3 sócios) · retratoElegante (Tema 2 · 4–6 sócios) */
-export type EquipeVariant = "splitAlternado" | "retratoElegante";
+export type {
+  AreasVariant,
+  DorVariant,
+  EquipeVariant,
+  EtapasVariant,
+  HeroVariant,
+  SobreVariant,
+  SolucaoVariant,
+} from "./variants";
 
 /** Tom de fundo de uma seção: claro (cream/branco) ou escuro (cor da marca). */
 export type Tone = "light" | "dark";
@@ -261,7 +290,9 @@ export type Layout = {
   dor: DorVariant;
   solucao: SolucaoVariant;
   sobre: SobreVariant;
-  equipe?: EquipeVariant; // opcional: sem valor = auto (≤3 → split, ≥4 → retrato)
+  // Sem valor: mantém o auto apenas para 2+ advogados. O caso solo exige
+  // escolha explícita da variant própria no editor.
+  equipe?: EquipeVariant;
   areas: AreasVariant;
   etapas: EtapasVariant;
   tones: SectionTones;
@@ -274,12 +305,12 @@ export type Layout = {
 };
 
 export const DEFAULT_LAYOUT: Layout = {
-  hero: "centered",
-  dor: "comImagem",
-  solucao: "soCards",
-  sobre: "fotoLista",
-  areas: "grid",
-  etapas: "numerado",
+  hero: HERO_VARIANT_CENTERED_FOCUS,
+  dor: DOR_VARIANT_WITH_IMAGE_CARDS,
+  solucao: SOLUCAO_VARIANT_CARDS_COMPACT,
+  sobre: SOBRE_VARIANT_PHOTO_LIST,
+  areas: AREAS_VARIANT_GRID_ICON_CARDS,
+  etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
   // Default preserva a alternância atual de fundos.
   tones: {
     hero: "light",
@@ -325,7 +356,7 @@ export type LpSchema = {
   theme: Theme;
   office: Office;
   layout: Layout;
-  videoId?: string; // id do YouTube (opcional) — usado no hero "video"
+  videoId?: string; // id do YouTube (opcional) — usado no hero com vídeo
   hero: HeroContent;
   dor: DorContent;
   solucao: SolucaoContent;

@@ -1,12 +1,20 @@
+import {
+  AREAS_VARIANT_GRID_ICON_CARDS,
+  DOR_VARIANT_WITH_IMAGE_CARDS,
+  ETAPAS_VARIANT_NUMBERED_STEPS,
+  HERO_VARIANT_CENTERED_FOCUS,
+  SOBRE_VARIANT_PHOTO_LIST,
+  SOLUCAO_VARIANT_CARDS_COMPACT,
+} from "../variants";
 import type { Layout, Theme } from "./types";
 
 export const DEFAULT_LAYOUT: Layout = {
-  hero: "centered",
-  dor: "comImagem",
-  solucao: "soCards",
-  sobre: "fotoLista",
-  areas: "grid",
-  etapas: "numerado",
+  hero: HERO_VARIANT_CENTERED_FOCUS,
+  dor: DOR_VARIANT_WITH_IMAGE_CARDS,
+  solucao: SOLUCAO_VARIANT_CARDS_COMPACT,
+  sobre: SOBRE_VARIANT_PHOTO_LIST,
+  areas: AREAS_VARIANT_GRID_ICON_CARDS,
+  etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
   tones: {
     hero: "light",
     dor: "light",

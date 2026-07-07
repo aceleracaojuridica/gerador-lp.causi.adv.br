@@ -1,31 +1,20 @@
 "use client";
 
+import { Home } from "@material-symbols-svg/react";
 import {
-  Add,
   ChevronLeft,
-  EventAvailable,
-  GridView,
-  Help,
   FileCopy,
-  IdCard,
+  Help,
   Image,
-  Inbox,
-  Paid,
-  Robot2,
-  School,
-  Tooltip as TooltipIcon,
 } from "@material-symbols-svg/react/rounded";
-import { Info, Moving } from "@material-symbols-svg/react/rounded/w600";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import React from "react";
 import CausiLogoIcon from "@/components/icons/causi-logo";
+import { useLpAccess } from "@/components/lp-access-provider";
 import { SupportModal } from "@/components/support-modal";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/use-access-control";
-import { useLpAccess } from "@/components/lp-access-provider";
-import { useSession } from "@/hooks/use-session";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const AvatarDropdown = dynamic(() => import("./ui-patterns/avatar-dropdown"), {
@@ -61,35 +50,21 @@ interface BottomNavItem extends NavItem {
   disabled?: boolean;
 }
 
-const ONBOARDING_TARGETS: Record<string, string> = {
-  "/canais": "channels",
-  "/agentes": "agents",
-  "/oportunidades": "opportunities",
-};
-
 export function AppSidebar({
   currentPath = "/",
   isOpen: externalIsOpen,
   setIsOpen: externalSetIsOpen,
-  dealsHref = "/oportunidades",
+  dealsHref = "/",
 }: AppSidebarProps) {
+  void dealsHref;
   const [localIsOpen, setLocalIsOpen] = React.useState(false);
   const [supportModalOpen, setSupportModalOpen] = React.useState(false);
-  const session = useSession();
   const hasLpAccess = useLpAccess();
   const { hasFeature } = useAccessControl();
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : localIsOpen;
   const setIsOpen = externalSetIsOpen || setLocalIsOpen;
 
   const closeSidebar = React.useCallback(() => setIsOpen(false), [setIsOpen]);
-
-  // Calculate usage percentage once
-  const usageStats = React.useMemo(() => {
-    const dealsCount = session.usage.deals_count ?? 0;
-    const maxDeals = session.limits.max_contacts ?? 0;
-    const pct = maxDeals > 0 ? Math.round((dealsCount / maxDeals) * 100) : 0;
-    return { dealsCount, maxDeals, pct };
-  }, [session.usage.deals_count, session.limits.max_contacts]);
 
   /** Check if current path is active for this nav item */
   const isNavItemActive = React.useCallback(
@@ -104,17 +79,12 @@ export function AppSidebar({
     [currentPath],
   );
 
-  const lpNavItems: NavItem[] = [
+  const navItems: NavItem[] = [
     {
       href: "/",
       icon: FileCopy,
       label: "Página inicial",
-    },
-    {
-      href: "/nova",
-      icon: Add,
-      label: "Nova landing page",
-      routes: ["/nova"],
+      routes: ["/"],
     },
     {
       href: "/galeria",
@@ -124,60 +94,21 @@ export function AppSidebar({
     },
   ];
 
-  const navItems = [
-    {
-      href: "/dashboard?onboarding=true",
-      icon: GridView,
-      label: "Dashboard",
-      feature: "deals",
-    },
-    {
-      href: "/conversas",
-      icon: TooltipIcon,
-      label: "Conversas",
-      feature: "conversations",
-    },
-    {
-      href: dealsHref,
-      icon: Paid,
-      label: "Oportunidades",
-      routes: ["/oportunidades", "/funis", "/etiquetas"],
-      feature: "deals",
-    },
-    {
-      href: "/pessoas",
-      icon: IdCard,
-      label: "Contatos",
-      routes: ["/pessoas", "/organizacoes"],
-      feature: "persons",
-    },
-    {
-      href: "/tarefas",
-      icon: EventAvailable,
-      label: "Tarefas",
-      feature: "tasks",
-    },
-    { href: "/canais", icon: Inbox, label: "Canais", feature: "channels" },
-    { href: "/agentes", icon: Robot2, label: "Agentes", feature: "agents" },
-  ].filter((item) => !item.feature || hasFeature(item.feature));
-
-  const mainNavItems = [...(hasLpAccess ? lpNavItems : []), ...navItems];
+  const mainNavItems = [...(hasLpAccess ? navItems : [])];
 
   const bottomItems: BottomNavItem[] = [
     {
-      href: "/cursos",
-      icon: School,
-      label: "Cursos",
-      routes: ["/cursos"],
-      feature: "classroom",
-    },
-    {
-      href: "#",
+      href: "?suporte=abrir",
       icon: Help,
       label: "Suporte",
       action: () => setSupportModalOpen(true),
     },
-  ].filter((item) => !item.feature || hasFeature(item.feature));
+    {
+      href: "/",
+      icon: Home,
+      label: "Voltar ao Causi",
+    },
+  ].filter((item: BottomNavItem) => !item.feature || hasFeature(item.feature));
 
   return (
     <>
@@ -294,7 +225,6 @@ export function AppSidebar({
                       href={item.href}
                       onClick={closeSidebar}
                       title={item.label}
-                      data-onboarding-target={ONBOARDING_TARGETS[item.href]}
                     >
                       <item.icon className="size-6.5" />
                     </Link>
@@ -345,116 +275,6 @@ export function AppSidebar({
               </Tooltip>
             );
           })}
-
-          <Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  {(() => {
-                    const circumference = 2 * Math.PI * 46;
-                    const offset =
-                      circumference - (usageStats.pct / 100) * circumference;
-
-                    return (
-                      <button
-                        type="button"
-                        className="relative size-11 flex items-center justify-center rounded-full cursor-pointer hover:opacity-70 transition-opacity my-1 group"
-                      >
-                        <svg
-                          viewBox="0 0 100 100"
-                          className="absolute inset-0 size-full"
-                        >
-                          <title>{`Progresso: ${usageStats.pct}%`}</title>
-                          {/* Círculo de fundo (cinza) */}
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="46"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="7"
-                            className="text-sidebar-ring"
-                          />
-
-                          {/* Círculo de progresso (roxo) - inicia no topo, sentido horário */}
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="46"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="7"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={offset}
-                            strokeLinecap="round"
-                            transform="rotate(-90 50 50)"
-                            className="text-primary transition-all duration-300"
-                          />
-                        </svg>
-
-                        {/* Texto do percentual */}
-                        <span className="text-[11px] font-semibold text-muted-foreground/80">
-                          {usageStats.pct}%
-                        </span>
-                      </button>
-                    );
-                  })()}
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Limites de uso</p>
-              </TooltipContent>
-            </Tooltip>
-            <PopoverContent className="w-65" align="end" side="right">
-              {(() => {
-                const barWidth =
-                  usageStats.maxDeals > 0 ? Math.min(usageStats.pct, 100) : 0;
-                return (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium text-xs text-foreground">
-                          Oportunidades
-                        </span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="size-4 text-muted-foreground-light cursor-pointer" />
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="w-50">
-                            <p>
-                              Oportunidades são contatos que estão em qualquer
-                              etapa de um funil de vendas.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {usageStats.dealsCount.toLocaleString("pt-BR")} de{" "}
-                        {usageStats.maxDeals.toLocaleString("pt-BR")}
-                      </span>
-                    </div>
-
-                    <div className="h-[5px] w-full bg-sidebar-ring rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-300"
-                        style={{ width: `${barWidth}%` }}
-                      />
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      Você já utilizou {usageStats.pct}% do seu limite de
-                      oportunidades.
-                    </p>
-
-                    <Button variant="secondary" size="xs">
-                      <Moving />
-                      Aumentar Limites
-                    </Button>
-                  </div>
-                );
-              })()}
-            </PopoverContent>
-          </Popover>
 
           <AvatarDropdown />
         </div>

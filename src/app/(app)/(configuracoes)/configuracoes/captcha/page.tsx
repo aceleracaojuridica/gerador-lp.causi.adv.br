@@ -1,0 +1,32 @@
+import { CaptchaConfigForm } from "@/forms/GlobalConfigForm";
+import { getConfig } from "@/lib/landing-pages/config";
+import { getSession, requireSession } from "@/lib/session";
+
+/** Pagina de configuracoes de captcha das landing pages. */
+export default async function CaptchaPage() {
+  const session = await getSession();
+  requireSession(session);
+
+  const initialData = await getConfig();
+
+  return (
+    <div className="absolute inset-0 flex h-full w-full max-w-full flex-1 flex-col">
+      <header className="sticky top-0 z-10 hidden shrink-0 border-b border-border bg-background md:block">
+        <div className="mx-auto w-full max-w-4xl px-4 py-4 md:px-0 md:py-6">
+          <h1 className="mb-1 text-xl font-bold text-foreground md:mb-2 md:text-2xl">
+            Captcha
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Protecao padrao aplicada aos formularios das landing pages.
+          </p>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto w-full">
+        <div className="mx-auto w-full max-w-4xl px-6 pt-6 md:px-0 md:pt-8">
+          <CaptchaConfigForm initialData={initialData} />
+        </div>
+      </div>
+    </div>
+  );
+}
