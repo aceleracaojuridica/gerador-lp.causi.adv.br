@@ -2,11 +2,8 @@
 
 import {
   DarkMode,
-  DataObject,
   LightMode,
   Logout,
-  ManageAccounts,
-  School,
   Settings,
 } from "@material-symbols-svg/react/rounded";
 import Link from "next/link";
@@ -27,7 +24,6 @@ import {
 import { invalidateAccountCache } from "@/hooks/use-account-switcher";
 import { useSession } from "@/hooks/use-session";
 import { logoutAction } from "@/lib/auth/actions";
-import { env } from "@/lib/env";
 
 export default function AvatarDropdown() {
   const { theme, setTheme } = useTheme();
@@ -35,8 +31,6 @@ export default function AvatarDropdown() {
   const [isLoggingOut, startTransition] = useTransition();
   const session = useSession();
 
-  const isSuperAdmin = session.role.accessLevel === 999;
-  const showDebug = isSuperAdmin || env.NODE_ENV === "development";
   const avatarFallback = session.user.name.charAt(0).toUpperCase() || "U";
 
   const handleLogout = () => {
@@ -101,32 +95,8 @@ export default function AvatarDropdown() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {showDebug && (
-            <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
-              <Link href="/debug">
-                <DataObject />
-                Debug
-              </Link>
-            </DropdownMenuItem>
-          )}
-          {isSuperAdmin && (
-            <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
-              <Link href="/admin-cursos">
-                <School />
-                Administrar Cursos
-              </Link>
-            </DropdownMenuItem>
-          )}
-          {isSuperAdmin && (
-            <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
-              <Link href="/admin-contas">
-                <ManageAccounts />
-                Administrar Contas
-              </Link>
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
-            <Link href="/perfil">
+            <Link href="/configuracoes">
               <Settings />
               Configurações
             </Link>

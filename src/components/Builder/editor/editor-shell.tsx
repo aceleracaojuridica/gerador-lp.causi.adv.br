@@ -74,6 +74,18 @@ import {
   type Tone,
 } from "@/lib/landing-pages/schema";
 import { TEMPLATES } from "@/lib/landing-pages/templates";
+import {
+  EQUIPE_VARIANT_SOLO_PORTRAIT,
+  getAutoEquipeVariant,
+  getAvailableEquipeVariants,
+  getToggleEquipeVariant,
+  HERO_VARIANT_CENTERED_FOCUS,
+  HERO_VARIANT_STATS_AUTHORITY,
+  HERO_VARIANT_VIDEO_EMBEDDED,
+  isEquipeVariantAllowed,
+  SOBRE_VARIANT_PHOTO_LIST,
+  SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
+} from "@/lib/landing-pages/variants";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -257,23 +269,77 @@ export function Editor({
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const isPublishing = publishState === "saving";
+  const lawyerCount = office.lawyers?.length ?? 0;
 
-  const needsVideo = layout.hero === "video";
-  const needsMetrics = layout.hero === "stats";
+  const needsVideo = layout.hero === HERO_VARIANT_VIDEO_EMBEDDED;
+  const needsMetrics = layout.hero === HERO_VARIANT_STATS_AUTHORITY;
   // Só o Hero centralizado mostra os mini-cards de destaque (ícone + texto).
-  const needsCards = layout.hero === "centered";
+  const needsCards = layout.hero === HERO_VARIANT_CENTERED_FOCUS;
 
   const heroOptions = useMemo(
     () =>
       form.videoId
         ? HERO_OPTIONS
-        : HERO_OPTIONS.filter((o) => o.id !== "video"),
+        : HERO_OPTIONS.filter((o) => o.id !== HERO_VARIANT_VIDEO_EMBEDDED),
     [form.videoId],
   );
 
-  const equipeVariant =
-    layout.equipe ??
-    ((office.lawyers?.length ?? 0) <= 3 ? "splitAlternado" : "retratoElegante");
+  const availableEquipeOptions = useMemo(
+    () =>
+      EQUIPE_OPTIONS.filter((option) =>
+        getAvailableEquipeVariants(lawyerCount).includes(
+          option.id as EquipeVariant,
+        ),
+      ),
+    [lawyerCount],
+  );
+
+  const equipeVariant = useMemo(() => {
+    if (isEquipeVariantAllowed(lawyerCount, layout.equipe)) {
+      return layout.equipe ?? getAutoEquipeVariant(lawyerCount);
+    }
+    return (
+      getAutoEquipeVariant(lawyerCount) ??
+      (availableEquipeOptions[0]?.id as EquipeVariant | undefined)
+    );
+  }, [availableEquipeOptions, lawyerCount, layout.equipe]);
+
+  const editorNotices = useMemo(() => {
+    if (lawyerCount === 0) {
+      return [
+        {
+          id: "equipe-empty",
+          title: "Equipe indisponível",
+          description:
+            "Adicione ao menos um advogado para liberar a seção Equipe no editor.",
+        },
+      ];
+    }
+
+    if (lawyerCount === 1 && layout.equipe !== EQUIPE_VARIANT_SOLO_PORTRAIT) {
+      return [
+        {
+          id: "equipe-solo-only",
+          title: "Somente Retrato solo",
+          description:
+            "Com um advogado, a seção Equipe só pode usar a variação Retrato solo.",
+        },
+      ];
+    }
+
+    if (lawyerCount >= 2 && layout.equipe === EQUIPE_VARIANT_SOLO_PORTRAIT) {
+      return [
+        {
+          id: "equipe-multi-only",
+          title: "Variação solo incompatível",
+          description:
+            "Com dois ou mais advogados, use Split alternado ou Retrato elegante.",
+        },
+      ];
+    }
+
+    return [];
+  }, [lawyerCount, layout.equipe]);
 
   // Detecta qual template está aplicado no momento (match parcial por variantes).
   const currentTemplateId = useMemo(() => {
@@ -387,10 +453,9 @@ export function Editor({
         description: getSectionDescription("equipe"),
         stage: "content",
         enabled: !layout.hidden?.equipe,
-        variantLabel:
-          (office.lawyers?.length ?? 0) >= 2
-            ? EQUIPE_VARIANT_LABELS[equipeVariant]
-            : undefined,
+        variantLabel: layout.equipe
+          ? EQUIPE_VARIANT_LABELS[layout.equipe]
+          : undefined,
       },
       {
         id: "areas",
@@ -440,7 +505,7 @@ export function Editor({
       },
     ];
     return items;
-  }, [layout, office.lawyers?.length, equipeVariant]);
+  }, [layout]);
 
   const currentDetail =
     detailSection === null
@@ -522,12 +587,11 @@ export function Editor({
           }));
         },
       },
-      equipe:
-        office.lawyers.length >= 2
-          ? {
+      equipe: availableEquipeOptions.length
+        ? {
             label: "Equipe",
-            options: EQUIPE_OPTIONS,
-            value: equipeVariant,
+            options: availableEquipeOptions,
+            value: equipeVariant ?? availableEquipeOptions[0].id,
             onChange: (id) => {
               form.setLayout((currentLayout) => ({
                 ...currentLayout,
@@ -535,7 +599,7 @@ export function Editor({
               }));
             },
           }
-          : undefined,
+        : undefined,
       areas: {
         label: "Áreas",
         options: AREAS_OPTIONS,
@@ -560,6 +624,7 @@ export function Editor({
       },
     }),
     [
+      availableEquipeOptions,
       heroOptions,
       layout.hero,
       layout.dor,
@@ -567,7 +632,6 @@ export function Editor({
       layout.sobre,
       layout.areas,
       layout.etapas,
-      office.lawyers.length,
       equipeVariant,
       form,
     ],
@@ -615,7 +679,41 @@ export function Editor({
       case "equipe":
         return {
           on: !layout.hidden?.equipe,
-          onChange: (on: boolean) => form.setSectionHidden("equipe", !on),
+          onChange: (on: boolean) => {
+            if (!on) {
+              form.setSectionHidden("equipe", true);
+              return;
+            }
+
+            const nextVariant =
+              (isEquipeVariantAllowed(lawyerCount, layout.equipe)
+                ? layout.equipe
+                : getToggleEquipeVariant(lawyerCount)) ?? undefined;
+
+            if (!nextVariant) {
+              toast.error("A seção Equipe ainda não pode ser ativada.", {
+                description:
+                  "Adicione pelo menos um advogado para liberar essa seção.",
+              });
+              return;
+            }
+
+            if (layout.equipe !== nextVariant) {
+              form.setLayout((currentLayout) => ({
+                ...currentLayout,
+                equipe: nextVariant,
+              }));
+
+              toast("Variant da Equipe ajustada", {
+                description:
+                  nextVariant === EQUIPE_VARIANT_SOLO_PORTRAIT
+                    ? "A variação Retrato solo foi aplicada para apresentar um único advogado."
+                    : "A variação da Equipe foi ajustada para a quantidade atual de advogados.",
+              });
+            }
+
+            form.setSectionHidden("equipe", false);
+          },
         };
       case "areas":
         return {
@@ -650,6 +748,21 @@ export function Editor({
       setDetailSection(sec);
     }
   }, []);
+
+  useEffect(() => {
+    if (layout.hidden?.equipe) return;
+    if (isEquipeVariantAllowed(lawyerCount, layout.equipe)) return;
+
+    form.setSectionHidden("equipe", true);
+    toast("Seção Equipe ocultada", {
+      description:
+        lawyerCount === 1
+          ? "Com um advogado, a seção Equipe exige a variação Retrato solo."
+          : lawyerCount === 0
+            ? "Adicione ao menos um advogado para habilitar a seção Equipe."
+            : "A variação atual da Equipe não é compatível com a quantidade de advogados.",
+    });
+  }, [form, lawyerCount, layout.equipe, layout.hidden?.equipe]);
 
   // Ao abrir um accordeon, rola o preview até a seção correspondente. O preview
   // vive dentro de um <iframe>, então busca-se a seção no documento do iframe.
@@ -879,11 +992,11 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden border-border bg-card",
         isLgUp
           ? cn(
-            "flex h-full min-w-0 transition-[opacity] duration-200",
-            leftPanelCollapsed
-              ? "border-r-0 opacity-0"
-              : "border-r opacity-100",
-          )
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              leftPanelCollapsed
+                ? "border-r-0 opacity-0"
+                : "border-r opacity-100",
+            )
           : showNavigationPanel
             ? "flex border-b"
             : "hidden border-b",
@@ -896,7 +1009,7 @@ export function Editor({
               Navegação
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Clique em um item para abrir sua edição no painel da direita.
+              Clique em um item para editar à direita.
             </p>
           </div>
         </div>
@@ -961,6 +1074,31 @@ export function Editor({
 
               <AddSectionButton onAdd={form.addCustomSection} />
             </section>
+
+            {editorNotices.length ? (
+              <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                <div>
+                  <p className="text-xs font-semibold text-amber-900">
+                    Avisos da página
+                  </p>
+                  <p className="text-[11px] text-amber-800/80">
+                    Regras aplicadas automaticamente para evitar preview vazio.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {editorNotices.map((notice) => (
+                    <div key={notice.id} className="space-y-1">
+                      <p className="text-xs font-medium text-amber-950">
+                        {notice.title}
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-amber-900/80">
+                        {notice.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         )}
       </div>
@@ -1084,9 +1222,9 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden bg-card",
         isLgUp
           ? cn(
-            "flex h-full min-w-0 transition-[opacity] duration-200",
-            rightPanelCollapsed ? "opacity-0" : "opacity-100",
-          )
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              rightPanelCollapsed ? "opacity-0" : "opacity-100",
+            )
           : showCmsPanel
             ? "flex"
             : "hidden",
@@ -1370,8 +1508,8 @@ export function Editor({
                     />
                   </BuilderField>
                 </FieldGroup>
-                {layout.sobre === "fotoLista" ||
-                  layout.sobre === "duasColunas" ? (
+                {layout.sobre === SOBRE_VARIANT_PHOTO_LIST ||
+                layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
                   <FieldGroup title="Diferenciais">
                     <DiferenciaisInput form={form} />
                   </FieldGroup>
@@ -1382,11 +1520,11 @@ export function Editor({
               <>
                 {renderSectionSettings(
                   previewVariantControls.equipe,
-                  office.lawyers.length >= 2
+                  availableEquipeOptions.length
                     ? {
-                      value: tones.equipe,
-                      onChange: (t) => form.setTone("equipe", t),
-                    }
+                        value: tones.equipe,
+                        onChange: (t) => form.setTone("equipe", t),
+                      }
                     : undefined,
                 )}
                 <LawyerPhotosInput form={form} />

@@ -1,6 +1,24 @@
 import { PALETTES } from "./palettes";
 import type { Layout, Theme } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
+import {
+  AREAS_VARIANT_GRID_ICON_CARDS,
+  AREAS_VARIANT_LIST_BANDS,
+  DOR_VARIANT_CARDS_COMPACT,
+  DOR_VARIANT_WITH_IMAGE_CARDS,
+  ETAPAS_VARIANT_NUMBERED_STEPS,
+  ETAPAS_VARIANT_TIMELINE_FLOW,
+  HERO_VARIANT_CENTERED_FOCUS,
+  HERO_VARIANT_CUTOUT_PORTRAIT,
+  HERO_VARIANT_SPLIT_MEDIA,
+  HERO_VARIANT_STATS_AUTHORITY,
+  SOBRE_VARIANT_OVERLAY_PORTRAIT,
+  SOBRE_VARIANT_PHOTO_LIST,
+  SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
+  SOLUCAO_VARIANT_CARDS_COMPACT,
+  SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
+  SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
+} from "./variants";
 
 /** Presets de layout (+ theme para prévias estáticas). Na criação só o `layout` é copiado para o schema; cores vêm da logo. */
 export type LpTemplate = {
@@ -25,12 +43,12 @@ export const TEMPLATES: LpTemplate[] = [
     theme: palette("azul-marinho"),
     layout: {
       ...DEFAULT_LAYOUT,
-      hero: "centered",
-      dor: "comImagem",
-      solucao: "soCards",
-      sobre: "fotoLista",
-      areas: "grid",
-      etapas: "numerado",
+      hero: HERO_VARIANT_CENTERED_FOCUS,
+      dor: DOR_VARIANT_WITH_IMAGE_CARDS,
+      solucao: SOLUCAO_VARIANT_CARDS_COMPACT,
+      sobre: SOBRE_VARIANT_PHOTO_LIST,
+      areas: AREAS_VARIANT_GRID_ICON_CARDS,
+      etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
       tones: {
         hero: "light",
         dor: "light",
@@ -52,12 +70,12 @@ export const TEMPLATES: LpTemplate[] = [
     theme: palette("simples"),
     layout: {
       ...DEFAULT_LAYOUT,
-      hero: "split",
-      dor: "soCards",
-      solucao: "comImagem",
-      sobre: "overlay",
-      areas: "lista",
-      etapas: "timeline",
+      hero: HERO_VARIANT_SPLIT_MEDIA,
+      dor: DOR_VARIANT_CARDS_COMPACT,
+      solucao: SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
+      sobre: SOBRE_VARIANT_OVERLAY_PORTRAIT,
+      areas: AREAS_VARIANT_LIST_BANDS,
+      etapas: ETAPAS_VARIANT_TIMELINE_FLOW,
       tones: {
         hero: "dark",
         dor: "dark",
@@ -80,12 +98,12 @@ export const TEMPLATES: LpTemplate[] = [
     theme: palette("preto-branco"),
     layout: {
       ...DEFAULT_LAYOUT,
-      hero: "recorte",
-      dor: "comImagem",
-      solucao: "soCards",
-      sobre: "overlay",
-      areas: "grid",
-      etapas: "numerado",
+      hero: HERO_VARIANT_CUTOUT_PORTRAIT,
+      dor: DOR_VARIANT_WITH_IMAGE_CARDS,
+      solucao: SOLUCAO_VARIANT_CARDS_COMPACT,
+      sobre: SOBRE_VARIANT_OVERLAY_PORTRAIT,
+      areas: AREAS_VARIANT_GRID_ICON_CARDS,
+      etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
       // Alternância da referência: escuro (hero) → claro (dor) → escuro (áreas) →
       // escuro (sobre, card escuro) → escuro (etapas) → claro (faq) → escuro (rodapé).
       tones: {
@@ -110,12 +128,12 @@ export const TEMPLATES: LpTemplate[] = [
     theme: palette("caramel"),
     layout: {
       ...DEFAULT_LAYOUT,
-      hero: "stats",
-      dor: "comImagem",
-      solucao: "destaque",
-      sobre: "duasColunas",
-      areas: "grid",
-      etapas: "numerado",
+      hero: HERO_VARIANT_STATS_AUTHORITY,
+      dor: DOR_VARIANT_WITH_IMAGE_CARDS,
+      solucao: SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
+      sobre: SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
+      areas: AREAS_VARIANT_GRID_ICON_CARDS,
+      etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
       tones: {
         hero: "light",
         dor: "light",

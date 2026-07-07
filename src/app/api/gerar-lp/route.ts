@@ -22,6 +22,7 @@ import {
   slugFromOfficeName,
 } from "@/lib/landing-pages/slug";
 import { buscarImagensUnsplash } from "@/lib/landing-pages/unsplash";
+import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
 
@@ -162,10 +163,17 @@ export async function POST(request: Request) {
 
   const videoId = (p.videoId ?? "").trim();
 
-  // Layout: preset escolhido no wizard (só variantes) ou DEFAULT_LAYOUT; vídeo força hero "video"
+  // Layout: preset escolhido no wizard (só variantes) ou DEFAULT_LAYOUT; vídeo
+  // sempre força a variant semântica do hero com mídia embutida.
   const layout: Layout = p.layout
-    ? { ...p.layout, hero: videoId ? "video" : p.layout.hero }
-    : { ...DEFAULT_LAYOUT, hero: videoId ? "video" : DEFAULT_LAYOUT.hero };
+    ? {
+        ...p.layout,
+        hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : p.layout.hero,
+      }
+    : {
+        ...DEFAULT_LAYOUT,
+        hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : DEFAULT_LAYOUT.hero,
+      };
 
   const schema = buildSchema(
     office,

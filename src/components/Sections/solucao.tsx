@@ -36,6 +36,10 @@ import type {
   SolucaoVariant,
   Tone,
 } from "@/lib/landing-pages/schema";
+import {
+  SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
+  SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
+} from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -124,7 +128,7 @@ export function Solucao({
   image,
 }: SolucaoProps) {
   const dark = tone === "dark";
-  const comImagem = variant === "comImagem";
+  const comImagem = variant === SOLUCAO_VARIANT_WITH_IMAGE_CARDS;
 
   return (
     <section
@@ -164,7 +168,10 @@ export function Solucao({
           </Reveal>
         )}
 
-        <Cards content={content} destaque={variant === "destaque"} />
+        <Cards
+          content={content}
+          destaque={variant === SOLUCAO_VARIANT_CARDS_HIGHLIGHT}
+        />
       </div>
     </section>
   );

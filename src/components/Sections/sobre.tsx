@@ -3,6 +3,10 @@ import { CTAButton } from "@/components/ui/cta-button";
 import { Reveal } from "@/components/ui/reveal";
 import type { Office, SobreVariant, Tone } from "@/lib/landing-pages/schema";
 import { focalPos } from "@/lib/landing-pages/schema";
+import {
+  SOBRE_VARIANT_OVERLAY_PORTRAIT,
+  SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
+} from "@/lib/landing-pages/variants";
 
 type SobreProps = { office: Office; variant: SobreVariant; tone: Tone };
 
@@ -17,9 +21,9 @@ export function Sobre({ office, variant, tone }: SobreProps) {
   if (!hasText && office.diferenciais.length === 0) return null;
   const dark = tone === "dark";
 
-  if (variant === "overlay")
+  if (variant === SOBRE_VARIANT_OVERLAY_PORTRAIT)
     return <Overlay office={office} hasText={hasText} dark={dark} />;
-  if (variant === "duasColunas")
+  if (variant === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT)
     return <DuasColunas office={office} hasText={hasText} dark={dark} />;
   return <FotoLista office={office} hasText={hasText} dark={dark} />;
 }
@@ -42,19 +46,36 @@ function Title({ dark }: { dark: boolean }) {
 }
 
 function AboutParas({ about, dark }: { about: string; dark: boolean }) {
+  const paragraphs = withStableTextKeys(
+    about
+      .split(/\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean),
+  );
+
   return (
     <div
       className={`mt-5 space-y-4 text-lg leading-relaxed ${dark ? "text-white/85" : "text-lp-ink-soft"}`}
     >
-      {about
-        .split(/\n+/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
+      {paragraphs.map((paragraph) => (
+        <p key={paragraph.key}>{paragraph.value}</p>
+      ))}
     </div>
   );
+}
+
+function withStableTextKeys(items: string[]) {
+  const seen = new Map<string, number>();
+
+  return items.map((value) => {
+    const occurrence = (seen.get(value) ?? 0) + 1;
+    seen.set(value, occurrence);
+
+    return {
+      key: `${value}-${occurrence}`,
+      value,
+    };
+  });
 }
 
 // Imagem do bloco "Sobre": advogado solo (1 foto) usa a própria foto; equipe
@@ -142,6 +163,8 @@ function DuasColunas({
 }) {
   const img = sobreImg(office);
   const pos = sobrePos(office);
+  const diferenciais = withStableTextKeys(office.diferenciais);
+
   return (
     <section className={dark ? "bg-lp-brand" : "bg-lp-cream"}>
       <div className="grid grid-cols-1 lg:grid-cols-[40%_60%]">
@@ -158,10 +181,10 @@ function DuasColunas({
           </p>
           <Title dark={dark} />
           {hasText ? <AboutParas about={office.about} dark={dark} /> : null}
-          {office.diferenciais.length > 0 ? (
+          {diferenciais.length > 0 ? (
             <ul className="mt-6 space-y-2.5">
-              {office.diferenciais.map((d, i) => (
-                <li key={i} className="flex items-start gap-3">
+              {diferenciais.map((diferencial) => (
+                <li key={diferencial.key} className="flex items-start gap-3">
                   <CheckCircle
                     size={20}
                     className={`mt-0.5 shrink-0 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
@@ -169,7 +192,7 @@ function DuasColunas({
                   <span
                     className={`leading-relaxed ${dark ? "text-white/90" : "text-lp-ink"}`}
                   >
-                    {d}
+                    {diferencial.value}
                   </span>
                 </li>
               ))}
@@ -198,7 +221,7 @@ function FotoLista({
 }) {
   const img = sobreImg(office);
   const pos = sobrePos(office);
-  const difs = office.diferenciais;
+  const difs = withStableTextKeys(office.diferenciais);
   return (
     <section
       className={`py-20 md:py-28 ${dark ? "bg-lp-brand" : "bg-lp-cream"}`}
@@ -228,7 +251,7 @@ function FotoLista({
                   const highlight = i === 0;
                   return (
                     <li
-                      key={i}
+                      key={d.key}
                       className={`flex items-start gap-3 rounded-2xl p-4 ${
                         highlight
                           ? dark
@@ -256,7 +279,7 @@ function FotoLista({
                               : "text-lp-ink"
                         }`}
                       >
-                        {d}
+                        {d.value}
                       </span>
                     </li>
                   );

@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Session } from "@/lib/session/types";
 import type { LpDbClient } from "@/lib/supabase/lp-client";
 import {
   createLpAnonClient,
@@ -8,7 +9,6 @@ import {
   type LpContext,
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
-import type { Session } from "@/lib/session/types";
 import { GENERIC_ETAPAS } from "./focos";
 import { syncImageUsagesFromSchema } from "./image-usages";
 import { buildLpListPreview, type LpListPreview } from "./lp-preview";
@@ -17,6 +17,16 @@ import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
 import { allocateUniqueLpSlug, slugFromOfficeName } from "./slug";
+import {
+  normalizeAreasVariant,
+  normalizeDorVariant,
+  normalizeEquipeVariant,
+  normalizeEtapasVariant,
+  normalizeHeroVariant,
+  normalizeSobreVariant,
+  normalizeSolucaoVariant,
+  SOBRE_VARIANT_OVERLAY_PORTRAIT,
+} from "./variants";
 
 const safeSlug = (s: string) =>
   (s || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
@@ -388,15 +398,19 @@ function migrate(lp: StoredLp): StoredLp {
 
   const layout = lp.schema?.layout as unknown as
     | {
+        hero?: string;
         dor?: string;
         solucao?: string;
         sobre?: string;
+        equipe?: string;
+        areas?: string;
         etapas?: string;
         tones?: Partial<StoredLp["schema"]["layout"]["tones"]>;
         hidden?: StoredLp["schema"]["layout"]["hidden"];
       }
     | undefined;
   if (layout) {
+    layout.hero = normalizeHeroVariant(layout.hero) ?? DEFAULT_LAYOUT.hero;
     let dorToneFromOld: "light" | "dark" | undefined;
     if (layout.dor === "clara") {
       layout.dor = "comImagem";
@@ -405,10 +419,17 @@ function migrate(lp: StoredLp): StoredLp {
       layout.dor = "soCards";
       dorToneFromOld = "dark";
     }
+    layout.dor = normalizeDorVariant(layout.dor) ?? DEFAULT_LAYOUT.dor;
     if (layout.solucao === "cards") layout.solucao = "soCards";
+    layout.solucao =
+      normalizeSolucaoVariant(layout.solucao) ?? DEFAULT_LAYOUT.solucao;
+    layout.sobre = normalizeSobreVariant(layout.sobre) ?? DEFAULT_LAYOUT.sobre;
+    layout.equipe = normalizeEquipeVariant(layout.equipe);
+    layout.areas = normalizeAreasVariant(layout.areas) ?? DEFAULT_LAYOUT.areas;
+    layout.etapas =
+      normalizeEtapasVariant(layout.etapas) ?? DEFAULT_LAYOUT.etapas;
     const sobreToneFromOld: "light" | "dark" =
-      layout.sobre === "overlay" ? "dark" : "light";
-    if (!layout.etapas) layout.etapas = DEFAULT_LAYOUT.etapas;
+      layout.sobre === SOBRE_VARIANT_OVERLAY_PORTRAIT ? "dark" : "light";
     if (!layout.tones) {
       layout.tones = {
         ...DEFAULT_LAYOUT.tones,

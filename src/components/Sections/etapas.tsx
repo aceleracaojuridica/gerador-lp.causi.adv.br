@@ -4,6 +4,7 @@ import type {
   EtapasVariant,
   Tone,
 } from "@/lib/landing-pages/schema";
+import { ETAPAS_VARIANT_TIMELINE_FLOW } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 type EtapasProps = {
@@ -14,7 +15,7 @@ type EtapasProps = {
 
 export function Etapas({ content, variant, tone }: EtapasProps) {
   if (!content?.steps?.length) return null;
-  return variant === "timeline" ? (
+  return variant === ETAPAS_VARIANT_TIMELINE_FLOW ? (
     <Timeline content={content} dark={tone === "dark"} />
   ) : (
     <Numerado content={content} dark={tone === "dark"} />

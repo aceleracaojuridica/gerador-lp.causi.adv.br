@@ -14,6 +14,15 @@ import {
   refineRequiredWhatsapp,
 } from "@/lib/landing-pages/validation/contact";
 import {
+  AREAS_VARIANTS,
+  DOR_VARIANTS,
+  EQUIPE_VARIANTS,
+  ETAPAS_VARIANTS,
+  HERO_VARIANTS,
+  SOBRE_VARIANTS,
+  SOLUCAO_VARIANTS,
+} from "@/lib/landing-pages/variants";
+import {
   extraAddressSchema,
   extraContactSchema,
   heroFeatureSchema,
@@ -183,13 +192,13 @@ const officeSchema = z.object({
 });
 
 const layoutSchema = z.object({
-  hero: z.enum(["split", "video", "centered", "stats"]),
-  dor: z.enum(["comImagem", "soCards"]),
-  solucao: z.enum(["comImagem", "soCards", "destaque"]),
-  sobre: z.enum(["overlay", "duasColunas", "fotoLista"]),
-  equipe: z.enum(["splitAlternado", "retratoElegante"]).optional(),
-  areas: z.enum(["grid", "lista"]),
-  etapas: z.enum(["numerado", "timeline"]),
+  hero: z.enum(HERO_VARIANTS),
+  dor: z.enum(DOR_VARIANTS),
+  solucao: z.enum(SOLUCAO_VARIANTS),
+  sobre: z.enum(SOBRE_VARIANTS),
+  equipe: z.enum(EQUIPE_VARIANTS).optional(),
+  areas: z.enum(AREAS_VARIANTS),
+  etapas: z.enum(ETAPAS_VARIANTS),
   tones: z.object({
     hero: z.enum(["light", "dark"]),
     dor: z.enum(["light", "dark"]),

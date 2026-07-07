@@ -16,6 +16,7 @@ import {
 import { Container } from "@/components/ui-patterns/container";
 import {
   Header,
+  HeaderActions,
   HeaderContent,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
@@ -40,6 +41,14 @@ export function HomePageClient({ lps }: HomePageClientProps) {
             </Badge>
           </HeaderHeading>
         </HeaderContent>
+        <HeaderActions>
+          <Button asChild>
+            <Link href="/nova">
+              <Add />
+              Criar landing page
+            </Link>
+          </Button>
+        </HeaderActions>
       </Header>
 
       {lps.length === 0 ? (
