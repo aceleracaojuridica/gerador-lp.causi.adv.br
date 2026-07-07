@@ -1,14 +1,14 @@
+import type { LandingPageCreateFormValues } from "@/forms/LandingPageCreateForm/schema";
 import type { FocoCopy } from "../focos";
 import { matchFoco } from "../focos";
 import {
   DEFAULT_THEME,
-  type Layout,
   type Lawyer,
+  type Layout,
   type Office,
   type Social,
   type Theme,
 } from "../schema";
-import type { LandingPageCreateFormValues } from "@/forms/LandingPageCreateForm/schema";
 
 /** Payload aceito por POST /api/gerar-lp (wizard → LP salva). */
 export type GerarLpPayload = {

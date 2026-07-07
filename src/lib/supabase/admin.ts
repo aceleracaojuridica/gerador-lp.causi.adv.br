@@ -1,8 +1,8 @@
 import "server-only";
 
-import { createLpServiceClient } from "@/lib/supabase/lp-client";
-import { getLpAdminEnv } from "@/lib/env";
 import { createClient } from "@supabase/supabase-js";
+import { getLpAdminEnv } from "@/lib/env";
+import { createLpServiceClient } from "@/lib/supabase/lp-client";
 
 /** Cliente admin do banco de LPs (Projeto B). Nunca expor ao browser. */
 export function lpAdmin() {

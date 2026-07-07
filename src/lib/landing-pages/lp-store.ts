@@ -10,6 +10,7 @@ import {
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
 import { GENERIC_ETAPAS } from "./focos";
+import { deleteOrphanedImages } from "./gallery-store";
 import { syncImageUsagesFromSchema } from "./image-usages";
 import { buildLpListPreview, type LpListPreview } from "./lp-preview";
 import { persistLpSchemaMedia } from "./media-storage";
@@ -458,6 +459,136 @@ function migrate(lp: StoredLp): StoredLp {
   }
 
   return lp;
+}
+
+/** Remove contatos, endereços e redes sociais órfãos e imagens órfãs para a conta. */
+export async function deleteOrphanedAssets(session: Session): Promise<void> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
+
+  // 1. Apagar imagens órfãs usando a função existente
+  await deleteOrphanedImages(session);
+
+  // 2. Buscar todas as landing pages restantes da conta
+  const { data: lps, error: lpsError } = await db
+    .from("landing_pages")
+    .select("schema")
+    .eq("account_id", ctx.accountId);
+
+  if (lpsError) throwDbError(lpsError);
+
+  // Mapear todos os valores usados nas LPs
+  const usedWhatsapps = new Set<string>();
+  const usedEmails = new Set<string>();
+  const usedAddresses = new Set<string>();
+  const usedSocialUrls = new Set<string>();
+
+  for (const lp of lps || []) {
+    const office = lp.schema?.office;
+    if (!office) continue;
+
+    // Contatos principais
+    if (office.whatsapp) usedWhatsapps.add(office.whatsapp.replace(/\D/g, ""));
+    if (office.email) usedEmails.add(office.email.trim().toLowerCase());
+
+    // Contatos adicionais
+    if (office.extraContacts) {
+      for (const c of office.extraContacts) {
+        if (c.whatsapp) usedWhatsapps.add(c.whatsapp.replace(/\D/g, ""));
+        if (c.email) usedEmails.add(c.email.trim().toLowerCase());
+      }
+    }
+
+    // Endereço principal
+    if (office.address) usedAddresses.add(office.address.trim());
+
+    // Endereços adicionais
+    if (office.extraAddresses) {
+      for (const a of office.extraAddresses) {
+        if (a.address) usedAddresses.add(a.address.trim());
+      }
+    }
+
+    // Redes sociais
+    if (office.socials) {
+      for (const s of office.socials) {
+        if (s.url) usedSocialUrls.add(s.url.trim().toLowerCase());
+      }
+    }
+  }
+
+  // 3. Excluir contatos órfãos (is_primary = false E não usados em nenhuma LP)
+  const { data: contacts, error: contactsError } = await db
+    .from("lp_account_contacts")
+    .select("id, whatsapp, email")
+    .eq("account_id", ctx.accountId)
+    .eq("is_primary", false);
+
+  if (!contactsError && contacts) {
+    const toDeleteContacts = contacts.filter((c) => {
+      const whatsappClean = c.whatsapp?.replace(/\D/g, "") ?? "";
+      const emailClean = c.email?.trim().toLowerCase() ?? "";
+      return !usedWhatsapps.has(whatsappClean) && !usedEmails.has(emailClean);
+    });
+
+    if (toDeleteContacts.length > 0) {
+      await db
+        .from("lp_account_contacts")
+        .delete()
+        .in(
+          "id",
+          toDeleteContacts.map((c) => c.id),
+        );
+    }
+  }
+
+  // 4. Excluir endereços órfãos (is_primary = false E não usados em nenhuma LP)
+  const { data: addresses, error: addressesError } = await db
+    .from("lp_account_addresses")
+    .select("id, address")
+    .eq("account_id", ctx.accountId)
+    .eq("is_primary", false);
+
+  if (!addressesError && addresses) {
+    const toDeleteAddresses = addresses.filter((a) => {
+      const addrClean = a.address?.trim() ?? "";
+      return !usedAddresses.has(addrClean);
+    });
+
+    if (toDeleteAddresses.length > 0) {
+      await db
+        .from("lp_account_addresses")
+        .delete()
+        .in(
+          "id",
+          toDeleteAddresses.map((a) => a.id),
+        );
+    }
+  }
+
+  // 5. Excluir redes sociais órfãs (is_primary = false E não usadas em nenhuma LP)
+  const { data: socials, error: socialsError } = await db
+    .from("lp_account_socials")
+    .select("id, url")
+    .eq("account_id", ctx.accountId)
+    .eq("is_primary", false);
+
+  if (!socialsError && socials) {
+    const toDeleteSocials = socials.filter((s) => {
+      const urlClean = s.url?.trim().toLowerCase() ?? "";
+      return !usedSocialUrls.has(urlClean);
+    });
+
+    if (toDeleteSocials.length > 0) {
+      await db
+        .from("lp_account_socials")
+        .delete()
+        .in(
+          "id",
+          toDeleteSocials.map((s) => s.id),
+        );
+    }
+  }
 }
 
 export type { LpContext };

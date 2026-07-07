@@ -1,11 +1,11 @@
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
+import { DEFAULT_LOGO_BG } from "@/lib/landing-pages/colors";
+import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
 import {
   refineRequiredEmail,
   refineRequiredWhatsapp,
 } from "@/lib/landing-pages/validation/contact";
-import { DEFAULT_LOGO_BG } from "@/lib/landing-pages/colors";
-import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
 import {
   addressEntrySchema,
   lawyerSchema,
@@ -13,11 +13,11 @@ import {
   socialNetworkSchema,
   themeSchema,
 } from "@/lib/landing-pages/zod-shared";
+import type { LandingPageCreateFormProps } from "./landing-page-create-form.types";
 
 /** Schema base — tipagem e valores default; validação por passo em `step0Schema` / `step1Schema`. */
 export const landingPageCreateFormSchema = z.object({
   tema: z.string(),
-  name: z.string(),
   about: z.string(),
   diferenciais: z.array(z.object({ val: z.string() })),
   whatsapp: z.string(),
@@ -45,21 +45,37 @@ export type LandingPageCreateFormValues = z.infer<
   typeof landingPageCreateFormSchema
 >;
 
-export function landingPageCreateDefaultValues(): LandingPageCreateFormValues {
+export function landingPageCreateDefaultValues(
+  props?: LandingPageCreateFormProps,
+): LandingPageCreateFormValues {
+  const primaryContact = props?.savedContacts?.find((c) => c.is_primary);
+  const primaryAddress = props?.savedAddresses?.find((a) => a.is_primary);
+  const primarySocials = props?.savedSocials?.filter((s) => s.is_primary) || [];
+
   return {
     tema: "",
-    name: "",
     about: "",
     diferenciais: [{ val: "" }],
-    whatsapp: "",
-    whatsappDisplay: "",
-    email: "",
+    whatsapp: primaryContact?.whatsapp ?? "",
+    whatsappDisplay: primaryContact?.whatsapp_display ?? "",
+    email: primaryContact?.email ?? "",
     showAddress: true,
-    addresses: [
-      { address: "", uf: "", cidade: "", mapsUrl: "", showMaps: false },
-    ],
+    addresses: primaryAddress
+      ? [
+          {
+            address: primaryAddress.address,
+            uf: primaryAddress.uf,
+            cidade: primaryAddress.cidade,
+            mapsUrl: primaryAddress.maps_url ?? "",
+            showMaps: !!primaryAddress.maps_url,
+          },
+        ]
+      : [{ address: "", uf: "", cidade: "", mapsUrl: "", showMaps: false }],
     showSocials: true,
-    socials: [{ network: "instagram", url: "" }],
+    socials:
+      primarySocials.length > 0
+        ? primarySocials.map((s) => ({ network: s.network, url: s.url }))
+        : [{ network: "instagram", url: "" }],
     showVideo: false,
     videoId: "",
     logoSrc: "",
@@ -72,7 +88,6 @@ export function landingPageCreateDefaultValues(): LandingPageCreateFormValues {
 
 export const step0Schema = z.object({
   tema: z.string().trim().min(1, "O campo é obrigatório"),
-  name: z.string().trim().min(1, "O campo é obrigatório"),
   about: z.string().trim().min(1, "O campo é obrigatório"),
 });
 

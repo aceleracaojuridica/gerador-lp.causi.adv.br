@@ -27,7 +27,7 @@ function defaultHint(value: string) {
 
 /**
  * Painel "Integrações" do editor da LP — override por página de tracking,
- * scripts, captcha e domínio. Campos vazios herdam o padrão da conta
+ * scripts e captcha. Campos vazios herdam o padrão da conta
  * (configurado em Configurações); ver `applyGlobalConfigToOffice`.
  */
 export function IntegracoesPanel({
@@ -168,16 +168,6 @@ export function IntegracoesPanel({
             />
           </>
         ) : null}
-      </FieldGroup>
-
-      <FieldGroup title="Domínio personalizado">
-        <BuilderField label="Domínio" hint={defaultHint(accountConfig.domain)}>
-          <Input
-            value={office.domain ?? ""}
-            onChange={(e) => form.set("domain", e.target.value)}
-            placeholder="www.seudominio.com.br"
-          />
-        </BuilderField>
       </FieldGroup>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">

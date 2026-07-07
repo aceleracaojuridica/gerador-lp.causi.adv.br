@@ -66,8 +66,43 @@ CREATE TABLE public.lp_account_settings (
   tracking_providers jsonb NOT NULL DEFAULT '{"googleAdsId": "", "metaPixelId": "", "googleAdsLabel": "", "gtmContainerId": "", "ga4MeasurementId": ""}'::jsonb,
   tracking_scripts jsonb NOT NULL DEFAULT '{"body": "", "head": "", "footer": ""}'::jsonb,
   captcha_config jsonb NOT NULL DEFAULT '{"siteKey": "", "provider": "none", "widgetTheme": "auto"}'::jsonb,
-  custom_domain text NOT NULL DEFAULT ''::text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT lp_account_settings_pkey PRIMARY KEY (account_id)
+);
+
+CREATE TABLE public.lp_account_addresses (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  account_id bigint NOT NULL,
+  address text NOT NULL,
+  cidade text NOT NULL,
+  uf text NOT NULL,
+  maps_url text,
+  is_primary boolean DEFAULT false NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lp_account_addresses_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.lp_account_contacts (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  account_id bigint NOT NULL,
+  whatsapp text NOT NULL,
+  whatsapp_display text NOT NULL,
+  email text NOT NULL,
+  is_primary boolean DEFAULT false NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lp_account_contacts_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.lp_account_socials (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  account_id bigint NOT NULL,
+  network text NOT NULL,
+  url text NOT NULL,
+  is_primary boolean DEFAULT false NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lp_account_socials_pkey PRIMARY KEY (id)
 );

@@ -10,7 +10,18 @@ export type GlobalConfig = {
   tags: ConversionTags;
   tracking: TrackingProviderConfig;
   captcha: CaptchaConfig;
-  domain: string;
+  address?: {
+    address: string;
+    cidade: string;
+    uf: string;
+    mapsUrl: string;
+  };
+  contact?: {
+    whatsapp: string;
+    whatsappDisplay: string;
+    email: string;
+  };
+  socials?: { network: string; url: string }[];
 };
 
 export const DEFAULT_TRACKING: TrackingProviderConfig = {
@@ -32,7 +43,6 @@ export const DEFAULT_CONFIG: GlobalConfig = {
   tags: { head: "", body: "", footer: "" },
   tracking: DEFAULT_TRACKING,
   captcha: DEFAULT_CAPTCHA,
-  domain: "",
 };
 
 function pickString(
@@ -142,7 +152,27 @@ export function normalizeGlobalConfig(
       siteKey: value?.captcha?.siteKey ?? "",
       widgetTheme: value?.captcha?.widgetTheme ?? "auto",
     },
-    domain: value?.domain ?? "",
+    address: value?.address
+      ? {
+          address: value.address.address ?? "",
+          cidade: value.address.cidade ?? "",
+          uf: value.address.uf ?? "",
+          mapsUrl: value.address.mapsUrl ?? "",
+        }
+      : undefined,
+    contact: value?.contact
+      ? {
+          whatsapp: value.contact.whatsapp ?? "",
+          whatsappDisplay: value.contact.whatsappDisplay ?? "",
+          email: value.contact.email ?? "",
+        }
+      : undefined,
+    socials: value?.socials
+      ? value.socials.map((s) => ({
+          network: s.network ?? "",
+          url: s.url ?? "",
+        }))
+      : undefined,
   };
 }
 
@@ -166,7 +196,6 @@ export function applyGlobalConfigToOffice(
     tags: mergeTags(office.tags, config.tags, overwrite),
     tracking: mergeTracking(office.tracking, config.tracking, overwrite),
     captcha: mergeCaptcha(office.captcha, config.captcha, overwrite),
-    domain: pickString(office.domain, config.domain, overwrite),
   };
 }
 
@@ -176,6 +205,5 @@ export function extractGlobalConfigFromOffice(office: Office): GlobalConfig {
     tags: office.tags,
     tracking: office.tracking,
     captcha: office.captcha,
-    domain: office.domain,
   });
 }

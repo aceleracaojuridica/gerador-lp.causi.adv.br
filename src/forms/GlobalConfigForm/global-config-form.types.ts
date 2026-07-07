@@ -1,9 +1,9 @@
-import { z } from "zod";
+import type { z } from "zod";
 import {
-  normalizeGlobalConfig,
   type GlobalConfig,
+  normalizeGlobalConfig,
 } from "@/lib/landing-pages/global-config";
-import { globalConfigFormSchema } from "./schema";
+import type { globalConfigFormSchema } from "./schema";
 
 export type GlobalConfigFormValues = z.infer<typeof globalConfigFormSchema>;
 

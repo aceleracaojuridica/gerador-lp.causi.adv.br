@@ -54,7 +54,27 @@ export async function saveConfigAction(
         siteKey: c.captcha?.siteKey ?? "",
         widgetTheme: c.captcha?.widgetTheme ?? "auto",
       },
-      domain: c.domain ?? "",
+      address: c.address
+        ? {
+            address: c.address.address ?? "",
+            cidade: c.address.cidade ?? "",
+            uf: c.address.uf ?? "",
+            mapsUrl: c.address.mapsUrl ?? "",
+          }
+        : undefined,
+      contact: c.contact
+        ? {
+            whatsapp: c.contact.whatsapp ?? "",
+            whatsappDisplay: c.contact.whatsappDisplay ?? "",
+            email: c.contact.email ?? "",
+          }
+        : undefined,
+      socials: c.socials
+        ? c.socials.map((s) => ({
+            network: s.network ?? "",
+            url: s.url ?? "",
+          }))
+        : undefined,
     });
     return { ok: true };
   } catch (err) {

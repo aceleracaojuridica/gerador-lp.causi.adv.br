@@ -14,10 +14,11 @@ export default async function ConfiguracoesPage() {
       <header className="sticky top-0 z-10 hidden shrink-0 border-b border-border bg-background md:block">
         <div className="mx-auto w-full max-w-4xl px-4 py-4 md:px-0 md:py-6">
           <h1 className="mb-1 text-xl font-bold text-foreground md:mb-2 md:text-2xl">
-            Visual
+            Configurações
           </h1>
           <p className="text-sm text-muted-foreground">
-            Tipografia e dominio padrao das landing pages da conta.
+            Tipografia, contatos e endereço padrão do escritório para as landing
+            pages.
           </p>
         </div>
       </header>

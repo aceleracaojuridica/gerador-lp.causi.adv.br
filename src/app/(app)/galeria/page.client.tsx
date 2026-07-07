@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GalleryImageDto } from "@/app/actions/gallery";
 import {
   deleteGalleryImageAction,
+  deleteOrphanedImagesAction,
   listGalleryImagesAction,
   uploadGalleryImageAction,
 } from "@/app/actions/gallery";
@@ -19,6 +20,7 @@ import {
   HeaderHeading,
 } from "@/components/ui-patterns/header";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
+import { publicLpUrl } from "@/lib/landing-pages/lp-url";
 import { showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +29,7 @@ export function GalleryPageClient() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [confirmOrphanedDelete, setConfirmOrphanedDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { canDeleteImage, canManageAll, session } = useLpPermissions();
@@ -74,6 +77,18 @@ export function GalleryPageClient() {
     setDeleteId(null);
   }
 
+  async function handleConfirmOrphanedDelete() {
+    setDeleting(true);
+    const res = await deleteOrphanedImagesAction();
+    setDeleting(false);
+    setConfirmOrphanedDelete(false);
+    if (!res.ok) {
+      showLpMessageError(res.error);
+      return;
+    }
+    void load();
+  }
+
   return (
     <Container orientation="vertical" overflow="hidden">
       <Header>
@@ -85,6 +100,15 @@ export function GalleryPageClient() {
         <HeaderActions>
           <Button asChild variant="outline">
             <Link href="/">Voltar às LPs</Link>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            disabled={deleting || images.length === 0}
+            onClick={() => setConfirmOrphanedDelete(true)}
+          >
+            Limpar não utilizadas
           </Button>
           <input
             ref={fileRef}
@@ -155,7 +179,9 @@ export function GalleryPageClient() {
                             <span key={u.landingPageId}>
                               {index > 0 ? ", " : null}
                               <Link
-                                href={`/lp/${u.slug}`}
+                                href={publicLpUrl(u.officeSubdomain, u.slug)}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-foreground underline-offset-2 hover:underline"
                               >
                                 {u.name || u.slug}
@@ -209,6 +235,18 @@ export function GalleryPageClient() {
         variant="destructive"
         loading={deleting}
         onConfirm={confirmDelete}
+      />
+      <ConfirmDialog
+        open={confirmOrphanedDelete}
+        onOpenChange={(open) => {
+          if (!deleting && !open) setConfirmOrphanedDelete(false);
+        }}
+        title="Apagar imagens não utilizadas?"
+        description="Todas as imagens na galeria que não estão vinculadas a nenhuma landing page serão excluídas permanentemente."
+        confirmLabel="Apagar todas"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleConfirmOrphanedDelete}
       />
     </Container>
   );

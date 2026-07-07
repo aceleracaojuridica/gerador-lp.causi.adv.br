@@ -5,6 +5,7 @@ import type { ActionResult } from "@/app/actions/lps";
 import { mapLpDbError } from "@/lib/errors";
 import {
   deleteGalleryImage,
+  deleteOrphanedImages,
   type GalleryImageItem,
   listGalleryImages,
   uploadGalleryImage,
@@ -87,5 +88,19 @@ export async function deleteGalleryImageAction(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: toMessage(err, "Erro ao excluir imagem.") };
+  }
+}
+
+export async function deleteOrphanedImagesAction(): Promise<ActionResult> {
+  try {
+    const session = await requireLpSession();
+    await deleteOrphanedImages(session);
+    revalidatePath("/galeria");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: toMessage(err, "Erro ao excluir imagens órfãs."),
+    };
   }
 }

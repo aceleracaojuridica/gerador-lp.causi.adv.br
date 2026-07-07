@@ -16,6 +16,7 @@ export type GalleryImageUsage = {
   landingPageId: string;
   slug: string;
   name: string;
+  officeSubdomain: string;
   slot: string;
 };
 
@@ -43,7 +44,11 @@ function throwDbError(error: { message: string; code?: string }): never {
 type UsageRow = {
   landing_page_id: string;
   slot: string;
-  landing_pages: { slug: string; name: string } | null;
+  landing_pages: {
+    slug: string;
+    name: string;
+    office_subdomain: string;
+  } | null;
 };
 
 /** Lista imagens da galeria da conta com usos. */
@@ -68,7 +73,7 @@ export async function listGalleryImages(
       lp_image_usages (
         landing_page_id,
         slot,
-        landing_pages ( slug, name )
+        landing_pages ( slug, name, office_subdomain )
       )
     `,
     )
@@ -84,6 +89,7 @@ export async function listGalleryImages(
       landingPageId: u.landing_page_id,
       slug: u.landing_pages?.slug ?? "",
       name: u.landing_pages?.name ?? "",
+      officeSubdomain: u.landing_pages?.office_subdomain ?? "",
       slot: u.slot,
     }));
 
@@ -220,6 +226,41 @@ export async function deleteGalleryImage(
   await db.storage
     .from(GERADOR_LP_BUCKET)
     .remove([image.storage_path as string]);
+}
+
+/** Remove todas as imagens órfãs (sem usos) da galeria da conta. */
+export async function deleteOrphanedImages(session: Session): Promise<void> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
+
+  // Seleciona imagens sem usos
+  const { data: orphaned, error: fetchError } = await db
+    .from("lp_account_images")
+    .select(`
+      id,
+      storage_path,
+      lp_image_usages!left (
+        id
+      )
+    `)
+    .eq("account_id", ctx.accountId)
+    .is("lp_image_usages.id", null);
+
+  if (fetchError) throwDbError(fetchError);
+  if (!orphaned || orphaned.length === 0) return;
+
+  const ids = orphaned.map((img) => img.id as string);
+  const paths = orphaned.map((img) => img.storage_path as string);
+
+  // Deleta do banco
+  const { error: deleteRowError } = await db
+    .from("lp_account_images")
+    .delete()
+    .in("id", ids);
+  if (deleteRowError) throwDbError(deleteRowError);
+
+  // Remove do storage
+  await db.storage.from(GERADOR_LP_BUCKET).remove(paths);
 }
 
 export function isGalleryStorageUrl(url: string): boolean {

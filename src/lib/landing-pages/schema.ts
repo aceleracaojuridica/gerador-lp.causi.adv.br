@@ -147,7 +147,6 @@ export type Office = {
   tags?: ConversionTags; // scripts no <head>, início do <body> e rodapé
   tracking?: TrackingProviderConfig; // ids de GA4, GTM, Meta Pixel e Google Ads
   captcha?: CaptchaConfig; // config pública do Turnstile/captcha da LP
-  domain?: string; // domínio personalizado (conectado na publicação)
   privacyPolicy?: string; // texto da Política de Privacidade (link no rodapé)
   // Tipografia escolhida no editor (ids de lib/fonts). "" = padrão do site.
   fonts?: { heading: string; body: string };

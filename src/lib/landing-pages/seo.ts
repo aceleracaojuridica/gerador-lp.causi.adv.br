@@ -1,5 +1,5 @@
-import type { LpSchema, Office, SeoMeta } from "./schema";
 import { publicLpUrl } from "./lp-url";
+import type { LpSchema, Office, SeoMeta } from "./schema";
 
 export const SEO_TITLE_MAX = 60;
 export const SEO_DESC_MAX = 155;

@@ -1,4 +1,9 @@
 export {
+  type LpEditorForm,
+  type LpSeed,
+  useLpEditorForm,
+} from "@/hooks/use-lp-editor-form";
+export {
   applyLpEditorSaveErrorsToForm,
   EMPTY_OFFICE,
   type LpEditorFormValues,
@@ -7,8 +12,3 @@ export {
   lpEditorSaveSchema,
   validateLpEditorSave,
 } from "./schema";
-export {
-  type LpEditorForm,
-  type LpSeed,
-  useLpEditorForm,
-} from "@/hooks/use-lp-editor-form";

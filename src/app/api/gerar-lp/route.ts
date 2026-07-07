@@ -6,6 +6,7 @@ import {
   resolveOfficeSubdomain,
   saveLp,
 } from "@/lib/landing-pages/lp-store";
+import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
 import {
   DEFAULT_LAYOUT,
   DEFAULT_THEME,
@@ -25,6 +26,10 @@ import { buscarImagensUnsplash } from "@/lib/landing-pages/unsplash";
 import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
+import {
+  createLpUserClient,
+  sessionToLpContext,
+} from "@/lib/supabase/lp-client";
 
 /*
   Gera a LP COMPLETA a partir do cadastro do front (self-service): escreve a
@@ -66,11 +71,11 @@ export async function POST(request: Request) {
     return Response.json({ error: "Corpo inválido." }, { status: 400 });
   }
 
-  const name = (p.name ?? "").trim();
+  const name = (p.name ?? "").trim() || user.account.name;
   const tema = (p.tema ?? "").trim();
   if (!name || !tema) {
     return Response.json(
-      { error: "Informe ao menos o nome do escritório e o tema." },
+      { error: "Informe ao menos o tema da página." },
       { status: 400 },
     );
   }
@@ -123,13 +128,51 @@ export async function POST(request: Request) {
   if (p.images) {
     images = p.images;
   } else {
+    const ctx = sessionToLpContext(user);
+    const db = createLpUserClient(user);
+
     const live = await buscarImagensUnsplash(imageQueries);
     const bank = imagensDoTema(tema);
+
+    // Buscar imagens da galeria da conta
+    const { data: galleryImages } = await db
+      .from("lp_account_images")
+      .select("id, storage_path")
+      .eq("account_id", ctx.accountId);
+
+    // Buscar usos atuais
+    const { data: usages } = await db
+      .from("lp_image_usages")
+      .select("slot, image_id");
+
+    const usageMap = new Map((usages || []).map((u) => [u.slot, u.image_id]));
+    const galleryMap = new Map(
+      (galleryImages || []).map((img) => [img.id, img.storage_path]),
+    );
+    const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
+
+    const getSlotImage = (slot: string, liveUrl: string, bankUrl: string) => {
+      // 1. Matched slot
+      const matchedImageId = usageMap.get(slot);
+      if (matchedImageId) {
+        const path = galleryMap.get(matchedImageId);
+        if (path) return getPublicMediaUrl(path);
+      }
+      // 2. Qualquer imagem da galeria (com índice para distribuir)
+      if (galleryPaths.length > 0) {
+        const slotIndex = ["hero", "dor", "sobre", "solucao"].indexOf(slot);
+        const path = galleryPaths[slotIndex % galleryPaths.length];
+        return getPublicMediaUrl(path);
+      }
+      // 3. Unsplash / Banco
+      return liveUrl || bankUrl;
+    };
+
     images = {
-      hero: live.hero || bank.hero,
-      dor: live.dor || bank.dor,
-      sobre: live.sobre || bank.sobre,
-      solucao: live.solucao || bank.solucao,
+      hero: getSlotImage("hero", live.hero, bank.hero),
+      dor: getSlotImage("dor", live.dor, bank.dor),
+      sobre: getSlotImage("sobre", live.sobre, bank.sobre),
+      solucao: getSlotImage("solucao", live.solucao, bank.solucao),
     };
   }
 

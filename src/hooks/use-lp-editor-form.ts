@@ -7,7 +7,10 @@ import {
   lpEditorDefaultValues,
   validateLpEditorSave,
 } from "@/forms/LpEditorForm/schema";
-import { detectLogoBackground, extractPalette } from "@/lib/landing-pages/colors";
+import {
+  detectLogoBackground,
+  extractPalette,
+} from "@/lib/landing-pages/colors";
 import {
   buildSchema,
   type FocoCopy,

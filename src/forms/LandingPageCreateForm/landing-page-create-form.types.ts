@@ -1,1 +1,6 @@
-export type LandingPageCreateFormProps = Record<string, never>;
+export type LandingPageCreateFormProps = {
+  defaultOfficeName?: string;
+  savedAddresses?: any[];
+  savedContacts?: any[];
+  savedSocials?: any[];
+};

@@ -99,7 +99,6 @@ export type Office = {
   tags?: ConversionTags;
   tracking?: TrackingProviderConfig;
   captcha?: CaptchaConfig;
-  domain?: string;
   privacyPolicy?: string;
   fonts?: { heading: string; body: string };
   cardRadius?: "rounded" | "square";

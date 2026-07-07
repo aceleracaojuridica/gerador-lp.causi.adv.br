@@ -146,11 +146,16 @@ function PlainRow({
   );
 }
 
-export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
+export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
+  const {
+    defaultOfficeName = "",
+    savedAddresses = [],
+    savedContacts = [],
+  } = props;
   const router = useRouter();
 
   const form = useForm<LandingPageCreateFormValues>({
-    defaultValues: landingPageCreateDefaultValues(),
+    defaultValues: landingPageCreateDefaultValues(props),
   });
 
   const { fields: diferenciais } = useFieldArray({
@@ -175,7 +180,6 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
   const values = form.watch();
   const {
     tema,
-    name,
     about,
     whatsapp,
     whatsappDisplay,
@@ -295,7 +299,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
     setGerandoMsg("Escrevendo a copy sobre o tema e buscando as imagens…");
 
     const copyPayload = {
-      name: name.trim(),
+      name: defaultOfficeName.trim(),
       tema: tema.trim(),
       city: [addresses[0]?.cidade, addresses[0]?.uf].filter(Boolean).join("/"),
       about: about.trim(),
@@ -350,7 +354,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
 
     const templateLayout = getTemplate(selectedTemplateId).layout;
     const savePayload = {
-      name: name.trim(),
+      name: defaultOfficeName.trim(),
       tema: tema.trim(),
       city: [addresses[0]?.cidade, addresses[0]?.uf].filter(Boolean).join("/"),
       whatsapp,
@@ -410,7 +414,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
   }
 
   // ── Validações por passo ─────────────────────────────────────────────────
-  const temNome = name.trim().length > 0;
+  const temNome = defaultOfficeName.trim().length > 0;
   const temTema = tema.trim().length > 0;
 
   function avancar() {
@@ -445,7 +449,7 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
               <span className="sr-only">Gerando copy da landing page</span>
             </div>
             <h2 className="text-lg font-semibold text-foreground">
-              Criando a página de {name}
+              Criando a página de {defaultOfficeName}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {gerandoMsg ||
@@ -590,27 +594,6 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                     />
                     <FormField
                       control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FieldRow
-                          label={
-                            <>
-                              Nome do escritório{" "}
-                              <span className="text-muted-foreground">*</span>
-                            </>
-                          }
-                        >
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="Ex: Garcia & Klemann"
-                            />
-                          </FormControl>
-                        </FieldRow>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
                       name="about"
                       render={({ field }) => (
                         <FieldRow
@@ -624,7 +607,10 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                             <MelhorarTextoButton
                               text={about}
                               kind="sobre"
-                              office={{ name, product: tema }}
+                              office={{
+                                name: defaultOfficeName,
+                                product: tema,
+                              }}
                               onResult={(text) => form.setValue("about", text)}
                               iconOnly
                             />
@@ -646,6 +632,62 @@ export function LandingPageCreateForm(_props: LandingPageCreateFormProps = {}) {
                 {/* Passo 1 — Contato */}
                 {step === 1 ? (
                   <>
+                    {savedContacts.length > 0 || savedAddresses.length > 0 ? (
+                      <div className="rounded-lg border border-border bg-muted/40 p-4 mb-4">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                          Usar dados salvos do escritório
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {savedContacts.map((c, idx) => (
+                            <Button
+                              key={c.id}
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("whatsapp", c.whatsapp, {
+                                  shouldDirty: true,
+                                });
+                                form.setValue(
+                                  "whatsappDisplay",
+                                  c.whatsapp_display,
+                                  { shouldDirty: true },
+                                );
+                                form.setValue("email", c.email, {
+                                  shouldDirty: true,
+                                });
+                              }}
+                              className="text-xs"
+                            >
+                              Contato (
+                              {c.is_primary ? "Padrão" : `Opção ${idx + 1}`})
+                            </Button>
+                          ))}
+                          {savedAddresses.map((a, idx) => (
+                            <Button
+                              key={a.id}
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                updateAddress(0, {
+                                  address: a.address,
+                                  uf: a.uf,
+                                  cidade: a.cidade,
+                                  mapsUrl: a.maps_url ?? "",
+                                  showMaps: !!a.maps_url,
+                                });
+                              }}
+                              className="text-xs"
+                            >
+                              Endereço (
+                              {a.is_primary ? "Padrão" : `Opção ${idx + 1}`})
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
                     <FormField
                       control={form.control}
                       name="whatsapp"

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ACCESS_DENIED_ERROR, LP_ERRORS, mapLpDbError } from "@/lib/errors";
 import {
   deleteLp,
+  deleteOrphanedAssets,
   getLpMeta,
   publishLp,
   saveLp,
@@ -107,7 +108,10 @@ export async function unpublishLpAction(slug: string): Promise<ActionResult> {
 }
 
 /** Remove uma LP (somente owner/super_admin via RLS). */
-export async function deleteLpAction(slug: string): Promise<ActionResult> {
+export async function deleteLpAction(
+  slug: string,
+  deleteEverything = false,
+): Promise<ActionResult> {
   let session: Awaited<ReturnType<typeof requireLpSession>>;
   try {
     session = await requireLpSession();
@@ -119,6 +123,9 @@ export async function deleteLpAction(slug: string): Promise<ActionResult> {
 
   try {
     await deleteLp(session, slug);
+    if (deleteEverything) {
+      await deleteOrphanedAssets(session);
+    }
     revalidatePath("/");
     return { ok: true };
   } catch (err) {

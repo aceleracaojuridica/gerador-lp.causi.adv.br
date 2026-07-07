@@ -7,7 +7,14 @@ import { useState } from "react";
 import { deleteLpAction } from "@/app/actions/lps";
 import { useLpAccess } from "@/components/lp-access-provider";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
 import { isAccessDeniedError } from "@/lib/errors";
 import type { LpListPreview } from "@/lib/landing-pages/lp-preview";
@@ -63,10 +70,10 @@ export function LpCard({
     setDeleteOpen(true);
   }
 
-  async function confirmarExclusao() {
+  async function confirmarExclusao(deleteEverything: boolean) {
     setExcluindo(true);
     try {
-      const res = await deleteLpAction(slug);
+      const res = await deleteLpAction(slug, deleteEverything);
       if ("error" in res) {
         if (isAccessDeniedError(res.error)) {
           showAccessDeniedToast();
@@ -78,10 +85,11 @@ export function LpCard({
       setDeleteOpen(false);
       router.refresh();
     } catch {
-      setExcluindo(false);
       showLpMessageError(
         "Não foi possível excluir. Tente de novo em instantes.",
       );
+    } finally {
+      setExcluindo(false);
     }
   }
 
@@ -95,18 +103,59 @@ export function LpCard({
 
   return (
     <>
-      <ConfirmDialog
+      <Dialog
         open={deleteOpen}
         onOpenChange={(open) => {
           if (!excluindo) setDeleteOpen(open);
         }}
-        title={`Excluir "${name}"?`}
-        description="Esta ação não pode ser desfeita. A página será removida permanentemente."
-        confirmLabel="Excluir"
-        variant="destructive"
-        loading={excluindo}
-        onConfirm={confirmarExclusao}
-      />
+      >
+        <DialogContent showCloseButton={!excluindo}>
+          <DialogHeader>
+            <DialogTitle>Excluir &ldquo;{name}&rdquo;?</DialogTitle>
+            <DialogDescription>
+              Escolha como deseja excluir esta landing page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <button
+              type="button"
+              disabled={excluindo}
+              onClick={() => void confirmarExclusao(false)}
+              className="w-full rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-muted/60 disabled:opacity-50"
+            >
+              <p className="font-medium text-foreground">
+                Somente a landing page
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Remove apenas a página. Imagens, contatos e endereços vinculados
+                são mantidos.
+              </p>
+            </button>
+            <button
+              type="button"
+              disabled={excluindo}
+              onClick={() => void confirmarExclusao(true)}
+              className="w-full rounded-lg border border-destructive/40 px-4 py-3 text-left transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            >
+              <p className="font-medium text-destructive">Tudo</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Remove a página e limpa imagens, contatos e endereços que não
+                estejam em uso em outra LP.
+              </p>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={excluindo}
+              onClick={() => setDeleteOpen(false)}
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="group relative w-full shrink-0 sm:w-[300px]">
         <button

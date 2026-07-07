@@ -1,33 +1,74 @@
 import { z } from "zod";
 
-const ga4MeasurementIdSchema = z.string().trim().refine(
-  (value) => value === "" || /^G-[A-Z0-9]+$/i.test(value),
-  "Use um ID no formato G-XXXXXXXXXX.",
-);
+const ga4MeasurementIdSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^G-[A-Z0-9]+$/i.test(value),
+    "Use um ID no formato G-XXXXXXXXXX.",
+  );
 
-const gtmContainerIdSchema = z.string().trim().refine(
-  (value) => value === "" || /^GTM-[A-Z0-9]+$/i.test(value),
-  "Use um container no formato GTM-XXXXXXX.",
-);
+const gtmContainerIdSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^GTM-[A-Z0-9]+$/i.test(value),
+    "Use um container no formato GTM-XXXXXXX.",
+  );
 
-const metaPixelIdSchema = z.string().trim().refine(
-  (value) => value === "" || /^\d+$/.test(value),
-  "Use apenas numeros no Meta Pixel ID.",
-);
+const metaPixelIdSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^\d+$/.test(value),
+    "Use apenas numeros no Meta Pixel ID.",
+  );
 
-const googleAdsIdSchema = z.string().trim().refine(
-  (value) => value === "" || /^AW-\d+$/i.test(value),
-  "Use um ID no formato AW-XXXXXXXXX.",
-);
+const googleAdsIdSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^AW-\d+$/i.test(value),
+    "Use um ID no formato AW-XXXXXXXXX.",
+  );
 
-const domainSchema = z.string().trim().refine(
-  (value) =>
-    value === "" ||
-    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(
-      value,
+const addressSchema = z.object({
+  address: z.string().trim(),
+  cidade: z.string().trim(),
+  uf: z.string().trim(),
+  mapsUrl: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^https:\/\//i.test(value),
+      "O link deve começar com https://",
     ),
-  "Informe apenas o dominio, sem protocolo ou caminhos.",
-);
+});
+
+const contactSchema = z.object({
+  whatsapp: z.string().trim(),
+  whatsappDisplay: z.string().trim(),
+  email: z.string().trim(),
+});
+
+const socialNetworkSchema = z.enum([
+  "instagram",
+  "facebook",
+  "youtube",
+  "tiktok",
+  "linkedin",
+]);
+
+const socialItemSchema = z.object({
+  network: socialNetworkSchema,
+  url: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^https:\/\//i.test(value),
+      "O link deve começar com https://",
+    ),
+});
 
 export const globalConfigFormSchema = z
   .object({
@@ -52,7 +93,9 @@ export const globalConfigFormSchema = z
       siteKey: z.string().trim(),
       widgetTheme: z.enum(["auto", "light", "dark"]),
     }),
-    domain: domainSchema,
+    address: addressSchema.optional(),
+    contact: contactSchema.optional(),
+    socials: z.array(socialItemSchema).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.captcha.provider === "turnstile" && !value.captcha.siteKey) {
