@@ -44,6 +44,19 @@ export const runtime = "nodejs";
 
 type Payload = Partial<GerarLpPayload>;
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof err.message === "string"
+  ) {
+    return err.message;
+  }
+  return "Erro ao salvar a LP.";
+}
+
 export async function POST(request: Request) {
   let user: Session;
   try {
@@ -234,7 +247,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ ok: true, slug });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro ao salvar a LP.";
-    return Response.json({ error: msg }, { status: 500 });
+    console.error("[gerar-lp] save failed:", err);
+    return Response.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -66,6 +66,7 @@ import {
   type GlobalConfig,
 } from "@/lib/landing-pages/global-config";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
+import { getLpPublicDomain } from "@/lib/landing-pages/public-routing";
 import {
   DEFAULT_LAYOUT,
   type EquipeVariant,
@@ -214,6 +215,90 @@ function getSectionDescription(sectionId: DetailSectionId): string {
     default:
       return "";
   }
+}
+
+/** Preview da URL pública da LP — layout único, discreto, para publicado e rascunho. */
+function PublicLpUrlPreview({
+  officeSubdomain,
+  slug,
+  status,
+}: {
+  officeSubdomain: string;
+  slug: string;
+  status: "draft" | "published";
+}) {
+  const lpDomain = getLpPublicDomain() || "causi.adv.br";
+  const isLive = status === "published";
+
+  const content = (
+    <>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <span className="relative flex size-1.5" aria-hidden>
+          {isLive ? (
+            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/30" />
+          ) : null}
+          <span
+            className={cn(
+              "relative size-1.5 rounded-full",
+              isLive
+                ? "bg-emerald-500/70"
+                : "bg-rose-400/55 dark:bg-rose-400/45",
+            )}
+          />
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {isLive ? "Ao vivo" : "Offline"}
+        </span>
+      </span>
+      <span aria-hidden className="h-3 w-px shrink-0 bg-border/80" />
+      <span
+        className={cn(
+          "min-w-0 truncate font-mono text-[11px] leading-none tabular-nums",
+          !isLive && "opacity-80",
+        )}
+      >
+        <span className="font-medium text-foreground/90">{officeSubdomain}</span>
+        <span className="text-muted-foreground/40">.{lpDomain}/</span>
+        <span className="font-medium text-foreground/90">{slug}</span>
+      </span>
+      {isLive ? (
+        <OpenInNew
+          size={12}
+          className="size-3 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden
+        />
+      ) : null}
+    </>
+  );
+
+  const shellClass =
+    "inline-flex max-w-full items-center gap-2 rounded-md border border-border/70 bg-muted/20 px-2.5 py-1";
+
+  if (isLive) {
+    return (
+      <a
+        href={publicLpUrl(officeSubdomain, slug)}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Abrir site publicado em nova aba"
+        className={cn(
+          shellClass,
+          "group transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60",
+        )}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div
+      className={shellClass}
+      title="Landing page fora do ar — publique para ativar o link"
+    >
+      {content}
+    </div>
+  );
 }
 
 export function Editor({
@@ -589,16 +674,16 @@ export function Editor({
       },
       equipe: availableEquipeOptions.length
         ? {
-            label: "Equipe",
-            options: availableEquipeOptions,
-            value: equipeVariant ?? availableEquipeOptions[0].id,
-            onChange: (id) => {
-              form.setLayout((currentLayout) => ({
-                ...currentLayout,
-                equipe: id as EquipeVariant,
-              }));
-            },
-          }
+          label: "Equipe",
+          options: availableEquipeOptions,
+          value: equipeVariant ?? availableEquipeOptions[0].id,
+          onChange: (id) => {
+            form.setLayout((currentLayout) => ({
+              ...currentLayout,
+              equipe: id as EquipeVariant,
+            }));
+          },
+        }
         : undefined,
       areas: {
         label: "Áreas",
@@ -945,18 +1030,10 @@ export function Editor({
   }) {
     return (
       <section className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
-              {step}
-            </span>
-            <p className="truncate text-xs font-semibold text-foreground">
-              {title}
-            </p>
-          </div>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {sections.length}
-          </span>
+        <div className="flex items-center justify-between min-w-0 gap-2 px-2">
+          <p className="truncate text-xs font-semibold text-foreground">
+            {title}
+          </p>
         </div>
         <div className="space-y-0.5">
           {sections.map((section) => (
@@ -992,11 +1069,11 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden border-border bg-card",
         isLgUp
           ? cn(
-              "flex h-full min-w-0 transition-[opacity] duration-200",
-              leftPanelCollapsed
-                ? "border-r-0 opacity-0"
-                : "border-r opacity-100",
-            )
+            "flex h-full min-w-0 transition-[opacity] duration-200",
+            leftPanelCollapsed
+              ? "border-r-0 opacity-0"
+              : "border-r opacity-100",
+          )
           : showNavigationPanel
             ? "flex border-b"
             : "hidden border-b",
@@ -1018,7 +1095,7 @@ export function Editor({
         {reorderMode ? (
           <ReorderPanel form={form} onClose={() => setReorderMode(false)} />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {renderNavigationGroup({
               step: "1",
               title: "Recursos da página",
@@ -1081,9 +1158,6 @@ export function Editor({
                   <p className="text-xs font-semibold text-amber-900">
                     Avisos da página
                   </p>
-                  <p className="text-[11px] text-amber-800/80">
-                    Regras aplicadas automaticamente para evitar preview vazio.
-                  </p>
                 </div>
                 <div className="space-y-2">
                   {editorNotices.map((notice) => (
@@ -1145,10 +1219,11 @@ export function Editor({
               </Button>
             ) : null}
             <div className="min-w-0 space-y-1">
-              <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <Visibility size={13} />
-                Preview interativo
-              </p>
+              <PublicLpUrlPreview
+                officeSubdomain={officeSubdomain}
+                slug={slug}
+                status={status}
+              />
             </div>
           </div>
 
@@ -1222,9 +1297,9 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden bg-card",
         isLgUp
           ? cn(
-              "flex h-full min-w-0 transition-[opacity] duration-200",
-              rightPanelCollapsed ? "opacity-0" : "opacity-100",
-            )
+            "flex h-full min-w-0 transition-[opacity] duration-200",
+            rightPanelCollapsed ? "opacity-0" : "opacity-100",
+          )
           : showCmsPanel
             ? "flex"
             : "hidden",
@@ -1509,7 +1584,7 @@ export function Editor({
                   </BuilderField>
                 </FieldGroup>
                 {layout.sobre === SOBRE_VARIANT_PHOTO_LIST ||
-                layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
+                  layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
                   <FieldGroup title="Diferenciais">
                     <DiferenciaisInput form={form} />
                   </FieldGroup>
@@ -1522,9 +1597,9 @@ export function Editor({
                   previewVariantControls.equipe,
                   availableEquipeOptions.length
                     ? {
-                        value: tones.equipe,
-                        onChange: (t) => form.setTone("equipe", t),
-                      }
+                      value: tones.equipe,
+                      onChange: (t) => form.setTone("equipe", t),
+                    }
                     : undefined,
                 )}
                 <LawyerPhotosInput form={form} />
@@ -1667,32 +1742,20 @@ export function Editor({
                 Salvar
               </Button>
               {status === "published" ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={despublicar}
-                    disabled={isPublishing}
-                  >
-                    {isPublishing ? (
-                      <ProgressActivity size={16} className="animate-spin" />
-                    ) : (
-                      <CloudOff size={16} />
-                    )}
-                    Retirar do ar
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={publicLpUrl(officeSubdomain, slug)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <OpenInNew size={16} />
-                      Visitar
-                    </a>
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={despublicar}
+                  disabled={isPublishing}
+                >
+                  {isPublishing ? (
+                    <ProgressActivity size={16} className="animate-spin" />
+                  ) : (
+                    <CloudOff size={16} />
+                  )}
+                  Retirar do ar
+                </Button>
               ) : (
                 <Button
                   type="button"

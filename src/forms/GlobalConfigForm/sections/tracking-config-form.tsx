@@ -1,5 +1,6 @@
 "use client";
 
+import { GoogleAnalytics, GoogleTagManager } from "@thesvg/react";
 import {
   Card,
   CardContent,
@@ -36,7 +37,12 @@ export function TrackingConfigForm({ initialData }: GlobalConfigFormProps) {
               name="tracking.ga4MeasurementId"
               render={({ field }) => (
                 <FieldRow
-                  label="GA4 Measurement ID"
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      <GoogleAnalytics className="size-4" />
+                      GA4 Measurement ID
+                    </span>
+                  }
                   description="Formato esperado: G-XXXXXXXXXX."
                 >
                   <FormControl>
@@ -51,7 +57,12 @@ export function TrackingConfigForm({ initialData }: GlobalConfigFormProps) {
               name="tracking.gtmContainerId"
               render={({ field }) => (
                 <FieldRow
-                  label="Google Tag Manager"
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      <GoogleTagManager className="size-4" />
+                      Google Tag Manager
+                    </span>
+                  }
                   description="Container ID padrao para GTM."
                   borderless
                 >

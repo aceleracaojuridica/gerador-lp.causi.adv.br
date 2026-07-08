@@ -18,6 +18,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
         // Variants based on alignment.
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
         "has-[>[data-align=inline-end]]:[&>input]:pr-2",
+        "has-[>[data-align=overlay-end]]:[&>textarea]:pb-9 has-[>[data-align=overlay-end]]:[&>textarea]:pr-9",
         "has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:[&>input]:pb-3",
         "has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3",
 
@@ -43,6 +44,8 @@ const inputGroupAddonVariants = cva(
           "order-first pl-3 has-[>button]:ml-[-0.45rem] has-[>kbd]:ml-[-0.35rem]",
         "inline-end":
           "order-last pr-3 has-[>button]:mr-[-0.45rem] has-[>kbd]:mr-[-0.35rem]",
+        "overlay-end":
+          "pointer-events-none absolute right-1.5 bottom-1.5 z-10 order-none p-0 has-[>button]:m-0 has-[>button]:pointer-events-auto",
         "block-start":
           "order-first w-full justify-start px-3 pt-3 group-has-[>input]/input-group:pt-2.5 [.border-b]:pb-3",
         "block-end":
