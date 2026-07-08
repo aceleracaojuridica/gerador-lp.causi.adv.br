@@ -273,8 +273,9 @@ https://garcia-e-kleeman.causi.adv.br/previdenciario
 Regras:
 
 - `slug` é derivado do tema e precisa ser único por conta
-- `office_subdomain` é derivado do nome da conta e precisa ser único globalmente entre contas
-- ambos são resolvidos no servidor na criação
+- `office_subdomain` é canônico em `lp_accounts.office_subdomain` e único globalmente
+- primeira resolução usa `account.name` do Causi slugificado; depois usa sempre o valor persistido
+- owner pode alterar em `/configuracoes`; a alteração propaga para todas as LPs da conta
 
 ## Estrutura do schema
 

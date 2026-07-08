@@ -113,6 +113,22 @@ Colunas relevantes: `account_id`, `created_by_user_id`, `office_subdomain`, `slu
 
 ---
 
+### `public.lp_accounts`
+
+Fonte canônica da conta para o gerador (`name` + `office_subdomain`).
+
+| Policy | Comando | Role | Regra |
+|--------|---------|------|-------|
+| `lp_accounts_select` | SELECT | `authenticated` | `lp_user_in_account(id)` |
+| `lp_accounts_insert` | INSERT | `authenticated` | `id = lp_jwt_account_id()` |
+| `lp_accounts_update` | UPDATE | `authenticated` | Conta no JWT + `lp_is_account_owner()` |
+| `lp_accounts_delete` | DELETE | `authenticated` | owner da conta ou super admin |
+| `lp_accounts_super_admin` | ALL | `authenticated` | `lp_is_super_admin()` |
+
+Subdomínio é garantido por `UNIQUE (office_subdomain)` + `CHECK` de formato.
+
+---
+
 ### `public.lp_account_images` (galeria)
 
 | Policy | Comando | Role | Regra |
@@ -189,7 +205,7 @@ Bucket público (`public: true`), limite 10 MB, tipos de imagem.
 
 | Tabela | Motivo |
 |--------|--------|
-| `public.user_settings` | Config global por `causi_user_id`; app usa `lpAdmin()` (service_role) em `src/lib/landing-pages/config.ts` |
+| — | Estado atual: tabelas de negócio do gerador usam RLS ativo |
 
 Nunca expor `LP_SUPABASE_SERVICE_ROLE_KEY` ao browser.
 

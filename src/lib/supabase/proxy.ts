@@ -31,12 +31,25 @@ function notFoundResponse(request: NextRequest) {
   return NextResponse.rewrite(url, { status: 404 });
 }
 
+/** Rotas internas do Next.js e API — não são slugs de LP pública. */
+function isInternalAppPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/api/") ||
+    pathname === "/not-found"
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get("host") ?? "";
 
   const office = officeSubdomainFromHost(host);
   if (office) {
+    if (isInternalAppPath(pathname)) {
+      return NextResponse.next();
+    }
+
     if (pathname === "/" || pathname === "") {
       return NextResponse.redirect(getMainAppUrl());
     }

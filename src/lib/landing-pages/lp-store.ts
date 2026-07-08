@@ -1,10 +1,16 @@
 import "server-only";
 
+import {
+  ensureLpAccount,
+  getLpAccount,
+  isOfficeSubdomainReservedByAccountName,
+  isOfficeSubdomainTakenByOtherAccount,
+  updateLpAccountOfficeSubdomain,
+} from "@/lib/landing-pages/account-store";
 import type { Session } from "@/lib/session/types";
 import type { LpDbClient } from "@/lib/supabase/lp-client";
 import {
   createLpAnonClient,
-  createLpServiceClient,
   createLpUserClient,
   type LpContext,
   sessionToLpContext,
@@ -75,21 +81,6 @@ export async function isLpSlugTaken(
   return !!data;
 }
 
-async function isOfficeSubdomainTakenByOtherAccount(
-  subdomain: string,
-  accountId: number,
-): Promise<boolean> {
-  const db = createLpServiceClient();
-  const { data } = await db
-    .from("landing_pages")
-    .select("account_id")
-    .eq("office_subdomain", subdomain)
-    .neq("account_id", accountId)
-    .limit(1)
-    .maybeSingle();
-  return !!data;
-}
-
 /**
  * Subdomínio fixo do escritório (derivado do nome da conta).
  * Persistido em todas as LPs da conta; único globalmente entre contas.
@@ -98,16 +89,10 @@ export async function resolveOfficeSubdomain(
   session: Session,
 ): Promise<string> {
   const ctx = sessionToLpContext(session);
-  const db = createLpUserClient(session);
+  await ensureLpAccount(session);
+  const account = await getLpAccount(session);
 
-  const { data: existing } = await db
-    .from("landing_pages")
-    .select("office_subdomain")
-    .eq("account_id", ctx.accountId)
-    .limit(1)
-    .maybeSingle();
-
-  const current = existing?.office_subdomain as string | undefined;
+  const current = account?.office_subdomain?.trim();
   if (current && !isBackfillOfficeSubdomain(current)) {
     return current;
   }
@@ -117,20 +102,33 @@ export async function resolveOfficeSubdomain(
     throw new Error("Nome da conta inválido para subdomínio do escritório.");
   }
 
-  const subdomain = await allocateUniqueLpSlug(base, (candidate) =>
-    isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
-  );
+  const ownerBase =
+    slugFromOfficeName(session.user.name || session.user.email.split("@")[0] || "") ||
+    "owner";
+
+  const subdomain = await allocateUniqueLpSlug(base, async (candidate) => {
+    const [takenBySubdomain, reservedByName] = await Promise.all([
+      isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
+      isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
+    ]);
+    return takenBySubdomain || reservedByName;
+  });
+
   if (!subdomain) {
-    throw new Error("subdomain-conflict");
+    const fallbackBase = `${base}-${ownerBase}`;
+    const fallback = await allocateUniqueLpSlug(fallbackBase, async (candidate) => {
+      const [takenBySubdomain, reservedByName] = await Promise.all([
+        isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
+        isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
+      ]);
+      return takenBySubdomain || reservedByName;
+    });
+    if (!fallback) throw new Error("subdomain-conflict");
+    await updateLpAccountOfficeSubdomain(session, fallback);
+    return fallback;
   }
 
-  if (current && isBackfillOfficeSubdomain(current)) {
-    const { error } = await db
-      .from("landing_pages")
-      .update({ office_subdomain: subdomain })
-      .eq("account_id", ctx.accountId);
-    if (error) throwDbError(error);
-  }
+  await updateLpAccountOfficeSubdomain(session, subdomain);
 
   return subdomain;
 }

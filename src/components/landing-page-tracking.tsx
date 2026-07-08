@@ -1,15 +1,75 @@
 import Script from "next/script";
+import { Fragment } from "react";
 import type { Office } from "@/lib/landing-pages/schema";
+
+const COMPLETE_SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+
+type ParsedSnippetScript = {
+  key: string;
+  src?: string;
+  inline?: string;
+};
+
+/** Extrai blocos `<script>...</script>` válidos para renderização via next/script. */
+function extractCompleteScripts(
+  html: string,
+  snippetId: string,
+): ParsedSnippetScript[] {
+  const scripts: ParsedSnippetScript[] = [];
+  let index = 0;
+
+  for (const match of html.matchAll(COMPLETE_SCRIPT_RE)) {
+    const attrs = match[1] ?? "";
+    const content = match[2] ?? "";
+    const srcMatch = /\bsrc=["']([^"']+)["']/i.exec(attrs);
+    const key = `${snippetId}-script-${index++}`;
+
+    if (srcMatch?.[1]) {
+      scripts.push({ key, src: srcMatch[1] });
+      continue;
+    }
+
+    if (content.trim()) {
+      scripts.push({ key, inline: content });
+    }
+  }
+
+  return scripts;
+}
+
+/** Remove scripts (incluindo markup malformado) antes de injetar HTML livre. */
+function stripScriptMarkup(html: string): string {
+  return html.replace(/<script\b[\s\S]*?(<\/script\s*>|$)/gi, "").trim();
+}
 
 function renderSnippet(id: string, html: string | undefined) {
   if (!html?.trim()) return null;
+
+  const scripts = extractCompleteScripts(html, id);
+  const safeHtml = stripScriptMarkup(html);
+  if (!safeHtml && scripts.length === 0) return null;
+
   return (
-    // biome-ignore lint/security/noDangerouslySetInnerHtml: snippets come from explicit account/LP configuration for published pages.
-    <div
-      key={id}
-      suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <Fragment key={id}>
+      {safeHtml ? (
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: snippets come from explicit account/LP configuration for published pages.
+        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: safeHtml }} />
+      ) : null}
+      {scripts.map((script) =>
+        script.src ? (
+          <Script
+            key={script.key}
+            id={script.key}
+            src={script.src}
+            strategy="afterInteractive"
+          />
+        ) : (
+          <Script key={script.key} id={script.key} strategy="afterInteractive">
+            {script.inline}
+          </Script>
+        ),
+      )}
+    </Fragment>
   );
 }
 

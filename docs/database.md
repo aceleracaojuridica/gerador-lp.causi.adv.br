@@ -159,7 +159,7 @@ Landing pages do CRM/gerador — schema JSON completo (`lib/schema.ts` → `LpSc
 | `id` | `uuid` | PK |
 | `causi_user_id` | `text` | Dono (`session.user.id` do Causi Auth) |
 | `profile_id` | `uuid` | FK opcional → `profiles.id` quando o usuário tem site Lovable |
-| `slug` | `text` | Identificador **global único** (`UNIQUE (slug)`) — vira subdomínio `{slug}.causi.adv.br` |
+| `slug` | `text` | Identificador único por conta (`UNIQUE (account_id, slug)`) |
 | `name` | `text` | Nome exibido na galeria |
 | `tema` | `text` | Foco/área (ex.: direito previdenciário) |
 | `schema` | `jsonb` | Conteúdo e layout da LP |
@@ -167,17 +167,36 @@ Landing pages do CRM/gerador — schema JSON completo (`lib/schema.ts` → `LpSc
 
 > **Identificador de escopo:** CRUD em `lib/lpStore.ts` filtra por `causi_user_id`. O vínculo com o Lovable é opcional: `profile_id` só é preenchido quando `causi_user_id` é UUID e existe linha correspondente em `profiles`.
 
-### `public.user_settings`
+### `public.lp_accounts`
 
-Configuração global por usuário (vale para todas as LPs dele).
+Espelho de conta do Causi no Projeto B. Esta tabela é a fonte canônica de
+`office_subdomain` por `account_id`.
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| `causi_user_id` | `text` | UK — mesmo valor de `session.user.id` (sem tabela `users`) |
+| `id` | `bigint` | PK, mesmo `account_id` da sessão/RPC |
+| `name` | `text` | Nome atual da conta no Causi |
+| `office_subdomain` | `text \| null` | Subdomínio canônico (único global) |
+| `synced_at` | `timestamptz` | Última sincronização de nome da conta |
+| `updated_at` | `timestamptz` | Última alteração de subdomínio |
+
+Regras:
+- primeira visita sem `office_subdomain`: slugifica `account.name`
+- visitas seguintes: usa sempre o valor persistido (override)
+- troca manual em configurações: owner only (`access_level >= 100`)
+
+### `public.lp_account_settings`
+
+Configuração global por conta (vale para todas as LPs da conta).
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `account_id` | `bigint` | PK/FK lógica da conta no Causi |
 | `heading_font` | `text` | Fonte de títulos |
 | `body_font` | `text` | Fonte de corpo |
-| `tracking_tags` | `jsonb` | Scripts GTM/Pixel: `{ head, body, footer }` |
-| `custom_domain` | `text` | Domínio personalizado (publicação futura) |
+| `tracking_providers` | `jsonb` | IDs de GA4, GTM, Meta Pixel e Google Ads |
+| `tracking_scripts` | `jsonb` | Scripts customizados `{ head, body, footer }` |
+| `captcha_config` | `jsonb` | Provider/site key/widgetTheme do captcha |
 | `updated_at` | `timestamptz` | Última atualização |
 
 ### `public.leads` (Lovable + dashboard do gerador)
@@ -211,11 +230,12 @@ CREATE INDEX idx_leads_subdomain_created ON public.leads (subdomain, created_at 
 
 | Regra | Implementação |
 |-------|---------------|
-| Um usuário pode ter N landing pages | Sem limite; cada LP com `slug` global único |
+| Uma conta pode ter N landing pages | Sem limite; cada LP com `slug` único por conta |
 | Slug não se repete | `UNIQUE (slug)` + alocação em `lib/slug.ts` na geração |
+| Subdomínio de escritório não se repete | `UNIQUE (lp_accounts.office_subdomain)` |
 | Leads pertencem ao escritório | Dashboard filtra `leads` por `profiles.subdomain` |
 | Plano de acesso | Validado no Projeto A (`plan_id = 9`), nunca no Projeto B |
-| Dados de LP isolados por usuário | `lpStore` filtra por `causi_user_id` em `landing_pages` |
+| Dados de LP isolados por conta | `lpStore` filtra por `account_id` em `landing_pages` |
 | Service role no Projeto B | Bypassa RLS; escopo manual no código da aplicação |
 
 ---
@@ -233,7 +253,8 @@ CREATE INDEX idx_leads_subdomain_created ON public.leads (subdomain, created_at 
 ## Referências no código
 
 - `lib/lpStore.ts` — CRUD de `landing_pages`
-- `lib/config.ts` — leitura/escrita de `user_settings`
+- `lib/landing-pages/account-store.ts` — espelho de conta e subdomínio canônico
+- `lib/config.ts` — leitura/escrita de `lp_account_settings`
 - `app/dashboard/page.tsx` — leitura de `public.leads` por `subdomain`
 - `lib/session/get-session.ts` — RPC do Projeto A
 - `supabase/causi.sql` — schema de referência Causi
@@ -251,6 +272,7 @@ O Projeto B é compartilhado com o Lovable. Duas tabelas pertencem ao fluxo do L
 |--------|------|-----------|
 | `public.profiles` | Lovable | Registro de subdomínios (`id`, `subdomain`) — gerador não grava em `pages` |
 | `public.leads` | Lovable + Gerador | Leads por `subdomain` |
-| `public.landing_pages` | Gerador | LPs com `schema` jsonb; `profile_id` opcional |
+| `public.landing_pages` | Gerador | LPs com `schema` jsonb; `office_subdomain` denormalizado para rota pública |
+| `public.lp_accounts` | Gerador | Conta canônica (`name`, `office_subdomain`) sincronizada com Causi |
 
 Ver [integrations.md](integrations.md) para a estratégia de convivência e reuso.

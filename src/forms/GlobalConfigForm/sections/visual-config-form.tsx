@@ -1,7 +1,13 @@
 "use client";
 
 import { Add } from "@material-symbols-svg/react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray } from "react-hook-form";
+import { toast } from "sonner";
+import {
+  checkSubdomainAvailabilityAction,
+  updateOfficeSubdomainAction,
+} from "@/app/actions/subdomain";
 import { AutoTextarea } from "@/components/auto-textarea";
 import { EstadoCidade } from "@/components/Builder/create/estado-cidade";
 import { SocialsInput } from "@/components/Builder/create/socials-input";
@@ -18,16 +24,35 @@ import { Input } from "@/components/ui/input";
 import { InputMask } from "@/components/ui/input-mask";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import { maskPhone } from "@/lib/landing-pages/phone";
-import type { GlobalConfigFormProps } from "../global-config-form.types";
+import { normalizeOfficeSubdomainInput } from "@/lib/landing-pages/subdomain";
+import type { GlobalConfig } from "@/lib/landing-pages/global-config";
 import { ConfigFormFooter } from "../shared/config-form-footer";
 import { FieldRow } from "../shared/field-row";
 import { FontSelect } from "../shared/font-select";
 import { useGlobalConfigForm } from "../shared/use-global-config-form";
 
-export function VisualConfigForm({ initialData }: GlobalConfigFormProps) {
+type VisualConfigFormProps = {
+  initialData: GlobalConfig;
+  initialOfficeSubdomain: string;
+  accountName: string;
+  canEditSubdomain: boolean;
+};
+
+export function VisualConfigForm({
+  initialData,
+  initialOfficeSubdomain,
+  accountName,
+  canEditSubdomain,
+}: VisualConfigFormProps) {
   const { form, defaultValues, onSubmit } = useGlobalConfigForm({
     initialData,
   });
+  const [savedSubdomain, setSavedSubdomain] = useState(initialOfficeSubdomain);
+  const [draftSubdomain, setDraftSubdomain] = useState(initialOfficeSubdomain);
+  const [isSavingSubdomain, setIsSavingSubdomain] = useState(false);
+  const [availability, setAvailability] = useState<
+    "idle" | "checking" | "available" | "invalid" | "taken" | "reserved"
+  >("idle");
 
   const {
     fields: socials,
@@ -56,6 +81,70 @@ export function VisualConfigForm({ initialData }: GlobalConfigFormProps) {
 
   function addSocial() {
     appendSocial({ network: "instagram", url: "" });
+  }
+
+  const suggestedSubdomain = useMemo(
+    () => normalizeOfficeSubdomainInput(accountName),
+    [accountName],
+  );
+  const isSubdomainDirty = draftSubdomain !== savedSubdomain;
+  const canSaveSubdomain =
+    canEditSubdomain &&
+    isSubdomainDirty &&
+    availability !== "checking" &&
+    availability !== "invalid" &&
+    availability !== "taken" &&
+    availability !== "reserved";
+
+  useEffect(() => {
+    if (!canEditSubdomain) return;
+    if (!isSubdomainDirty) {
+      setAvailability("idle");
+      return;
+    }
+
+    let cancelled = false;
+    setAvailability("checking");
+
+    const timer = setTimeout(async () => {
+      const result = await checkSubdomainAvailabilityAction(draftSubdomain);
+      if (cancelled) return;
+      if (result.available) {
+        setAvailability("available");
+        return;
+      }
+      if (result.reason === "taken") {
+        setAvailability("taken");
+        return;
+      }
+      if (result.reason === "reserved") {
+        setAvailability("reserved");
+        return;
+      }
+      setAvailability("invalid");
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [canEditSubdomain, draftSubdomain, isSubdomainDirty]);
+
+  async function onSaveSubdomain() {
+    if (!canSaveSubdomain) return;
+    setIsSavingSubdomain(true);
+    const result = await updateOfficeSubdomainAction(draftSubdomain);
+    setIsSavingSubdomain(false);
+
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+
+    setSavedSubdomain(result.officeSubdomain);
+    setDraftSubdomain(result.officeSubdomain);
+    setAvailability("idle");
+    toast.success("Subdominio atualizado com sucesso.");
   }
 
   return (
@@ -106,6 +195,79 @@ export function VisualConfigForm({ initialData }: GlobalConfigFormProps) {
                 </FieldRow>
               )}
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Subdominio da conta</CardTitle>
+            <CardDescription>
+              O subdominio define o host publico das landing pages:
+              {" "}
+              <span className="font-mono">{`{subdominio}.causi.adv.br`}</span>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            <FieldRow
+              label="Subdominio"
+              description="Alterar este valor muda o host publico de todas as landing pages publicadas."
+            >
+              <div className="flex flex-col gap-2">
+                <Input
+                  value={draftSubdomain}
+                  onChange={(event) => setDraftSubdomain(event.target.value)}
+                  disabled={!canEditSubdomain || isSavingSubdomain}
+                  placeholder={suggestedSubdomain || "meu-escritorio"}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sugestao do nome no Causi: {suggestedSubdomain || "-"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  URL publica de exemplo:{" "}
+                  <span className="font-mono">{`https://${draftSubdomain || "subdominio"}.causi.adv.br/previdenciario`}</span>
+                </p>
+                {!canEditSubdomain && (
+                  <p className="text-xs text-muted-foreground">
+                    Apenas o owner da conta pode alterar o subdominio.
+                  </p>
+                )}
+                {availability === "checking" && (
+                  <p className="text-xs text-muted-foreground">
+                    Verificando disponibilidade...
+                  </p>
+                )}
+                {availability === "available" && (
+                  <p className="text-xs text-emerald-600">
+                    Subdominio disponivel.
+                  </p>
+                )}
+                {availability === "invalid" && (
+                  <p className="text-xs text-destructive">
+                    Formato invalido. Use kebab-case, 3-63 caracteres.
+                  </p>
+                )}
+                {availability === "taken" && (
+                  <p className="text-xs text-destructive">
+                    Este subdominio ja esta em uso por outro escritorio.
+                  </p>
+                )}
+                {availability === "reserved" && (
+                  <p className="text-xs text-destructive">
+                    Este subdominio esta reservado pelo nome de outro escritorio no Causi.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  onClick={onSaveSubdomain}
+                  disabled={!canSaveSubdomain || isSavingSubdomain}
+                >
+                  {isSavingSubdomain ? "Salvando..." : "Salvar subdominio"}
+                </Button>
+              </div>
+            </FieldRow>
           </CardContent>
         </Card>
 
@@ -231,7 +393,7 @@ export function VisualConfigForm({ initialData }: GlobalConfigFormProps) {
             <div className="space-y-4">
               <SocialsInput
                 socials={socials.map((s) => ({
-                  network: s.network as any,
+                  network: s.network,
                   url: s.url,
                 }))}
                 onChange={setSocialUrl}

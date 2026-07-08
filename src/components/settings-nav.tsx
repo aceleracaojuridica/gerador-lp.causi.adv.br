@@ -22,7 +22,7 @@ const navItems: NavItem[] = [
   {
     href: "/configuracoes",
     label: "Visual",
-    description: "Fontes e dominio padrao das landing pages",
+    description: "Fontes e subdominio padrao das landing pages",
     icon: Palette,
   },
   {

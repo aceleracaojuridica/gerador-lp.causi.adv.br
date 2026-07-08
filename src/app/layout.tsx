@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import Script from "next/script";
 import {
   Cinzel,
   Cormorant_Garamond,
@@ -11,10 +13,10 @@ import {
   Raleway,
   Roboto,
 } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { ThemeWrapper } from "@/components/theme-wrapper";
 import { Toaster } from "@/components/ui/sonner";
+import { officeSubdomainFromHost } from "@/lib/landing-pages/public-routing";
 import { cn } from "@/lib/utils";
 import { Provider } from "@/provider";
 
@@ -100,11 +102,15 @@ export const metadata: Metadata = {
   description: "O Motor de Honorários da Advocacia Moderna",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const host = (await headers()).get("host") ?? "";
+  const showReactGrab =
+    process.env.NODE_ENV === "development" && !officeSubdomainFromHost(host);
+
   return (
     <html
       lang="pt-BR"
@@ -112,13 +118,13 @@ export default function RootLayout({
       className={cn("antialiased", "font-sans", inter.className, fontVars)}
     >
       <head>
-        {process.env.NODE_ENV === "development" && (
+        {showReactGrab ? (
           <Script
             src="//unpkg.com/react-grab/dist/index.global.js"
             crossOrigin="anonymous"
             strategy="beforeInteractive"
           />
-        )}
+        ) : null}
       </head>
       <body>
         <ThemeWrapper>

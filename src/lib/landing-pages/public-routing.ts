@@ -1,5 +1,5 @@
 /** Segmentos reservados do app — não são slugs de LP pública. */
-const RESERVED_SEGMENTS = new Set([
+export const RESERVED_SEGMENTS = new Set([
   "login",
   "cadastrar",
   "confirmar",
@@ -33,6 +33,10 @@ const RESERVED_SEGMENTS = new Set([
   "usuarios",
   "templates",
 ]);
+
+export function isReservedSegment(value: string): boolean {
+  return RESERVED_SEGMENTS.has(value);
+}
 
 function hostWithoutPort(host: string): string {
   const lastColon = host.lastIndexOf(":");

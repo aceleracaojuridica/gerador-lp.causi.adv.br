@@ -1,12 +1,18 @@
 import { VisualConfigForm } from "@/forms/GlobalConfigForm";
+import {
+  ensureLpAccount,
+  getLpAccount,
+} from "@/lib/landing-pages/account-store";
 import { getConfig } from "@/lib/landing-pages/config";
 import { getSession, requireSession } from "@/lib/session";
 
-/** Pagina de configuracoes visuais (fontes e dominio) das landing pages. */
+/** Pagina de configuracoes visuais (fontes e subdominio) das landing pages. */
 export default async function ConfiguracoesPage() {
   const session = await getSession();
   requireSession(session);
 
+  await ensureLpAccount(session);
+  const account = await getLpAccount(session);
   const initialData = await getConfig();
 
   return (
@@ -25,7 +31,12 @@ export default async function ConfiguracoesPage() {
 
       <div className="flex-1 overflow-y-auto w-full">
         <div className="mx-auto w-full max-w-4xl px-6 pt-6 md:px-0 md:pt-8">
-          <VisualConfigForm initialData={initialData} />
+          <VisualConfigForm
+            initialData={initialData}
+            initialOfficeSubdomain={account?.office_subdomain ?? ""}
+            accountName={session.account.name}
+            canEditSubdomain={session.role.accessLevel >= 100}
+          />
         </div>
       </div>
     </div>

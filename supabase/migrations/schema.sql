@@ -35,6 +35,15 @@ CREATE TABLE public.landing_pages (
   CONSTRAINT landing_pages_pkey PRIMARY KEY (id),
   CONSTRAINT landing_pages_profile_fk FOREIGN KEY (profile_id) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.lp_accounts (
+  id bigint NOT NULL,
+  name text NOT NULL DEFAULT ''::text,
+  office_subdomain text UNIQUE,
+  synced_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT lp_accounts_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.lp_account_images (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   account_id bigint NOT NULL,

@@ -22,6 +22,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { ensureLpAccount } from "@/lib/landing-pages/account-store";
 import { resolveMediaPublicUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -206,8 +207,14 @@ const loadSession = cache(async (): Promise<SessionLoadResult> => {
       .maybeSingle();
 
     if (!error && data) {
+      const mapped = mapRpcToSession(data as unknown as CurrentUserDetailsRow);
+      try {
+        await ensureLpAccount(mapped);
+      } catch {
+        // Falha no espelho nao deve bloquear autenticacao.
+      }
       return {
-        session: mapRpcToSession(data as unknown as CurrentUserDetailsRow),
+        session: mapped,
         staleAccountCookie: false,
       };
     }
@@ -223,8 +230,15 @@ const loadSession = cache(async (): Promise<SessionLoadResult> => {
     return { session: fallback, staleAccountCookie };
   }
 
+  const mapped = mapRpcToSession(data as unknown as CurrentUserDetailsRow);
+  try {
+    await ensureLpAccount(mapped);
+  } catch {
+    // Falha no espelho nao deve bloquear autenticacao.
+  }
+
   return {
-    session: mapRpcToSession(data as unknown as CurrentUserDetailsRow),
+    session: mapped,
     staleAccountCookie,
   };
 });
