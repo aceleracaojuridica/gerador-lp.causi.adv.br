@@ -8,6 +8,7 @@ import {
   deleteOrphanedImages,
   type GalleryImageItem,
   listGalleryImages,
+  listSystemImagesForGallery,
   uploadGalleryImage,
 } from "@/lib/landing-pages/gallery-store";
 import { requireLpSession } from "@/lib/session";
@@ -29,14 +30,15 @@ async function enrichWithUploaderNames(
   items: GalleryImageItem[],
 ): Promise<GalleryImageDto[]> {
   const userIds = [...new Set(items.map((i) => i.uploadedByUserId))];
+  const accountUserIds = userIds.filter((id) => id !== "system");
   const nameById = new Map<string, string>();
 
-  if (userIds.length > 0) {
+  if (accountUserIds.length > 0) {
     const causi = await createClient();
     const { data } = await causi
       .from("users")
       .select("id,name")
-      .in("id", userIds);
+      .in("id", accountUserIds);
     for (const row of data ?? []) {
       nameById.set(row.id as string, (row.name as string) || "Usuário");
     }
@@ -44,7 +46,10 @@ async function enrichWithUploaderNames(
 
   return items.map((item) => ({
     ...item,
-    uploadedByName: nameById.get(item.uploadedByUserId) ?? "Usuário",
+    uploadedByName:
+      item.source === "system"
+        ? "Sistema Causi"
+        : (nameById.get(item.uploadedByUserId) ?? "Usuário"),
   }));
 }
 
@@ -53,7 +58,11 @@ export async function listGalleryImagesAction(): Promise<
 > {
   try {
     const session = await requireLpSession();
-    const images = await listGalleryImages(session);
+    const [accountImages, systemImages] = await Promise.all([
+      listGalleryImages(session),
+      listSystemImagesForGallery(session),
+    ]);
+    const images = [...systemImages, ...accountImages];
     const enriched = await enrichWithUploaderNames(images);
     return { ok: true, images: enriched };
   } catch (err) {

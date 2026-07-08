@@ -197,8 +197,14 @@ Detalhes do `POST /api/gerar-lp`:
 
 - usa `layout` recebido ou `DEFAULT_LAYOUT`
 - se houver `videoId`, força `hero = causi_lp_section_hero_video_embedded`
+- se `images` não vier no payload, resolve imagens com prioridade:
+  1. galeria da conta (`lp_account_images`)
+  2. catálogo global (`lp_system_images`) com randomização por slot
+  3. banco curado local (`image-bank`) como fallback de segurança
 - monta o schema com `buildSchema()`
 - normaliza SEO com `normalizeSeo()`
+
+No fluxo de criação, o app não executa chamadas da API Unsplash.
 
 ## Editor
 

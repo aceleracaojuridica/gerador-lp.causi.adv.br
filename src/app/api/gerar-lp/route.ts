@@ -22,7 +22,10 @@ import {
   allocateUniqueLpSlug,
   slugFromOfficeName,
 } from "@/lib/landing-pages/slug";
-import { buscarImagensUnsplash } from "@/lib/landing-pages/unsplash";
+import {
+  listSystemGalleryImages,
+  pickDefaultSystemImages,
+} from "@/lib/landing-pages/system-default-images";
 import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
@@ -33,11 +36,11 @@ import {
 
 /*
   Gera a LP COMPLETA a partir do cadastro do front (self-service): escreve a
-  copy (OpenAI), busca as imagens de cenário (Unsplash), monta o LpSchema e
+  copy (OpenAI), resolve as imagens de cenário, monta o LpSchema e
   salva no banco. Devolve o slug para o front abrir a LP.
 
   Aceita copy e images pré-gerados (vindos de /api/gerar-copy) para evitar
-  chamadas duplas ao OpenAI/Unsplash quando o wizard já fez o preview.
+  chamadas duplas ao OpenAI quando o wizard já fez o preview.
   Aceita layout explícito (variantes iniciais copiadas de um preset no wizard).
 */
 export const runtime = "nodejs";
@@ -116,7 +119,6 @@ export async function POST(request: Request) {
 
   // 1. Copy: usa pré-gerada (do /api/gerar-copy) ou chama a IA agora
   let copy: FocoCopy;
-  let imageQueries: Record<string, string> = {};
   if (p.copy) {
     copy = p.copy;
   } else {
@@ -129,7 +131,6 @@ export async function POST(request: Request) {
         diferenciais: p.diferenciais?.filter(Boolean),
       });
       copy = result.copy;
-      imageQueries = result.imageQueries;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao gerar a copy.";
       return Response.json({ error: msg }, { status: 502 });
@@ -144,7 +145,11 @@ export async function POST(request: Request) {
     const ctx = sessionToLpContext(user);
     const db = createLpUserClient(user);
 
-    const live = await buscarImagensUnsplash(imageQueries);
+    const systemCatalog = await listSystemGalleryImages(user);
+    const systemDefaults = pickDefaultSystemImages(
+      systemCatalog,
+      `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+    );
     const bank = imagensDoTema(tema);
 
     // Buscar imagens da galeria da conta
@@ -155,22 +160,22 @@ export async function POST(request: Request) {
 
     const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
 
-    const getSlotImage = (slot: string, liveUrl: string, bankUrl: string) => {
+    const getSlotImage = (slot: string, systemUrl: string, bankUrl: string) => {
       // 1. Qualquer imagem da galeria (com índice para distribuir)
       if (galleryPaths.length > 0) {
         const slotIndex = ["hero", "dor", "sobre", "solucao"].indexOf(slot);
         const path = galleryPaths[slotIndex % galleryPaths.length];
         return getPublicMediaUrl(path);
       }
-      // 2. Unsplash / Banco
-      return liveUrl || bankUrl;
+      // 2. Catálogo global / Banco curado
+      return systemUrl || bankUrl;
     };
 
     images = {
-      hero: getSlotImage("hero", live.hero, bank.hero),
-      dor: getSlotImage("dor", live.dor, bank.dor),
-      sobre: getSlotImage("sobre", live.sobre, bank.sobre),
-      solucao: getSlotImage("solucao", live.solucao, bank.solucao),
+      hero: getSlotImage("hero", systemDefaults.hero, bank.hero),
+      dor: getSlotImage("dor", systemDefaults.dor, bank.dor),
+      sobre: getSlotImage("sobre", systemDefaults.sobre, bank.sobre),
+      solucao: getSlotImage("solucao", systemDefaults.solucao, bank.solucao),
     };
   }
 

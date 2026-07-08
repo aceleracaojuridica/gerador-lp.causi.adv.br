@@ -11,6 +11,7 @@ import {
   getPublicMediaUrl,
   isGeradorStorageUrl,
 } from "./media-storage";
+import { listSystemGalleryImages } from "./system-default-images";
 
 export type GalleryImageUsage = {
   landingPageId: string;
@@ -30,6 +31,9 @@ export type GalleryImageItem = {
   height: number | null;
   createdAt: string;
   uploadedByUserId: string;
+  source: "account" | "system";
+  readOnly: boolean;
+  canDelete: boolean;
   usages: GalleryImageUsage[];
 };
 
@@ -103,9 +107,34 @@ export async function listGalleryImages(
       height: (row.height as number | null) ?? null,
       createdAt: row.created_at as string,
       uploadedByUserId: row.uploaded_by_user_id as string,
+      source: "account",
+      readOnly: false,
+      canDelete: true,
       usages,
     };
   });
+}
+
+/** Lista imagens globais do sistema formatadas para a galeria. */
+export async function listSystemImagesForGallery(
+  session: Session,
+): Promise<GalleryImageItem[]> {
+  const items = await listSystemGalleryImages(session);
+  return items.map((item) => ({
+    id: item.id,
+    storagePath: item.storagePath,
+    url: item.url,
+    originalFilename: item.label,
+    sizeBytes: 0,
+    width: null,
+    height: null,
+    createdAt: item.createdAt,
+    uploadedByUserId: "system",
+    source: "system",
+    readOnly: true,
+    canDelete: false,
+    usages: [],
+  }));
 }
 
 async function optimizeImage(buffer: Buffer): Promise<{
