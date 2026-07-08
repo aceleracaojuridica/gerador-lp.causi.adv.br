@@ -24,7 +24,7 @@ import {
 } from "@/lib/landing-pages/slug";
 import {
   listSystemGalleryImages,
-  pickDefaultSystemImages,
+  pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
 import type { Session } from "@/lib/session";
@@ -146,10 +146,12 @@ export async function POST(request: Request) {
     const db = createLpUserClient(user);
 
     const systemCatalog = await listSystemGalleryImages(user);
-    const systemDefaults = pickDefaultSystemImages(
-      systemCatalog,
-      `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
-    );
+    const systemDefaults = await pickSystemImagesWithAiRanking({
+      apiKey,
+      theme: tema,
+      catalog: systemCatalog,
+      seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+    });
     const bank = imagensDoTema(tema);
 
     // Buscar imagens da galeria da conta

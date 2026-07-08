@@ -199,7 +199,10 @@ Detalhes do `POST /api/gerar-lp`:
 - se houver `videoId`, força `hero = causi_lp_section_hero_video_embedded`
 - se `images` não vier no payload, resolve imagens com prioridade:
   1. galeria da conta (`lp_account_images`)
-  2. catálogo global (`lp_system_images`) com randomização por slot
+  2. catálogo global (`lp_system_images`) com ranking semântico por IA
+     - a IA recebe o tema da LP e os candidatos do catálogo por seção (`hero`, `dor`, `sobre`, `solucao`)
+     - a resposta é validada por ID e seção antes de ser aplicada
+     - se a IA falhar ou responder inválido, entra fallback determinístico por `section_key` + `semantic_tags` + seed
   3. banco curado local (`image-bank`) como fallback de segurança
 - monta o schema com `buildSchema()`
 - normaliza SEO com `normalizeSeo()`
