@@ -15,12 +15,20 @@ export function ThemeWrapper({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
+  // next-themes injeta <script> no client; React 19 emite warning falso-positivo.
+  // No SSR o script roda normalmente; no client usamos type inerte para silenciar.
+  const scriptProps =
+    typeof window === "undefined"
+      ? undefined
+      : ({ type: "application/json" } as const);
+
   return (
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      scriptProps={scriptProps}
       {...props}
     >
       {children}

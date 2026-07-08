@@ -37,6 +37,9 @@ const MOCK_OFFICE: Office = {
       role: "Sócio-Diretor",
     },
   ],
+  socials: [],
+  sectionImages: { hero: "", dor: "", sobre: "", solucao: "" },
+  metrics: [],
   cardRadius: "rounded",
   buttons: {
     radius: "rounded",
@@ -69,14 +72,14 @@ export default function TemplatePreviewPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       {/* Floating preview banner */}
-      <div className="bg-slate-900 border-b border-slate-800 text-slate-100 py-3 px-4 sticky top-0 z-50 shadow-md">
+      <div className="sticky top-0 z-50 border-b border-slate-700/80 bg-slate-900/85 px-4 py-3 text-slate-100 shadow-lg backdrop-blur">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link href="/templates">
               <Button
-                variant="ghost"
+                variant="outline-light"
                 size="sm"
-                className="text-slate-300 hover:text-white"
+                className="text-slate-200"
               >
                 <ArrowBack className="mr-2 w-5 h-5 fill-current" />
                 Voltar à Galeria
@@ -91,7 +94,7 @@ export default function TemplatePreviewPage({ params }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 bg-slate-800 border border-slate-700 px-2 py-1 rounded">
+            <span className="rounded-full border border-slate-600/80 bg-slate-800/70 px-3 py-1 text-xs text-slate-300">
               Modo de Visualização
             </span>
           </div>
