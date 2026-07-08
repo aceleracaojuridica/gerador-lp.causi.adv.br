@@ -50,6 +50,7 @@ Catálogo global de imagens padrão recomendado pela Causi.
 | `public_url` | URL pública da imagem |
 | `section_key` | Slot de uso (`hero`, `dor`, `sobre`, `solucao`) |
 | `label` | Nome amigável exibido na UI |
+| `semantic_tags` | Lista JSON de tags semânticas para ranking por tema |
 | `sort_order` | Ordem de exibição |
 | `is_active` | Controle de disponibilidade no app |
 | `created_at` | Data de cadastro |
@@ -94,6 +95,45 @@ Helper `isGalleryStorageUrl(url)` detecta URLs que contêm `/gallery/` no bucket
 ---
 
 ## Fluxos
+
+### Seleção semântica de imagens do sistema
+
+Nos fluxos de geração (`/api/gerar-copy` e `/api/gerar-lp`), quando o payload não envia imagens explícitas, o catálogo `lp_system_images` é usado com duas etapas:
+
+1. **Ranking por IA (primário):**
+   - entrada: tema da LP + candidatos por seção (`id`, `section_key`, `label`, `semantic_tags`)
+   - saída: lista ordenada de IDs por seção
+   - validação: apenas IDs existentes e pertencentes à seção correta são aceitos
+
+2. **Fallback determinístico (resiliência):**
+   - ativado em timeout/erro/resposta inválida da IA
+   - score local por interseção de tema com `semantic_tags` e `label`
+   - desempate estável por seed, mantendo reprodutibilidade entre chamadas próximas
+
+#### Padrão de `semantic_tags`
+
+`semantic_tags` não deve ser texto livre irrestrito. O campo aceita qualquer string, mas a qualidade do ranking depende de vocabulário consistente.
+
+Regras recomendadas:
+
+- usar termos curtos e objetivos (1 a 3 palavras)
+- manter sempre minúsculo e sem variações desnecessárias para o mesmo conceito
+- descrever cena/contexto visual (ambiente, ação, emoção, objeto), não opinião subjetiva
+- evitar tags genéricas demais (`foto`, `imagem`) ou pouco informativas (`top`, `bonita`)
+
+Taxonomia sugerida por eixo:
+
+- **ambiente:** `escritorio`, `interno`, `externo`, `fachada`
+- **ação:** `consulta`, `orientacao`, `atendimento`, `assinatura`
+- **emoção/contexto:** `preocupacao`, `acolhimento`, `confianca`
+- **elementos visuais:** `documentos`, `mesa-reuniao`, `cliente`, `advogado`
+- **tempo/luz:** `diurno`, `noturno`
+
+Exemplos de tags boas:
+
+- `["escritorio","fachada","moderno","diurno"]`
+- `["cliente","preocupacao","documentos","atendimento"]`
+- `["consulta","advogado","orientacao","mesa-reuniao"]`
 
 ### Listar imagens (catálogo unificado)
 

@@ -70,7 +70,6 @@ CREATE TABLE public.lp_account_settings (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT lp_account_settings_pkey PRIMARY KEY (account_id)
 );
-
 CREATE TABLE public.lp_account_addresses (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   account_id bigint NOT NULL,
@@ -78,31 +77,41 @@ CREATE TABLE public.lp_account_addresses (
   cidade text NOT NULL,
   uf text NOT NULL,
   maps_url text,
-  is_primary boolean DEFAULT false NOT NULL,
+  is_primary boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT lp_account_addresses_pkey PRIMARY KEY (id)
 );
-
 CREATE TABLE public.lp_account_contacts (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   account_id bigint NOT NULL,
   whatsapp text NOT NULL,
   whatsapp_display text NOT NULL,
   email text NOT NULL,
-  is_primary boolean DEFAULT false NOT NULL,
+  is_primary boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT lp_account_contacts_pkey PRIMARY KEY (id)
 );
-
 CREATE TABLE public.lp_account_socials (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   account_id bigint NOT NULL,
   network text NOT NULL,
   url text NOT NULL,
-  is_primary boolean DEFAULT false NOT NULL,
+  is_primary boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT lp_account_socials_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.lp_system_images (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  storage_path text NOT NULL UNIQUE,
+  public_url text NOT NULL,
+  section_key text NOT NULL,
+  label text NOT NULL DEFAULT 'Imagem do sistema'::text,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  semantic_tags jsonb NOT NULL DEFAULT '[]'::jsonb,
+  CONSTRAINT lp_system_images_pkey PRIMARY KEY (id)
 );

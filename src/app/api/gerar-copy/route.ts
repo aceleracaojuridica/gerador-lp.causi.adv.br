@@ -13,7 +13,7 @@ import {
 import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
 import {
   listSystemGalleryImages,
-  pickDefaultSystemImages,
+  pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
@@ -73,10 +73,12 @@ export async function POST(request: Request) {
 
   // Imagens: galeria da conta + catálogo global do sistema.
   const systemCatalog = await listSystemGalleryImages(session);
-  const systemDefaults = pickDefaultSystemImages(
-    systemCatalog,
-    `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
-  );
+  const systemDefaults = await pickSystemImagesWithAiRanking({
+    apiKey,
+    theme: tema,
+    catalog: systemCatalog,
+    seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+  });
   const bank = imagensDoTema(tema);
 
   // Buscar imagens da galeria da conta
