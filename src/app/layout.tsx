@@ -11,6 +11,7 @@ import {
   Raleway,
   Roboto,
 } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeWrapper } from "@/components/theme-wrapper";
 import { Toaster } from "@/components/ui/sonner";
@@ -110,6 +111,15 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", "font-sans", inter.className, fontVars)}
     >
+      <head>
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <body>
         <ThemeWrapper>
           <Provider>{children}</Provider>

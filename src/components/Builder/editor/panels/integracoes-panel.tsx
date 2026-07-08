@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  GoogleAds,
+  GoogleAnalytics,
+  GoogleTagManager,
+  Meta,
+} from "@thesvg/react";
 import Link from "next/link";
 import { AutoTextarea } from "@/components/auto-textarea";
 import { Button } from "@/components/ui/button";
@@ -56,6 +62,9 @@ export function IntegracoesPanel({
         <BuilderField
           label="GA4 Measurement ID"
           hint={defaultHint(accountConfig.tracking.ga4MeasurementId)}
+          labelAction={
+            <GoogleAnalytics className="size-4 text-muted-foreground" />
+          }
         >
           <Input
             value={tracking?.ga4MeasurementId ?? ""}
@@ -68,6 +77,9 @@ export function IntegracoesPanel({
         <BuilderField
           label="Google Tag Manager (container ID)"
           hint={defaultHint(accountConfig.tracking.gtmContainerId)}
+          labelAction={
+            <GoogleTagManager className="size-4 text-muted-foreground" />
+          }
         >
           <Input
             value={tracking?.gtmContainerId ?? ""}
@@ -80,6 +92,7 @@ export function IntegracoesPanel({
         <BuilderField
           label="Meta Pixel ID"
           hint={defaultHint(accountConfig.tracking.metaPixelId)}
+          labelAction={<Meta className="size-4 text-muted-foreground" />}
         >
           <Input
             value={tracking?.metaPixelId ?? ""}
@@ -92,6 +105,7 @@ export function IntegracoesPanel({
         <BuilderField
           label="Google Ads ID"
           hint={defaultHint(accountConfig.tracking.googleAdsId)}
+          labelAction={<GoogleAds className="size-4 text-muted-foreground" />}
         >
           <Input
             value={tracking?.googleAdsId ?? ""}

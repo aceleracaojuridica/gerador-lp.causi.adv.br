@@ -48,9 +48,10 @@ export type LandingPageCreateFormValues = z.infer<
 export function landingPageCreateDefaultValues(
   props?: LandingPageCreateFormProps,
 ): LandingPageCreateFormValues {
-  const primaryContact = props?.savedContacts?.find((c) => c.is_primary);
-  const primaryAddress = props?.savedAddresses?.find((a) => a.is_primary);
-  const primarySocials = props?.savedSocials?.filter((s) => s.is_primary) || [];
+  const primaryContact =
+    props?.savedContacts?.find((c) => c.is_primary) ?? props?.savedContacts?.[0];
+  const allAddresses = props?.savedAddresses ?? [];
+  const allSocials = props?.savedSocials ?? [];
 
   return {
     tema: "",
@@ -60,21 +61,23 @@ export function landingPageCreateDefaultValues(
     whatsappDisplay: primaryContact?.whatsapp_display ?? "",
     email: primaryContact?.email ?? "",
     showAddress: true,
-    addresses: primaryAddress
-      ? [
-          {
-            address: primaryAddress.address,
-            uf: primaryAddress.uf,
-            cidade: primaryAddress.cidade,
-            mapsUrl: primaryAddress.maps_url ?? "",
-            showMaps: !!primaryAddress.maps_url,
-          },
-        ]
+    addresses:
+      allAddresses.length > 0
+        ? allAddresses.map((address) => ({
+            address: address.address,
+            uf: address.uf,
+            cidade: address.cidade,
+            mapsUrl: address.maps_url ?? "",
+            showMaps: !!address.maps_url,
+          }))
       : [{ address: "", uf: "", cidade: "", mapsUrl: "", showMaps: false }],
     showSocials: true,
     socials:
-      primarySocials.length > 0
-        ? primarySocials.map((s) => ({ network: s.network, url: s.url }))
+      allSocials.length > 0
+        ? allSocials.map((social) => ({
+            network: social.network,
+            url: social.url,
+          }))
         : [{ network: "instagram", url: "" }],
     showVideo: false,
     videoId: "",

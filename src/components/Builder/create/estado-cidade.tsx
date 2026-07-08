@@ -40,10 +40,12 @@ const UFS: { sigla: string; nome: string }[] = [
 export function EstadoCidade({
   uf,
   cidade,
+  disabled = false,
   onChange,
 }: {
   uf: string;
   cidade: string;
+  disabled?: boolean;
   onChange: (uf: string, cidade: string) => void;
 }) {
   const [cities, setCities] = useState<string[]>([]);
@@ -84,6 +86,7 @@ export function EstadoCidade({
         aria-label="Estado"
         className={inputCls}
         value={uf}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value, "")}
       >
         <option value="">Selecione o Estado</option>
@@ -97,7 +100,7 @@ export function EstadoCidade({
         aria-label="Cidade"
         className={cityCls}
         value={cidade}
-        disabled={!uf || loading}
+        disabled={disabled || !uf || loading}
         onChange={(e) => onChange(uf, e.target.value)}
       >
         <option value="">

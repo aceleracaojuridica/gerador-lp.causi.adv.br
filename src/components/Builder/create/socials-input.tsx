@@ -19,6 +19,7 @@ export function SocialsInput({
   onRemove,
   hideAddButton = false,
   hideRemove = false,
+  disabledIndexes = [],
 }: {
   socials: Social[];
   onChange: (i: number, url: string) => void;
@@ -28,6 +29,8 @@ export function SocialsInput({
   hideAddButton?: boolean;
   /** Oculta o "X" de remover cada linha. */
   hideRemove?: boolean;
+  /** Índices bloqueados para edição/remoção. */
+  disabledIndexes?: number[];
 }) {
   return (
     <div className="space-y-2">
@@ -45,8 +48,9 @@ export function SocialsInput({
               placeholder="Cole o link (Instagram, TikTok, YouTube...)"
               inputMode="url"
               className="flex-1"
+              disabled={disabledIndexes.includes(i)}
             />
-            {hideRemove ? null : (
+            {hideRemove || disabledIndexes.includes(i) ? null : (
               <Button
                 type="button"
                 variant="ghost"

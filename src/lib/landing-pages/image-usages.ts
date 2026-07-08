@@ -4,6 +4,10 @@ import type { LpDbClient } from "@/lib/supabase/lp-client";
 import { isGeradorStorageUrl } from "./media-storage";
 import type { LpSchema } from "./schema";
 
+function throwDbError(error: { message: string; code?: string }): never {
+  throw Object.assign(new Error(error.message), { code: error.code });
+}
+
 export type ImageSlotUsage = {
   slot: string;
   url: string;
@@ -89,13 +93,14 @@ export async function syncImageUsagesFromSchema(
     }
   }
 
-  await db
+  const { error: deleteError } = await db
     .from("lp_image_usages")
     .delete()
     .eq("landing_page_id", landingPageId);
+  if (deleteError) throwDbError(deleteError);
 
   if (usages.length > 0) {
     const { error } = await db.from("lp_image_usages").insert(usages);
-    if (error) throw error;
+    if (error) throwDbError(error);
   }
 }

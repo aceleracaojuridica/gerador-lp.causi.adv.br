@@ -1,5 +1,6 @@
 "use client";
 
+import { GoogleAds, Meta } from "@thesvg/react";
 import {
   Card,
   CardContent,
@@ -36,7 +37,12 @@ export function PixelsConfigForm({ initialData }: GlobalConfigFormProps) {
               name="tracking.metaPixelId"
               render={({ field }) => (
                 <FieldRow
-                  label="Meta Pixel ID"
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      <Meta className="size-4" />
+                      Meta Pixel ID
+                    </span>
+                  }
                   description="Use apenas numeros do pixel padrao da conta."
                 >
                   <FormControl>
@@ -51,7 +57,12 @@ export function PixelsConfigForm({ initialData }: GlobalConfigFormProps) {
               name="tracking.googleAdsId"
               render={({ field }) => (
                 <FieldRow
-                  label="Google Ads ID"
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      <GoogleAds className="size-4" />
+                      Google Ads ID
+                    </span>
+                  }
                   description="Formato esperado: AW-XXXXXXXXX."
                 >
                   <FormControl>
