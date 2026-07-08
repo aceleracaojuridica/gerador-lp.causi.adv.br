@@ -83,12 +83,10 @@ export function HomePageClient({ lps }: HomePageClientProps) {
                 slug={lp.slug}
                 officeSubdomain={lp.officeSubdomain}
                 name={lp.name}
-                tema={lp.tema}
                 status={lp.status}
                 preview={lp.preview}
                 createdByUserId={lp.createdByUserId}
                 createdByLabel={lp.createdByLabel}
-                isOwnLp={lp.isOwnLp}
               />
             ))}
           </div>

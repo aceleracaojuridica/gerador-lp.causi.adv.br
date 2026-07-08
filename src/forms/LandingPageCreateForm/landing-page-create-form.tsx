@@ -291,7 +291,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = String(reader.result);
-      form.setValue("logoSrc", dataUrl);
+      form.setValue("logoSrc", dataUrl, { shouldDirty: true });
+      form.clearErrors("logoSrc");
+      setErro("");
       const img = new Image();
       img.onload = () => {
         const pal = extractPalette(img);
@@ -471,7 +473,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
     }
     if (step === 2) {
       if (!logoSrc) {
-        setErro("Envie a logo do escritório para continuar.");
+        form.setError("logoSrc", {
+          message: "Envie a logo do escritório para continuar.",
+        });
         return;
       }
       void generateAndSaveLandingPage();
@@ -1026,6 +1030,17 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               className="mt-3 border-t border-gray-100 pt-3"
                             />
                           </div>
+                        ) : null}
+                        {form.formState.errors.logoSrc ? (
+                          <FormField
+                            control={form.control}
+                            name="logoSrc"
+                            render={() => (
+                              <FormItem>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         ) : null}
                       </PlainRow>
                     </div>

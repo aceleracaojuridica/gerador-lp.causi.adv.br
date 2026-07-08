@@ -1,11 +1,16 @@
 "use client";
 
-import { Delete, OpenInNew, Web } from "@material-symbols-svg/react";
+import {
+  Delete,
+  MoreVert,
+  OpenInNew,
+  Web,
+} from "@material-symbols-svg/react";
 import { useRouter } from "next/navigation";
-import type React from "react";
 import { useState } from "react";
 import { deleteLpAction } from "@/app/actions/lps";
 import { useLpAccess } from "@/components/lp-access-provider";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
 import { isAccessDeniedError } from "@/lib/errors";
 import type { LpListPreview } from "@/lib/landing-pages/lp-preview";
@@ -26,37 +38,31 @@ type LpCardProps = {
   slug: string;
   officeSubdomain: string;
   name: string;
-  tema: string;
   status: "draft" | "published";
   preview: LpListPreview;
   createdByUserId: string;
   createdByLabel?: string;
-  isOwnLp?: boolean;
 };
 
 export function LpCard({
   slug,
   officeSubdomain,
   name,
-  tema,
   status,
   preview,
   createdByUserId,
   createdByLabel,
-  isOwnLp,
 }: LpCardProps) {
   const router = useRouter();
   const hasLpAccess = useLpAccess();
-  const { canDelete, canEdit, session } = useLpPermissions(createdByUserId);
+  const { canDelete, canEdit } = useLpPermissions(createdByUserId);
   const [excluindo, setExcluindo] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const statusLabel = status === "published" ? "Publicada" : "Rascunho";
-  const showCreator =
-    createdByLabel && createdByUserId !== session.user.id && !isOwnLp;
+  const responsibleName = createdByLabel || "Usuário";
 
-  function pedirExclusao(event: React.MouseEvent) {
-    event.stopPropagation();
+  function pedirExclusao() {
     if (!hasLpAccess) {
       showAccessDeniedToast();
       return;
@@ -116,7 +122,7 @@ export function LpCard({
               Escolha como deseja excluir esta landing page.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 p-4">
             <button
               type="button"
               disabled={excluindo}
@@ -169,7 +175,7 @@ export function LpCard({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="mb-0.5 truncate text-base font-semibold text-foreground sm:mb-1 sm:text-lg">
-                {name}
+                {preview.title || name}
               </h3>
               <p className="truncate text-xs text-muted-foreground sm:text-sm">
                 {preview.host}
@@ -178,76 +184,84 @@ export function LpCard({
           </div>
 
           <div className="space-y-1.5">
-            {showCreator ? (
-              <div className="flex items-center gap-2">
-                <span className="w-12 shrink-0 text-xs text-muted-foreground sm:w-14 sm:text-sm">
-                  Criador
-                </span>
-                <span className="flex-1 truncate text-xs sm:text-sm">
-                  {createdByLabel}
-                </span>
-              </div>
-            ) : null}
-            <div className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-xs text-muted-foreground sm:w-14 sm:text-sm">
-                Tema
+            <div className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
+              <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                Responsável
               </span>
-              <span
-                className={cn(
-                  "flex-1 truncate text-xs sm:text-sm",
-                  tema ? "font-regular" : "text-muted-foreground/40",
-                )}
-              >
-                {tema || "Não definido"}
+              <span className="flex-1 truncate text-xs sm:text-sm">
+                {responsibleName}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-xs text-muted-foreground sm:w-14 sm:text-sm">
+            <div className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
+              <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
                 Status
               </span>
-              <span
+              <Badge
+                variant={status === "published" ? "secondary" : "muted"}
+                size="default"
                 className={cn(
-                  "inline-flex items-center rounded-[4px] px-1.5 py-0.5 text-xs font-medium sm:px-2 sm:py-1",
+                  "justify-self-start",
                   status === "published"
                     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                    : "bg-muted text-muted-foreground",
+                    : "text-muted-foreground",
                 )}
               >
                 {statusLabel}
-              </span>
+              </Badge>
             </div>
           </div>
         </button>
 
-        <div className="absolute top-3 right-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          {status === "published" ? (
-            <Button asChild variant="ghost" size="icon-sm" className="h-8 w-8">
-              <a
-                href={publicLpUrl(officeSubdomain, slug)}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`Abrir ${preview.host}`}
-                aria-label={`Abrir site publicado em ${preview.host}`}
+        <div className="absolute top-3 right-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="h-8 w-8"
+                aria-label={`Ações da landing page ${name}`}
                 onClick={(event) => event.stopPropagation()}
               >
-                <OpenInNew className="size-5 text-muted-foreground" />
-              </a>
-            </Button>
-          ) : null}
-          {canDelete ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-              aria-label={`Excluir ${name}`}
-              title="Excluir"
-              onClick={pedirExclusao}
-              disabled={excluindo}
+                <MoreVert className="size-5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-44"
+              onClick={(event) => event.stopPropagation()}
             >
-              <Delete className="size-5 text-muted-foreground group-hover:text-destructive" />
-            </Button>
-          ) : null}
+              {status === "published" ? (
+                <DropdownMenuItem asChild>
+                  <a
+                    href={publicLpUrl(officeSubdomain, slug)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <OpenInNew className="size-4" />
+                    Abrir publicada
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
+              {status === "published" && canDelete ? (
+                <DropdownMenuSeparator />
+              ) : null}
+              {canDelete ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    pedirExclusao();
+                  }}
+                  disabled={excluindo}
+                >
+                  <Delete className="size-4" />
+                  Excluir
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </>
