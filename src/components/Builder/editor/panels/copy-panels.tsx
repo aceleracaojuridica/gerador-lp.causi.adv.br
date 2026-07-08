@@ -79,6 +79,7 @@ function PairList({
   onRemove,
   addLabel = "Adicionar",
   minItems = 0,
+  maxItems = Number.POSITIVE_INFINITY,
 }: {
   title: string;
   items: { a: string; b: string }[];
@@ -90,6 +91,7 @@ function PairList({
   onRemove?: (i: number) => void;
   addLabel?: string;
   minItems?: number;
+  maxItems?: number;
 }) {
   const itemKeys = useStableListKeys(
     items,
@@ -150,7 +152,7 @@ function PairList({
           </div>
         ))}
       </div>
-      {onAdd ? (
+      {onAdd && items.length < maxItems ? (
         <button
           type="button"
           onClick={onAdd}
@@ -273,6 +275,19 @@ export function DorCards({ form }: { form: LpEditorForm }) {
           else c.dor.cards[i].text = v;
         })
       }
+      onAdd={() =>
+        form.editCopy((c) => {
+          c.dor.cards.push({ icon: "alert", title: "", text: "" });
+        })
+      }
+      onRemove={(i) =>
+        form.editCopy((c) => {
+          c.dor.cards.splice(i, 1);
+        })
+      }
+      addLabel="Adicionar dor"
+      minItems={2}
+      maxItems={6}
     />
   );
 }

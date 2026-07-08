@@ -14,6 +14,7 @@ import {
   Groups,
   Help,
   Image,
+  KeyboardArrowDown,
   KeyboardArrowLeft,
   KeyboardArrowRight,
   Lightbulb,
@@ -266,6 +267,8 @@ export function Editor({
   );
   const accountConfig = initialAccountConfig ?? DEFAULT_CONFIG;
   const [restoreDefaultsOpen, setRestoreDefaultsOpen] = useState(false);
+  // "Recursos da página" começa recolhido (accordion fechado por padrão).
+  const [resourcesOpen, setResourcesOpen] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const isPublishing = publishState === "saving";
@@ -938,27 +941,60 @@ export function Editor({
     step,
     title,
     sections,
+    collapsible,
+    open,
+    onToggle,
   }: {
     step: string;
     title: string;
     sections: WorkspaceSectionMeta[];
+    collapsible?: boolean;
+    open?: boolean;
+    onToggle?: () => void;
   }) {
-    return (
-      <section className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex min-w-0 items-center gap-2">
+    const expanded = collapsible ? !!open : true;
+    const headerInner = (
+      <>
+        <div className="flex min-w-0 items-center gap-2">
+          {collapsible ? (
+            <KeyboardArrowDown
+              size={16}
+              className={cn(
+                "shrink-0 text-muted-foreground transition-transform",
+                expanded ? "" : "-rotate-90",
+              )}
+            />
+          ) : (
             <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
               {step}
             </span>
-            <p className="truncate text-xs font-semibold text-foreground">
-              {title}
-            </p>
-          </div>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {sections.length}
-          </span>
+          )}
+          <p className="truncate text-xs font-semibold text-foreground">
+            {title}
+          </p>
         </div>
-        <div className="space-y-0.5">
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {sections.length}
+        </span>
+      </>
+    );
+    return (
+      <section className="space-y-1.5">
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded ? "true" : "false"}
+            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-0.5 text-left transition hover:bg-muted/60"
+          >
+            {headerInner}
+          </button>
+        ) : (
+          <div className="flex items-center justify-between gap-2 px-1">
+            {headerInner}
+          </div>
+        )}
+        <div className={cn("space-y-0.5", expanded ? "" : "hidden")}>
           {sections.map((section) => (
             <EditorSectionMenuRow
               key={section.id}
@@ -1023,6 +1059,9 @@ export function Editor({
               step: "1",
               title: "Recursos da página",
               sections: resourceSections,
+              collapsible: true,
+              open: resourcesOpen,
+              onToggle: () => setResourcesOpen((v) => !v),
             })}
 
             {renderNavigationGroup({

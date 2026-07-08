@@ -66,6 +66,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 |---|---|
 | Com imagem | `causi_lp_section_dor_with_image_cards` |
 | Só cards | `causi_lp_section_dor_cards_compact` |
+| Lista | `causi_lp_section_dor_image_list` |
 
 ### Solução
 
@@ -73,7 +74,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 |---|---|
 | Com imagem | `causi_lp_section_solucao_with_image_cards` |
 | Só cards | `causi_lp_section_solucao_cards_compact` |
-| Com destaque | `causi_lp_section_solucao_cards_highlight` |
+| Lista | `causi_lp_section_solucao_image_list` |
 
 ### Sobre
 

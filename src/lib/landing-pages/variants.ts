@@ -100,10 +100,13 @@ export const DOR_VARIANT_WITH_IMAGE_CARDS =
   "causi_lp_section_dor_with_image_cards" as const;
 export const DOR_VARIANT_CARDS_COMPACT =
   "causi_lp_section_dor_cards_compact" as const;
+export const DOR_VARIANT_IMAGE_LIST =
+  "causi_lp_section_dor_image_list" as const;
 
 export const DOR_VARIANTS = [
   DOR_VARIANT_WITH_IMAGE_CARDS,
   DOR_VARIANT_CARDS_COMPACT,
+  DOR_VARIANT_IMAGE_LIST,
 ] as const;
 
 export type DorVariant = (typeof DOR_VARIANTS)[number];
@@ -121,6 +124,11 @@ export const DOR_VARIANT_OPTIONS: readonly VariantOption<DorVariant>[] = [
     intent: "Resume as dores em um bloco mais compacto.",
     legacyIds: ["soCards"],
   },
+  {
+    id: DOR_VARIANT_IMAGE_LIST,
+    label: "Lista",
+    intent: "Dores em lista enxuta (2 colunas, sem ícones) ao lado da imagem.",
+  },
 ] as const;
 
 export const DOR_VARIANT_LABELS = buildVariantLabels(DOR_VARIANT_OPTIONS);
@@ -137,13 +145,13 @@ export const SOLUCAO_VARIANT_WITH_IMAGE_CARDS =
   "causi_lp_section_solucao_with_image_cards" as const;
 export const SOLUCAO_VARIANT_CARDS_COMPACT =
   "causi_lp_section_solucao_cards_compact" as const;
-export const SOLUCAO_VARIANT_CARDS_HIGHLIGHT =
-  "causi_lp_section_solucao_cards_highlight" as const;
+export const SOLUCAO_VARIANT_IMAGE_LIST =
+  "causi_lp_section_solucao_image_list" as const;
 
 export const SOLUCAO_VARIANTS = [
   SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
   SOLUCAO_VARIANT_CARDS_COMPACT,
-  SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
+  SOLUCAO_VARIANT_IMAGE_LIST,
 ] as const;
 
 export type SolucaoVariant = (typeof SOLUCAO_VARIANTS)[number];
@@ -163,10 +171,11 @@ export const SOLUCAO_VARIANT_OPTIONS: readonly VariantOption<SolucaoVariant>[] =
       legacyIds: ["soCards"],
     },
     {
-      id: SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
-      label: "Com destaque",
-      intent: "Cria ritmo alternando cards neutros e destacados.",
-      legacyIds: ["destaque"],
+      id: SOLUCAO_VARIANT_IMAGE_LIST,
+      label: "Lista",
+      intent:
+        "Solução em lista enxuta (2 colunas, sem ícones) ao lado da imagem.",
+      legacyIds: ["destaque", "causi_lp_section_solucao_cards_highlight"],
     },
   ] as const;
 

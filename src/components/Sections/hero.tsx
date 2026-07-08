@@ -442,11 +442,9 @@ function HeroStats({
   tone,
 }: HeroProps) {
   const dark = tone === "dark";
-  // Card com borda dourada é a foto do advogado; sem ela, imagem de cenário.
-  const img = office.lawyers[0]?.photo || office.sectionImages.hero;
-  const imgPos = office.lawyers[0]?.photo
-    ? focalPos(office.lawyers[0].focal)
-    : "center";
+  // Foto recortada do advogado, sobreposta à direita (sem moldura). Sem foto,
+  // o hero fica só com o texto sobre o fundo (cena/cor).
+  const lawyer = office.lawyers[0]?.photo;
   const hasMetrics = office.metrics.length > 0;
 
   // Foto de fundo da seção (cenário/escritório) com overlay — como no Hero
@@ -542,22 +540,22 @@ function HeroStats({
           ) : null}
         </div>
 
-        {/* Card de imagem com borda dourada (oculto no mobile) */}
-        <div className="hidden justify-self-end lg:block">
-          <div className="border-4 border-lp-accent p-2">
-            <div
-              className="h-[30rem] w-72 bg-lp-brand"
-              style={
-                img
-                  ? {
-                      backgroundImage: `url('${img}')`,
-                      backgroundSize: "cover",
-                      backgroundPosition: imgPos,
-                    }
-                  : undefined
-              }
+        {/* Foto recortada sobreposta, ancorada na base — sem moldura (oculta no mobile) */}
+        <div className="relative hidden items-end justify-center self-stretch lg:flex">
+          {lawyer ? (
+            // biome-ignore lint/performance/noImgElement: recorte precisa de object-contain + máscara de fade
+            <img
+              src={lawyer}
+              alt={office.lawyers[0]?.name || office.name}
+              className="relative z-10 h-full max-h-[34rem] w-auto self-end object-contain object-bottom"
+              style={{
+                maskImage:
+                  "linear-gradient(to bottom, #000 88%, transparent 100%)",
+                WebkitMaskImage:
+                  "linear-gradient(to bottom, #000 88%, transparent 100%)",
+              }}
             />
-          </div>
+          ) : null}
         </div>
       </div>
     </section>
