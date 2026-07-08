@@ -1,14 +1,21 @@
 # Galeria de imagens
 
-Repositório centralizado de mídias por conta (`account_id`). As imagens alimentam o editor de landing pages (logo, seções, advogados, SEO) e aparecem na rota `/galeria` para gestão, reutilização e exclusão segura.
+Repositório centralizado de mídias com duas origens:
+
+- **Imagens da conta** (`account_id`) enviadas pelos usuários
+- **Imagens do sistema** globais (`lp_system_images`) somente leitura
+
+As imagens alimentam o editor de landing pages (logo, seções, advogados, SEO) e aparecem na rota `/galeria` para gestão e reutilização.
 
 ## Escopo e premissas
 
 | Premissa | Detalhe |
 |----------|---------|
 | Multi-tenant | Cada escritório vê apenas imagens da conta ativa (`session.account.id`) |
+| Globais do sistema | Visíveis para todas as contas, sem edição/exclusão no app |
 | Bucket | `gerador-lp-assets` no Projeto B (Supabase LP) |
 | Path novo | `{account_id}/gallery/{uuid}.webp` |
+| Path global | `system/defaults/{section}/{slug}.webp` |
 | Paths legados | `{office_subdomain}.causi.adv.br/{lp-slug}/...` — leitura pública; **não** entram na galeria nem geram vínculos |
 | Formato | WebP otimizado (Sharp), máx. 2400×2400 px, qualidade 85 |
 | Acesso à rota | `hasLpAccess()` — plano 9 ativo ou trial (ver [authentication.md](authentication.md)) |
@@ -31,6 +38,21 @@ Metadados de cada arquivo enviado pela galeria ou pelo fluxo de save da LP.
 | `mime_type` | Default `image/webp` |
 | `size_bytes`, `width`, `height` | Metadados após otimização |
 | `created_at` | Data do upload |
+
+### `lp_system_images`
+
+Catálogo global de imagens padrão recomendado pela Causi.
+
+| Coluna | Descrição |
+|--------|-----------|
+| `id` | UUID da imagem |
+| `storage_path` | Caminho no bucket, ex. `system/defaults/hero/hero-01.webp` |
+| `public_url` | URL pública da imagem |
+| `section_key` | Slot de uso (`hero`, `dor`, `sobre`, `solucao`) |
+| `label` | Nome amigável exibido na UI |
+| `sort_order` | Ordem de exibição |
+| `is_active` | Controle de disponibilidade no app |
+| `created_at` | Data de cadastro |
 
 ### `lp_image_usages`
 
@@ -73,19 +95,19 @@ Helper `isGalleryStorageUrl(url)` detecta URLs que contêm `/gallery/` no bucket
 
 ## Fluxos
 
-### Listar imagens
+### Listar imagens (catálogo unificado)
 
 ```mermaid
 sequenceDiagram
   participant UI as GaleriaPageClient
   participant Action as listGalleryImagesAction
   participant Store as gallery-store
-  participant DB as lp_account_images
+  participant DB as lp_account_images + lp_system_images
 
   UI->>Action: mount
-  Action->>Store: listGalleryImages(session)
-  Store->>DB: SELECT + join lp_image_usages
-  DB-->>Store: rows + usos por LP
+  Action->>Store: listGalleryImages + listSystemImagesForGallery
+  Store->>DB: SELECT account + SELECT system
+  DB-->>Store: rows account + rows system
   Action->>Action: enriquece uploadedByName (users Causi)
   Action-->>UI: GalleryImageDto[]
 ```
@@ -95,7 +117,10 @@ sequenceDiagram
 - `src/app/(app)/galeria/page.client.tsx` — grid, upload, exclusão
 - `src/app/actions/gallery.ts` — Server Actions
 
-A listagem ordena por `created_at` descendente e exibe, para cada imagem: thumbnail, nome do arquivo, quem enviou e links para LPs que usam a mídia (`/lp/{slug}`).
+A listagem separa visualmente as origens:
+
+- **Imagens do sistema**: badge `Sistema`, sem ações mutáveis
+- **Imagens da conta**: thumbnail, nome do arquivo, uploader e vínculos de uso
 
 ### Upload
 
@@ -148,10 +173,16 @@ flowchart TD
   E -->|livre| G[DELETE row + Storage remove]
 ```
 
-Proteções em camadas:
+Proteções em camadas para imagens da conta:
 1. **UI** — `useLpPermissions().canDeleteImage(uploaderId, inUse)`
 2. **RLS** — policy `lp_images_delete` + `lp_can_delete_image()`
 3. **Trigger** — `trg_lp_prevent_image_delete` levanta `P0001` com nomes das LPs se ainda houver uso
+
+Para imagens do sistema:
+
+- A UI não exibe ações de exclusão/edição
+- `lp_system_images` não possui policies de mutação para `authenticated`
+- O prefixo `system/defaults/` não entra nas policies de escrita/deleção da aplicação
 
 **Arquivo de erros:** `src/lib/errors.ts` mapeia `LP_IMAGE_IN_USE:` para toast com nomes das páginas.
 
@@ -159,7 +190,7 @@ Proteções em camadas:
 
 ## Integração com o editor
 
-**Arquivo:** `src/components/Builder/image-picker-dialog.tsx`
+**Arquivo:** `src/components/Builder/shared/image-picker-dialog.tsx`
 
 | Componente | Função |
 |------------|--------|
@@ -184,10 +215,12 @@ O campo `seo.ogImage` no painel SEO é texto/URL manual — não usa o picker da
 | Ação | Quem pode |
 |------|-----------|
 | Ver galeria | Membro da conta com plano 9 (`hasLpAccess`) |
+| Ver imagens do sistema | Todos os membros autenticados com acesso LP |
 | Upload | Qualquer membro autenticado da conta |
 | Excluir imagem própria | Autor do upload, se **não** estiver em uso |
 | Excluir imagem de outro | Owner (`accessLevel >= 100`) ou super admin (`>= 999`), se **não** estiver em uso |
 | Excluir imagem em uso | **Ninguém** (UI, RLS e trigger bloqueiam) |
+| Excluir imagem do sistema | **Ninguém no app** (somente admin no Supabase Dashboard) |
 
 `admin` com `accessLevel` 50 **não** é tratado como owner — segue regra de criador/uploader.
 

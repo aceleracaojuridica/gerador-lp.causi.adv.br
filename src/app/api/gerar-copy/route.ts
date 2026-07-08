@@ -1,5 +1,5 @@
 /*
-  Gera a copy da LP (OpenAI + imagens Unsplash) SEM salvar no banco.
+  Gera a copy da LP SEM salvar no banco.
   Retorna { copy, images } para o wizard montar o picker de layout.
   O advogado ainda não escolheu layout/variantes — isso acontece no step seguinte.
 */
@@ -11,7 +11,10 @@ import {
   callOpenAiForCopy,
 } from "@/lib/landing-pages/lp-generate-copy";
 import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
-import { buscarImagensUnsplash } from "@/lib/landing-pages/unsplash";
+import {
+  listSystemGalleryImages,
+  pickDefaultSystemImages,
+} from "@/lib/landing-pages/system-default-images";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
 import {
@@ -57,11 +60,9 @@ export async function POST(request: Request) {
   }
 
   let copy: FocoCopy;
-  let imageQueries: Record<string, string> = {};
   try {
     const result = await callOpenAiForCopy(apiKey, p);
     copy = result.copy;
-    imageQueries = result.imageQueries;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao gerar a copy.";
     return Response.json({ error: msg }, { status: 502 });
@@ -70,8 +71,12 @@ export async function POST(request: Request) {
   const ctx = sessionToLpContext(session);
   const db = createLpUserClient(session);
 
-  // Imagens: Unsplash ao vivo + banco curado como fallback
-  const live = await buscarImagensUnsplash(imageQueries);
+  // Imagens: galeria da conta + catálogo global do sistema.
+  const systemCatalog = await listSystemGalleryImages(session);
+  const systemDefaults = pickDefaultSystemImages(
+    systemCatalog,
+    `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+  );
   const bank = imagensDoTema(tema);
 
   // Buscar imagens da galeria da conta
@@ -84,7 +89,7 @@ export async function POST(request: Request) {
 
   console.log("[gerar-copy] galleryPaths.length:", galleryPaths.length);
   console.log("[gerar-copy] galleryPaths:", galleryPaths);
-  console.log("[gerar-copy] live images:", live);
+  console.log("[gerar-copy] systemCatalog.length:", systemCatalog.length);
   console.log("[gerar-copy] bank images:", bank);
 
   const SLOTS = ["hero", "dor", "sobre", "solucao"] as const;
@@ -96,20 +101,28 @@ export async function POST(request: Request) {
    */
   const getSlotImage = (
     slotIndex: number,
-    liveUrl: string,
+    systemUrl: string,
     bankUrl: string,
   ) => {
     if (slotIndex < galleryPaths.length) {
       return getPublicMediaUrl(galleryPaths[slotIndex]);
     }
-    return liveUrl || bankUrl;
+    return systemUrl || bankUrl;
   };
 
   const images = {
-    hero: getSlotImage(SLOTS.indexOf("hero"), live.hero, bank.hero),
-    dor: getSlotImage(SLOTS.indexOf("dor"), live.dor, bank.dor),
-    sobre: getSlotImage(SLOTS.indexOf("sobre"), live.sobre, bank.sobre),
-    solucao: getSlotImage(SLOTS.indexOf("solucao"), live.solucao, bank.solucao),
+    hero: getSlotImage(SLOTS.indexOf("hero"), systemDefaults.hero, bank.hero),
+    dor: getSlotImage(SLOTS.indexOf("dor"), systemDefaults.dor, bank.dor),
+    sobre: getSlotImage(
+      SLOTS.indexOf("sobre"),
+      systemDefaults.sobre,
+      bank.sobre,
+    ),
+    solucao: getSlotImage(
+      SLOTS.indexOf("solucao"),
+      systemDefaults.solucao,
+      bank.solucao,
+    ),
   };
 
   console.log("[gerar-copy] images resolvidas:", images);

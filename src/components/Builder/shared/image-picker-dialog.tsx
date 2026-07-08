@@ -1,12 +1,14 @@
 "use client";
 
 import { AddPhotoAlternate, Close, Upload } from "@material-symbols-svg/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryImageDto } from "@/app/actions/gallery";
 import {
   listGalleryImagesAction,
   uploadGalleryImageAction,
 } from "@/app/actions/gallery";
+import { GalleryImageFilterBar } from "@/components/gallery/gallery-image-filter-bar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLpPermissions } from "@/hooks/use-lp-permissions";
+import {
+  filterGalleryImages,
+  type GalleryImageFilter,
+} from "@/lib/landing-pages/gallery-filters";
 import { showLpMessageError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +33,20 @@ type ImagePickerDialogProps = {
   title?: string;
 };
 
+function PickerPreview({ url, isSystem }: { url: string; isSystem: boolean }) {
+  return (
+    // biome-ignore lint/performance/noImgElement: miniatura simples de biblioteca interna
+    <img
+      src={url}
+      alt=""
+      className={cn(
+        "shrink-0 rounded object-cover ring-1 ring-border",
+        isSystem ? "size-10 opacity-80" : "size-12",
+      )}
+    />
+  );
+}
+
 export function ImagePickerDialog({
   open,
   onOpenChange,
@@ -33,9 +54,16 @@ export function ImagePickerDialog({
   title = "Escolher imagem",
 }: ImagePickerDialogProps) {
   const [images, setImages] = useState<GalleryImageDto[]>([]);
+  const [filter, setFilter] = useState<GalleryImageFilter>("all");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { session } = useLpPermissions();
+
+  const filteredImages = useMemo(
+    () => filterGalleryImages(images, filter, session.user.id),
+    [images, filter, session.user.id],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +75,10 @@ export function ImagePickerDialog({
   useEffect(() => {
     if (open) void load();
   }, [open, load]);
+
+  useEffect(() => {
+    if (!open) setFilter("all");
+  }, [open]);
 
   async function onFile(file: File) {
     setUploading(true);
@@ -68,50 +100,41 @@ export function ImagePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col overflow-hidden p-0">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Escolha uma imagem da galeria da conta ou envie uma nova.
+            Escolha uma imagem da sua galeria ou do catálogo do sistema.
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="flex shrink-0 flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                Biblioteca de imagens da conta
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Selecione uma imagem já enviada ou adicione um novo arquivo.
-              </p>
-            </div>
-
-            <div className="flex shrink-0">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void onFile(f);
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploading}
-                onClick={() => fileRef.current?.click()}
-                className="w-full sm:w-auto"
-              >
-                <Upload className="size-4" />
-                {uploading ? "Enviando…" : "Enviar nova"}
-              </Button>
-            </div>
+        <DialogBody className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="flex shrink-0 flex-col gap-3 rounded-lg border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onFile(f);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="w-full sm:w-auto"
+            >
+              <Upload className="size-4" />
+              {uploading ? "Enviando…" : "Enviar nova"}
+            </Button>
           </div>
+
+          <GalleryImageFilterBar value={filter} onValueChange={setFilter} />
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {loading ? (
@@ -122,38 +145,67 @@ export function ImagePickerDialog({
               <div className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
                 Nenhuma imagem na galeria. Envie a primeira acima.
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {images.map((img) => (
-                  <button
-                    key={img.id}
-                    type="button"
-                    className="group relative overflow-hidden rounded-lg border border-border bg-card text-left transition hover:ring-2 hover:ring-primary"
-                    onClick={() => {
-                      onSelect(img.url);
-                      onOpenChange(false);
-                    }}
-                  >
-                    {/* biome-ignore lint/a11y/useAltText: decorative thumbnail in picker */}
-                    <img
-                      src={img.url}
-                      alt=""
-                      className="aspect-video w-full object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                      <p className="truncate text-xs font-medium text-white">
-                        {img.originalFilename ?? "Imagem"}
-                      </p>
-                      <p className="truncate text-[10px] text-white/80">
-                        {img.uploadedByName}
-                        {img.usages.length > 0
-                          ? ` · ${img.usages.length} uso(s)`
-                          : ""}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+            ) : filteredImages.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border bg-muted/10 px-4 py-10 text-center text-sm text-muted-foreground">
+                Nenhuma imagem para este filtro.
               </div>
+            ) : (
+              <ul className="divide-y divide-border rounded-lg border border-border">
+                {filteredImages.map((img) => {
+                  const isSystem = img.source === "system";
+
+                  return (
+                    <li key={img.id}>
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent/50",
+                          isSystem && "text-muted-foreground",
+                        )}
+                        onClick={() => {
+                          onSelect(img.url);
+                          onOpenChange(false);
+                        }}
+                      >
+                        <PickerPreview url={img.url} isSystem={isSystem} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={cn(
+                                "truncate font-medium",
+                                isSystem
+                                  ? "text-sm"
+                                  : "text-sm text-foreground",
+                              )}
+                            >
+                              {img.originalFilename ??
+                                (isSystem ? "Imagem do sistema" : "Imagem")}
+                            </p>
+                            <Badge
+                              variant={isSystem ? "outline" : "secondary"}
+                              className="shrink-0 text-[10px]"
+                            >
+                              {isSystem ? "Sistema" : "Conta"}
+                            </Badge>
+                          </div>
+                          {!isSystem ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {img.uploadedByName}
+                              {img.usages.length > 0
+                                ? ` · ${img.usages.length} uso(s)`
+                                : ""}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              Catálogo compartilhado
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
         </DialogBody>
@@ -191,7 +243,7 @@ export function LazyImageSlot({
     >
       {src ? (
         <div className="relative min-w-0 max-w-full">
-          {/* biome-ignore lint/a11y/useAltText: preview */}
+          {/* biome-ignore lint/performance/noImgElement: preview local no builder */}
           <img
             src={src}
             alt=""

@@ -337,7 +337,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   async function generateAndSaveLandingPage() {
     setErro("");
     setGerando(true);
-    setGerandoMsg("Escrevendo a copy sobre o tema e buscando as imagens…");
+    setGerandoMsg("Escrevendo a copy sobre o tema e selecionando as imagens…");
 
     const copyPayload = {
       name: defaultOfficeName.trim(),
@@ -957,7 +957,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                       >
                         {logoSrc ? (
                           <div className="flex items-center gap-4">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {/* biome-ignore lint/performance/noImgElement: preview local da logo no wizard */}
                             <img
                               src={logoSrc}
                               alt="logo"
@@ -1074,7 +1074,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                                   {l.photo ? (
                                     <div className="flex items-center gap-4">
                                       <div className="relative shrink-0">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        {/* biome-ignore lint/performance/noImgElement: preview local da foto no wizard */}
                                         <img
                                           src={l.photo}
                                           alt={`advogado ${i + 1}`}
@@ -1276,9 +1276,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                     </div>
 
                     <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                      As imagens de cenário (fundo do hero, dor, escritório) o
-                      Claude busca na Unsplash conforme o tema. Você só envia
-                      logo e fotos das pessoas.
+                      As imagens de cenário (fundo do hero, dor, escritório e
+                      solução) são selecionadas da biblioteca recomendada da
+                      Causi. Você só envia logo e fotos das pessoas.
                     </p>
                   </>
                 ) : null}

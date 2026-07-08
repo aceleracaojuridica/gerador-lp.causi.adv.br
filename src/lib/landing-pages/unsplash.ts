@@ -12,19 +12,7 @@ import "server-only";
   Sem a chave, devolve strings vazias e a seção fica no bloco da cor da marca.
 */
 
-export type SectionImages = {
-  hero: string;
-  dor: string;
-  sobre: string;
-  solucao: string;
-};
-
-export const EMPTY_SECTION_IMAGES: SectionImages = {
-  hero: "",
-  dor: "",
-  sobre: "",
-  solucao: "",
-};
+import { EMPTY_SECTION_IMAGES, type SectionImages } from "./section-images";
 
 // Consultas-base (inglês) quando a IA não sugere termos.
 const FALLBACK_QUERIES: SectionImages = {

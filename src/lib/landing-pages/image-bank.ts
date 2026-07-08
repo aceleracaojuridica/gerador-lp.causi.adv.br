@@ -6,7 +6,7 @@
 
   Só CENÁRIO (hero/dor/sobre). Fotos de pessoas são upload do usuário.
 */
-import type { SectionImages } from "./unsplash";
+import type { SectionImages } from "./section-images";
 
 const SIZE = "?auto=format&fit=crop&w=1600&q=80";
 const u = (id: string) => `https://images.unsplash.com/photo-${id}${SIZE}`;
