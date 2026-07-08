@@ -22,9 +22,9 @@ import { EstadoCidade } from "@/components/Builder/create/estado-cidade";
 import { maskPhone } from "@/components/Builder/create/fields";
 import { MelhorarTextoButton } from "@/components/Builder/create/melhorar-texto-button";
 import { PalettePicker } from "@/components/Builder/create/palette-picker";
-import { SocialsInput } from "@/components/Builder/create/socials-input";
 import { TemplateCard } from "@/components/Builder/create/template-card";
 import CausiLogo from "@/components/icons/causi-logo";
+import { SocialIcon } from "@/components/icons/social-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,6 +38,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
 import { InputMask } from "@/components/ui/input-mask";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -149,7 +154,6 @@ function PlainRow({
 export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   const {
     defaultOfficeName = "",
-    savedAddresses = [],
     savedContacts = [],
   } = props;
   const router = useRouter();
@@ -196,7 +200,14 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   const [step, setStep] = useState(0);
   const [selectedTemplateId, setSelectedTemplateId] =
     useState(DEFAULT_TEMPLATE_ID);
-  const [semFotosAdvogados, setSemFotosAdvogados] = useState(false);
+  const [showLawyers, setShowLawyers] = useState(false);
+  const hasSavedContacts = savedContacts.length > 0;
+  const primarySavedContact =
+    savedContacts.find((contact) => contact.is_primary) ?? savedContacts[0];
+  const [selectedSavedContactId, setSelectedSavedContactId] = useState<
+    string | null
+  >(primarySavedContact ? String(primarySavedContact.id) : null);
+  const isContactLocked = selectedSavedContactId !== null;
 
   // Ao trocar de etapa, rola o conteúdo de volta para o topo.
   const contentRef = useRef<HTMLDivElement>(null);
@@ -242,8 +253,38 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   // ── Image handlers ────────────────────────────────────────────────────────
   function onPhone(v: string) {
     const digits = v.replace(/\D/g, "").slice(0, 11);
+    if (isContactLocked) return;
     form.setValue("whatsapp", digits ? `55${digits}` : "");
     form.setValue("whatsappDisplay", maskPhone(digits));
+  }
+
+  function applyContactToForm(contact: {
+    whatsapp?: string | null;
+    whatsapp_display?: string | null;
+    email?: string | null;
+  }) {
+    form.setValue("whatsapp", contact.whatsapp ?? "", { shouldDirty: true });
+    form.setValue("whatsappDisplay", contact.whatsapp_display ?? "", {
+      shouldDirty: true,
+    });
+    form.setValue("email", contact.email ?? "", { shouldDirty: true });
+  }
+
+  function onSelectSavedContact(value: string) {
+    if (value === "new") {
+      setSelectedSavedContactId(null);
+      form.setValue("whatsapp", "", { shouldDirty: true });
+      form.setValue("whatsappDisplay", "", { shouldDirty: true });
+      form.setValue("email", "", { shouldDirty: true });
+      return;
+    }
+
+    const selectedContact = savedContacts.find(
+      (contact) => String(contact.id) === value,
+    );
+    if (!selectedContact) return;
+    setSelectedSavedContactId(String(selectedContact.id));
+    applyContactToForm(selectedContact);
   }
 
   function onLogo(file: File) {
@@ -293,7 +334,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   }
 
   // ── Gera copy + imagens e salva a LP (passo final) ───────────────────────
-  async function criarEEditar() {
+  async function generateAndSaveLandingPage() {
     setErro("");
     setGerando(true);
     setGerandoMsg("Escrevendo a copy sobre o tema e buscando as imagens…");
@@ -343,7 +384,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
     } catch (e) {
       console.error(e);
       setErro(
-        "Não foi possível gerar a copy agora. Verifique sua conexão e tente novamente.",
+        e instanceof Error
+          ? e.message
+          : "Não foi possível gerar a copy agora. Verifique sua conexão e tente novamente.",
       );
       setGerando(false);
       setGerandoMsg("");
@@ -376,7 +419,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
       logoSrc,
       logoBg,
       theme,
-      lawyers: semFotosAdvogados ? [] : lawyers.filter((l) => l.photo.trim()),
+      lawyers: showLawyers ? lawyers.filter((l) => l.photo.trim()) : [],
       socials: socials
         .map((s) => ({ network: detectNetwork(s.url), url: s.url.trim() }))
         .filter((s) => s.url),
@@ -406,7 +449,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
     } catch (e) {
       console.error(e);
       setErro(
-        "Não foi possível salvar a página agora. Verifique sua conexão e tente novamente.",
+        e instanceof Error
+          ? e.message
+          : "Não foi possível salvar a página agora. Verifique sua conexão e tente novamente.",
       );
       setGerando(false);
       setGerandoMsg("");
@@ -429,7 +474,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         setErro("Envie a logo do escritório para continuar.");
         return;
       }
-      void criarEEditar();
+      void generateAndSaveLandingPage();
     } else {
       setStep((s) => s + 1);
     }
@@ -603,25 +648,31 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               <span className="text-muted-foreground">*</span>
                             </>
                           }
-                          labelAction={
-                            <MelhorarTextoButton
-                              text={about}
-                              kind="sobre"
-                              office={{
-                                name: defaultOfficeName,
-                                product: tema,
-                              }}
-                              onResult={(text) => form.setValue("about", text)}
-                              iconOnly
-                            />
-                          }
                         >
                           <FormControl>
-                            <AutoTextarea
-                              {...field}
-                              className="min-h-[80px] resize-y"
-                              placeholder="Atuamos com dedicação na defesa de quem trabalha..."
-                            />
+                            <InputGroup className="h-auto">
+                              <InputGroupTextarea
+                                {...field}
+                                className="min-h-[80px] resize-y"
+                                placeholder="Atuamos com dedicação na defesa de quem trabalha..."
+                              />
+                              <InputGroupAddon align="overlay-end">
+                                <MelhorarTextoButton
+                                  text={about}
+                                  kind="sobre"
+                                  office={{
+                                    name: defaultOfficeName,
+                                    product: tema,
+                                  }}
+                                  onResult={(text) =>
+                                    form.setValue("about", text, {
+                                      shouldDirty: true,
+                                    })
+                                  }
+                                  iconOnly
+                                />
+                              </InputGroupAddon>
+                            </InputGroup>
                           </FormControl>
                         </FieldRow>
                       )}
@@ -632,60 +683,31 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                 {/* Passo 1 — Contato */}
                 {step === 1 ? (
                   <>
-                    {savedContacts.length > 0 || savedAddresses.length > 0 ? (
-                      <div className="rounded-lg border border-border bg-muted/40 p-4 mb-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                          Usar dados salvos do escritório
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {savedContacts.map((c, idx) => (
-                            <Button
-                              key={c.id}
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => {
-                                form.setValue("whatsapp", c.whatsapp, {
-                                  shouldDirty: true,
-                                });
-                                form.setValue(
-                                  "whatsappDisplay",
-                                  c.whatsapp_display,
-                                  { shouldDirty: true },
-                                );
-                                form.setValue("email", c.email, {
-                                  shouldDirty: true,
-                                });
-                              }}
-                              className="text-xs"
-                            >
-                              Contato (
-                              {c.is_primary ? "Padrão" : `Opção ${idx + 1}`})
-                            </Button>
+                    {hasSavedContacts ? (
+                      <PlainRow
+                        label="Contato"
+                        description="Selecione um contato salvo ou crie um novo."
+                      >
+                        <select
+                          aria-label="Selecionar contato"
+                          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+                          value={selectedSavedContactId ?? "new"}
+                          onChange={(event) =>
+                            onSelectSavedContact(event.target.value)
+                          }
+                        >
+                          {savedContacts.map((contact, index) => (
+                            <option key={String(contact.id)} value={contact.id}>
+                              {contact.is_primary
+                                ? "Principal"
+                                : `Contato ${index + 1}`}{" "}
+                              · {contact.whatsapp_display || "Sem WhatsApp"} ·{" "}
+                              {contact.email || "Sem e-mail"}
+                            </option>
                           ))}
-                          {savedAddresses.map((a, idx) => (
-                            <Button
-                              key={a.id}
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => {
-                                updateAddress(0, {
-                                  address: a.address,
-                                  uf: a.uf,
-                                  cidade: a.cidade,
-                                  mapsUrl: a.maps_url ?? "",
-                                  showMaps: !!a.maps_url,
-                                });
-                              }}
-                              className="text-xs"
-                            >
-                              Endereço (
-                              {a.is_primary ? "Padrão" : `Opção ${idx + 1}`})
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+                          <option value="new">Criar novo contato</option>
+                        </select>
+                      </PlainRow>
                     ) : null}
 
                     <FormField
@@ -707,6 +729,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               onAccept={(value: string) => onPhone(value)}
                               placeholder="(67) 99999-9999"
                               inputMode="tel"
+                              disabled={isContactLocked}
                             />
                           </FormControl>
                         </FieldRow>
@@ -730,6 +753,11 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               type="email"
                               placeholder="contato@escritorio.com.br"
                               autoComplete="email"
+                              disabled={isContactLocked}
+                              onChange={(event) => {
+                                if (isContactLocked) return;
+                                field.onChange(event);
+                              }}
                             />
                           </FormControl>
                         </FieldRow>
@@ -740,7 +768,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                       <div className="space-y-3">
                         {addresses.map((a, i) => (
                           <div key={a.id} className="space-y-5">
-                            {addresses.length > 1 ? (
+                            {addresses.length > 0 ? (
                               <div className="flex items-center gap-2">
                                 <span className="shrink-0 text-xs font-medium text-muted-foreground">
                                   Endereço {i + 1}
@@ -842,45 +870,70 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                       </Button>
                     </div>
 
-                    <PlainRow
-                      label={
-                        <>
-                          Redes sociais{" "}
-                          <span className="font-normal text-muted-foreground">
-                            (opcional)
-                          </span>
-                        </>
-                      }
-                      borderless
-                    >
-                      <SocialsInput
-                        socials={socials}
-                        onChange={setSocialUrl}
-                        onAdd={addSocial}
-                        onRemove={removeSocial}
-                        hideAddButton
-                        hideRemove
-                      />
-                      {form.formState.errors.socials ? (
-                        <FormField
-                          control={form.control}
-                          name="socials"
-                          render={() => (
-                            <FormItem>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : null}
-                    </PlainRow>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addSocial}
-                      className="w-full"
-                    >
-                      <Add size={16} /> Adicionar rede social
-                    </Button>
+                    <div className="space-y-5">
+                      <PlainRow
+                        label={
+                          <>
+                            Redes sociais{" "}
+                            <span className="font-normal text-muted-foreground">
+                              (opcional)
+                            </span>
+                          </>
+                        }
+                        borderless
+                      >
+                        <div className="space-y-2">
+                          {socials.map((social, i) => (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: social rows have no stable id
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-input text-muted-foreground">
+                                <SocialIcon
+                                  network={detectNetwork(social.url)}
+                                  size={16}
+                                />
+                              </span>
+                              <Input
+                                aria-label={`Link da rede ${i + 1}`}
+                                value={social.url}
+                                onChange={(e) => setSocialUrl(i, e.target.value)}
+                                placeholder="Cole o link (Instagram, TikTok, YouTube...)"
+                                inputMode="url"
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Remover rede"
+                                onClick={() => removeSocial(i)}
+                                className="shrink-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <Delete size={15} />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        {form.formState.errors.socials ? (
+                          <FormField
+                            control={form.control}
+                            name="socials"
+                            render={() => (
+                              <FormItem>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : null}
+                      </PlainRow>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addSocial}
+                        className="w-full"
+                      >
+                        <Add size={16} /> Adicionar rede social
+                      </Button>
+                    </div>
                   </>
                 ) : null}
 
@@ -981,20 +1034,23 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Checkbox
-                          id="sem-fotos-adv"
-                          checked={semFotosAdvogados}
+                          id="show-lawyers"
+                          checked={showLawyers}
                           onCheckedChange={(checked) =>
-                            setSemFotosAdvogados(checked === true)
+                            setShowLawyers(checked === true)
                           }
                         />
                         <label
-                          htmlFor="sem-fotos-adv"
+                          htmlFor="show-lawyers"
                           className="cursor-pointer text-sm font-semibold text-foreground"
                         >
-                          Não adicionar advogado
+                          Adicionar advogado{" "}
+                          <span className="font-normal text-muted-foreground">
+                            (opcional)
+                          </span>
                         </label>
                       </div>
-                      {semFotosAdvogados ? null : (
+                      {showLawyers ? (
                         <>
                           <div className="space-y-5">
                             {lawyers.map((l, i) => (
@@ -1141,7 +1197,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                             <Add size={16} /> Adicionar advogado
                           </Button>
                         </>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Vídeo */}

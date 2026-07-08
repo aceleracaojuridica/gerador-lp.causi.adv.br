@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { CardFooter } from "@/components/ui/card";
@@ -12,7 +11,7 @@ export function ConfigFormFooter({
   defaultValues: GlobalConfigFormValues;
 }) {
   return (
-    <CardFooter className="flex flex-col gap-3 border-t sm:flex-row sm:items-center sm:justify-between">
+    <CardFooter className="flex flex-col gap-3 border-t sm:flex-row sm:items-center sm:justify-end">
       <Button
         type="button"
         variant="outline"
