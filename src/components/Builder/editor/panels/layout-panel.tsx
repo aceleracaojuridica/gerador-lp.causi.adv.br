@@ -9,6 +9,7 @@ import {
   TEMPLATES,
   templatePreviewSrc,
 } from "@/lib/landing-pages/templates";
+import { LawyerImageHint } from "../../shared/image-hint";
 import { LawyerPhotosInput } from "../widgets/lawyer-row";
 import { SectionImageInput } from "../widgets/section-image-input";
 
@@ -103,6 +104,7 @@ export function ImagensPanel({ form }: { form: LpEditorForm }) {
         <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
           Fotos dos advogados
         </p>
+        <LawyerImageHint />
         <LawyerPhotosInput form={form} />
       </div>
 

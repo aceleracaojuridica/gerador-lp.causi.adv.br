@@ -6,7 +6,9 @@ import { cn } from "@/lib/utils";
 
 type AutoTextareaProps = React.ComponentProps<typeof Textarea>;
 
-/** Textarea que ajusta a altura ao conteúdo, sem piso alto de espaço vazio. */
+/** Textarea que ajusta a altura ao conteúdo, sem piso alto de espaço vazio.
+ *  Recalcula ao mudar o conteúdo e ao mudar a largura (evita altura travada
+ *  quando o campo é medido enquanto o painel ainda está estreito). */
 export function AutoTextarea({
   value,
   onChange,
@@ -15,11 +17,29 @@ export function AutoTextarea({
 }: AutoTextareaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refit ao mudar o conteúdo
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+
+    const fit = () => {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    fit();
+
+    // Só reajusta quando a LARGURA muda (mudar a altura dentro do fit não deve
+    // disparar de novo — evita loop do ResizeObserver).
+    let lastWidth = el.clientWidth;
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? lastWidth;
+      if (width !== lastWidth) {
+        lastWidth = width;
+        fit();
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [value]);
 
   return (
@@ -29,9 +49,10 @@ export function AutoTextarea({
       onChange={onChange}
       rows={1}
       {...props}
-      // min-h-9 (~1 linha) vence o min-h grande do Textarea base e das chamadas,
-      // deixando a altura acompanhar o texto em vez de sobrar espaço.
-      className={cn(className, "min-h-9")}
+      // field-sizing-fixed: o JS controla a altura (o reset "auto" volta a 1 linha
+      // e cresce só até o conteúdo). min-h-9 (~1 linha) vence o min-h grande do
+      // Textarea base e das chamadas, evitando espaço vazio.
+      className={cn(className, "field-sizing-fixed min-h-9")}
     />
   );
 }

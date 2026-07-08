@@ -23,6 +23,10 @@ import { maskPhone } from "@/components/Builder/create/fields";
 import { MelhorarTextoButton } from "@/components/Builder/create/melhorar-texto-button";
 import { PalettePicker } from "@/components/Builder/create/palette-picker";
 import { TemplateCard } from "@/components/Builder/create/template-card";
+import {
+  LawyerImageHint,
+  LogoImageHint,
+} from "@/components/Builder/shared/image-hint";
 import CausiLogo from "@/components/icons/causi-logo";
 import { SocialIcon } from "@/components/icons/social-icon";
 import { Button } from "@/components/ui/button";
@@ -152,10 +156,7 @@ function PlainRow({
 }
 
 export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
-  const {
-    defaultOfficeName = "",
-    savedContacts = [],
-  } = props;
+  const { defaultOfficeName = "", savedContacts = [] } = props;
   const router = useRouter();
 
   const form = useForm<LandingPageCreateFormValues>({
@@ -895,7 +896,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               <Input
                                 aria-label={`Link da rede ${i + 1}`}
                                 value={social.url}
-                                onChange={(e) => setSocialUrl(i, e.target.value)}
+                                onChange={(e) =>
+                                  setSocialUrl(i, e.target.value)
+                                }
                                 placeholder="Cole o link (Instagram, TikTok, YouTube...)"
                                 inputMode="url"
                                 className="flex-1"
@@ -996,6 +999,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                             />
                           </label>
                         )}
+                        <LogoImageHint className="mt-2.5" />
                         {autoTheme ? (
                           <div className="mt-1">
                             <p className="inline-flex items-center gap-1 text-xs text-success">
@@ -1052,6 +1056,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                       </div>
                       {showLawyers ? (
                         <>
+                          <LawyerImageHint />
                           <div className="space-y-5">
                             {lawyers.map((l, i) => (
                               // biome-ignore lint/suspicious/noArrayIndexKey: as fotos não têm id estável
