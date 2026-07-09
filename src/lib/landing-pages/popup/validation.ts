@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { parseDecimalCurrencyInput } from "@/lib/formatters";
 import {
   isValidCep,
   unmaskNumeric,
 } from "@/lib/validators/brazilian-documents";
-import { parseDecimalCurrencyInput } from "@/lib/formatters";
 import type { PopupQuestion } from "./types";
 
 export function isQuestionRequired(q: PopupQuestion): boolean {

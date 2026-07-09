@@ -8,6 +8,7 @@ import {
   type GlobalConfig,
   normalizeGlobalConfig,
 } from "@/lib/landing-pages/global-config";
+import type { SocialNetwork } from "@/lib/landing-pages/schema";
 import { getSession } from "@/lib/session";
 import {
   createLpUserClient,
@@ -22,6 +23,16 @@ type AccountSettingsRow = {
   tracking_scripts: Partial<GlobalConfig["tags"]> | null;
   tracking_providers: Partial<GlobalConfig["tracking"]> | null;
   captcha_config: Partial<GlobalConfig["captcha"]> | null;
+};
+
+type LpAccountSocialRow = {
+  network: SocialNetwork;
+  url: string;
+};
+
+type LpAccountSocialIdRow = {
+  id: string;
+  network: SocialNetwork;
 };
 
 export async function getConfig(): Promise<GlobalConfig> {
@@ -56,7 +67,8 @@ export async function getConfig(): Promise<GlobalConfig> {
     .from("lp_account_socials")
     .select("network, url")
     .eq("account_id", ctx.accountId)
-    .eq("is_primary", true);
+    .eq("is_primary", true)
+    .returns<LpAccountSocialRow[]>();
 
   const baseConfig = normalizeGlobalConfig({
     fonts: data
@@ -100,7 +112,7 @@ export async function getConfig(): Promise<GlobalConfig> {
         }
       : undefined,
     socials: socialsData
-      ? socialsData.map((s: any) => ({
+      ? socialsData.map((s) => ({
           network: s.network,
           url: s.url,
         }))
@@ -198,10 +210,11 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
       .from("lp_account_socials")
       .select("id, network")
       .eq("account_id", ctx.accountId)
-      .eq("is_primary", true);
+      .eq("is_primary", true)
+      .returns<LpAccountSocialIdRow[]>();
 
     const existingMap = new Map(
-      (existingSocials ?? []).map((s: any) => [s.network, s.id]),
+      (existingSocials ?? []).map((s) => [s.network, s.id]),
     );
     const incomingNetworks = new Set(normalized.socials.map((s) => s.network));
 
@@ -228,8 +241,8 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
 
     // Delete das que não vieram no payload
     const toDeleteIds = (existingSocials ?? [])
-      .filter((s: any) => !incomingNetworks.has(s.network))
-      .map((s: any) => s.id);
+      .filter((s) => !incomingNetworks.has(s.network))
+      .map((s) => s.id);
 
     if (toDeleteIds.length > 0) {
       await db.from("lp_account_socials").delete().in("id", toDeleteIds);

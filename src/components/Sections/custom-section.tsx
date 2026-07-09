@@ -1,8 +1,8 @@
+import type { CustomSection as CustomSectionType } from "@/lib/landing-pages/schema";
 import {
   extractIframeSrc,
   validateIframeDomain,
 } from "@/lib/landing-pages/validation/iframe-extractor";
-import type { CustomSection as CustomSectionType } from "@/lib/landing-pages/schema";
 
 /**
  * Seção personalizada criada pelo usuário. Dois formatos — "cards" (grade
@@ -59,8 +59,8 @@ export function CustomSection({ section }: { section: CustomSectionType }) {
               dark ? "text-white/85" : "text-lp-ink-soft"
             }`}
           >
-            {paras.map((p, i) => (
-              <p key={i}>{p}</p>
+            {paras.map((p) => (
+              <p key={p}>{p}</p>
             ))}
           </div>
         ) : section.kind === "youtube" ? (
@@ -167,13 +167,13 @@ export function CustomSection({ section }: { section: CustomSectionType }) {
           })()
         ) : (
           <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-            {cards.map((c, i) => (
+            {cards.map((c, index) => (
               <div
-                key={i}
+                key={`${c.title}::${c.text}`}
                 className="flex h-full flex-col rounded-2xl bg-white p-7 transition hover:-translate-y-1 hover:shadow-xl"
               >
                 <span className="mb-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lp-brand font-display text-lg font-bold text-lp-accent-soft">
-                  {i + 1}
+                  {index + 1}
                 </span>
                 <h3 className="font-display text-2xl font-bold text-lp-brand">
                   {c.title}

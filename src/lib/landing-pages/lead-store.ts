@@ -1,9 +1,9 @@
 import "server-only";
 
 import { mapLpDbError } from "@/lib/errors";
-import type { LpSchema, PopupQuestion } from "@/lib/landing-pages/schema";
 import { formatAnswerForDisplay } from "@/lib/landing-pages/popup/format-answers";
 import { normalizeOfficeButtons } from "@/lib/landing-pages/popup/normalize";
+import type { LpSchema, PopupQuestion } from "@/lib/landing-pages/schema";
 import { pageUrlMatchesLpSlug } from "@/lib/leads/format";
 import type { Session } from "@/lib/session/types";
 import { lpAdmin } from "@/lib/supabase/admin";

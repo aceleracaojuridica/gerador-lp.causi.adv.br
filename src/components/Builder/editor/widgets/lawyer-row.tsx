@@ -2,7 +2,6 @@
 
 import {
   Add,
-  Check,
   Close,
   OpenWith,
   ProgressActivity,
@@ -245,7 +244,12 @@ export function LawyerPhotosInput({ form }: { form: LpEditorForm }) {
       {lawyers.length > 0 ? (
         <div className="flex flex-col gap-3">
           {lawyers.map((l, i) => (
-            <LawyerRow key={i} form={form} lawyer={l} index={i} />
+            <LawyerRow
+              key={`${l.photo}::${l.name}::${l.role}`}
+              form={form}
+              lawyer={l}
+              index={i}
+            />
           ))}
         </div>
       ) : (

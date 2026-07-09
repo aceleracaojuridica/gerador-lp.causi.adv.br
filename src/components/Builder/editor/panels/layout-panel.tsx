@@ -63,32 +63,34 @@ export function ReorderPanel({
       </p>
 
       <FixedRow label="Topo da página" />
-      {order.map((item, i) => (
-        <div
-          key={item}
-          draggable
-          onDragStart={() => setDragIdx(i)}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setOverIdx(i);
-          }}
-          onDrop={() => drop(i)}
-          onDragEnd={() => {
-            setDragIdx(null);
-            setOverIdx(null);
-          }}
-          className={`flex cursor-grab items-center gap-2 rounded-lg border bg-white px-3 py-2.5 transition active:cursor-grabbing ${
-            overIdx === i && dragIdx !== null && dragIdx !== i
-              ? "border-ui ring-1 ring-ui/30"
-              : "border-slate-200"
-          } ${dragIdx === i ? "opacity-40" : ""}`}
-        >
-          <DragIndicator size={18} className="text-slate-400" />
-          <span className="truncate text-sm font-medium text-slate-700">
-            {labelOf(item, form.customSections)}
-          </span>
-        </div>
-      ))}
+      <ul className="flex list-none flex-col gap-2">
+        {order.map((item, i) => (
+          <li
+            key={item}
+            draggable
+            onDragStart={() => setDragIdx(i)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOverIdx(i);
+            }}
+            onDrop={() => drop(i)}
+            onDragEnd={() => {
+              setDragIdx(null);
+              setOverIdx(null);
+            }}
+            className={`flex cursor-grab items-center gap-2 rounded-lg border bg-white px-3 py-2.5 transition active:cursor-grabbing ${
+              overIdx === i && dragIdx !== null && dragIdx !== i
+                ? "border-ui ring-1 ring-ui/30"
+                : "border-slate-200"
+            } ${dragIdx === i ? "opacity-40" : ""}`}
+          >
+            <DragIndicator size={18} className="text-slate-400" />
+            <span className="truncate text-sm font-medium text-slate-700">
+              {labelOf(item, form.customSections)}
+            </span>
+          </li>
+        ))}
+      </ul>
       <FixedRow label="Perguntas frequentes" />
       <FixedRow label="Contato e rodapé" />
     </div>

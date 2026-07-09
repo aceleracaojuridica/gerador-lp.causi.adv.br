@@ -60,15 +60,15 @@ export function Footer({
         <div className="grid grid-cols-1 gap-10 md:flex md:flex-row md:gap-10">
           {/* Endereços — coluna única (1 cidade) ou coluna por cidade (multi) */}
           {multiCity ? (
-            addressGroups.map((g, gi) => (
-              <div key={gi} className="min-w-0 md:flex-1">
+            addressGroups.map((g) => (
+              <div key={g.city || "sem-cidade"} className="min-w-0 md:flex-1">
                 <p className="mb-1 text-base font-bold text-white">
                   {fmtCity(g.city)}
                 </p>
                 <div className="mb-4 h-px w-8 bg-lp-accent-soft" />
                 <div className="space-y-4">
-                  {g.items.map((a, i) => (
-                    <div key={i}>
+                  {g.items.map((a) => (
+                    <div key={`${a.city}::${a.address}::${a.mapsUrl ?? ""}`}>
                       <p className="whitespace-pre-line leading-relaxed text-white/75">
                         {a.address?.trim() || a.city}
                       </p>
@@ -94,8 +94,8 @@ export function Footer({
               </p>
               {allAddresses.length > 0 ? (
                 <div className="space-y-4">
-                  {allAddresses.map((a, i) => (
-                    <div key={i}>
+                  {allAddresses.map((a) => (
+                    <div key={`${a.city}::${a.address}::${a.mapsUrl ?? ""}`}>
                       <p className="whitespace-pre-line leading-relaxed text-white/75">
                         {a.address?.trim() || a.city}
                       </p>
@@ -119,12 +119,18 @@ export function Footer({
           )}
 
           {/* Contato(s) — 1 coluna; a partir de 3, quebra em colunas de 2 */}
-          {contactColumns.map((col, ci) => (
-            <div key={ci} className="min-w-0 md:flex-1">
+          {contactColumns.map((col) => (
+            <div
+              key={col.map((c) => `${c.whatsapp}::${c.email}`).join("|")}
+              className="min-w-0 md:flex-1"
+            >
               <p className="eyebrow mb-4 text-lp-accent-soft">Contato</p>
               <div className="space-y-3 text-white/75">
-                {col.map((c, i) => (
-                  <div key={i} className="space-y-1.5">
+                {col.map((c) => (
+                  <div
+                    key={`${c.whatsapp}::${c.email}`}
+                    className="space-y-1.5"
+                  >
                     {c.whatsappDisplay ? (
                       <p>
                         <a
@@ -159,9 +165,9 @@ export function Footer({
             <div className="min-w-0 md:flex-1 md:text-right">
               <p className="eyebrow mb-4 text-lp-accent-soft">Acompanhe</p>
               <div className="flex gap-3 md:justify-end">
-                {socials.map((s, i) => (
+                {socials.map((s) => (
                   <a
-                    key={i}
+                    key={s.network}
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"

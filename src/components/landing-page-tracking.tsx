@@ -52,9 +52,9 @@ function renderSnippet(id: string, html: string | undefined) {
   return (
     <Fragment key={id}>
       {safeHtml ? (
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: snippets come from explicit account/LP configuration for published pages.
         <div
           suppressHydrationWarning
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: snippets come from explicit account/LP configuration for published pages.
           dangerouslySetInnerHTML={{ __html: safeHtml }}
         />
       ) : null}

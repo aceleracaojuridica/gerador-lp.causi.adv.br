@@ -184,7 +184,7 @@ export const Accordion = EditorSectionAccordion;
 /** Linha do menu principal — abre o painel de detalhe (não expande inline). */
 export function EditorSectionMenuRow({
   title,
-  subtitle,
+  subtitle: _subtitle,
   meta,
   icon,
   toggle: sectionToggle,

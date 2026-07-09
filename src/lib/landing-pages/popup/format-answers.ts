@@ -1,5 +1,5 @@
-import { formatCepAnswerDisplay } from "./viacep";
 import type { PopupQuestion } from "./types";
+import { formatCepAnswerDisplay } from "./viacep";
 
 /** Formata valor bruto de uma resposta para exibição legível. */
 export function formatAnswerForDisplay(q: PopupQuestion, raw: string): string {

@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-import Script from "next/script";
 import {
   Cinzel,
   Cormorant_Garamond,
@@ -13,6 +11,8 @@ import {
   Raleway,
   Roboto,
 } from "next/font/google";
+import { headers } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeWrapper } from "@/components/theme-wrapper";
 import { Toaster } from "@/components/ui/sonner";

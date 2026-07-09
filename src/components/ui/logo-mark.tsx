@@ -14,7 +14,7 @@ export function LogoMark({
 }) {
   if (office.logoSrc) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
+      // biome-ignore lint/performance/noImgElement: logo dinâmica do escritório (data URL ou storage)
       <img
         src={office.logoSrc}
         alt={office.fullName || office.name}

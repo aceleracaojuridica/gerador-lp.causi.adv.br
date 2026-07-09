@@ -20,7 +20,10 @@ export function HeroFeaturesInput({ form }: { form: LpEditorForm }) {
       </p>
       <div className="flex flex-col gap-2">
         {features.map((f, i) => (
-          <div key={i} className="flex items-center gap-1.5">
+          <div
+            key={`${f.icon}::${f.text}`}
+            className="flex items-center gap-1.5"
+          >
             <IconPicker
               value={f.icon}
               onChange={(key) => form.setHeroFeature(i, "icon", key)}
@@ -71,7 +74,10 @@ export function MetricsInput({ form }: { form: LpEditorForm }) {
       </p>
       <div className="flex flex-col gap-2">
         {metrics.map((m, i) => (
-          <div key={i} className="flex items-center gap-1.5">
+          <div
+            key={`${m.icon}::${m.label}`}
+            className="flex items-center gap-1.5"
+          >
             <IconPicker
               value={m.icon}
               onChange={(key) => form.setMetric(i, "icon", key)}
@@ -124,7 +130,7 @@ export function DiferenciaisInput({ form }: { form: LpEditorForm }) {
       </p>
       <div className="flex flex-col gap-2">
         {difs.map((d, i) => (
-          <div key={i} className="flex items-center gap-1.5">
+          <div key={d} className="flex items-center gap-1.5">
             <Input
               aria-label={`Diferencial ${i + 1}`}
               value={d}

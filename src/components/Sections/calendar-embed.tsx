@@ -1,13 +1,30 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Reveal } from "@/components/ui/reveal";
 
 type CalendarEmbedProps = {
   src: string;
   mode: "iframe" | "button";
 };
+
+type GoogleCalendarSchedulingButton = {
+  load: (options: {
+    url: string;
+    color: string;
+    label: string;
+    target: HTMLElement;
+  }) => void;
+};
+
+declare global {
+  interface Window {
+    calendar?: {
+      schedulingButton: GoogleCalendarSchedulingButton;
+    };
+  }
+}
 
 export function CalendarEmbed({ src, mode }: CalendarEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,14 +42,11 @@ export function CalendarEmbed({ src, mode }: CalendarEmbedProps) {
           src="https://calendar.google.com/calendar/scheduling-button-script.js"
           strategy="lazyOnload"
           onLoad={() => {
-            if (
-              typeof window !== "undefined" &&
-              (window as any).calendar?.schedulingButton
-            ) {
+            if (window.calendar?.schedulingButton) {
               const target = containerRef.current;
               if (target) {
-                target.innerHTML = ""; // Clear duplicate initializations
-                (window as any).calendar.schedulingButton.load({
+                target.innerHTML = "";
+                window.calendar.schedulingButton.load({
                   url: src,
                   color: "#039BE5",
                   label: "Agendar um compromisso",

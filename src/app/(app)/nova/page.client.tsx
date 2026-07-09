@@ -1,14 +1,20 @@
 "use client";
 
 import { Container } from "@/components/ui-patterns/container";
-import { LandingPageCreateForm } from "@/forms/LandingPageCreateForm";
+import {
+  LandingPageCreateForm,
+  type LandingPageCreateFormProps,
+} from "@/forms/LandingPageCreateForm";
 
-interface NovaPageClientProps {
+type NovaPageClientProps = Pick<
+  LandingPageCreateFormProps,
+  "defaultOfficeName" | "savedAddresses" | "savedContacts" | "savedSocials"
+> & {
   defaultOfficeName: string;
-  savedAddresses: any[];
-  savedContacts: any[];
-  savedSocials: any[];
-}
+  savedAddresses: NonNullable<LandingPageCreateFormProps["savedAddresses"]>;
+  savedContacts: NonNullable<LandingPageCreateFormProps["savedContacts"]>;
+  savedSocials: NonNullable<LandingPageCreateFormProps["savedSocials"]>;
+};
 
 export function NovaPageClient({
   defaultOfficeName,

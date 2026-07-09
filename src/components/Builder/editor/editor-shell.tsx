@@ -1022,7 +1022,7 @@ export function Editor({
   }
 
   function renderNavigationGroup({
-    step,
+    step: _step,
     title,
     sections,
   }: {

@@ -69,12 +69,11 @@ export function AppSidebar({
   /** Check if current path is active for this nav item */
   const isNavItemActive = React.useCallback(
     (item: NavItem): boolean => {
-      // If routes are defined, check if currentPath starts with any of them
-      if (item.routes && item.routes.length > 0) {
-        return item.routes.some((route) => currentPath.startsWith(route));
-      }
-      // Otherwise, exact match with href
-      return currentPath === item.href;
+      const paths = item.routes?.length ? item.routes : [item.href];
+      return paths.some((route) => {
+        if (route === "/") return currentPath === "/";
+        return currentPath === route || currentPath.startsWith(`${route}/`);
+      });
     },
     [currentPath],
   );
@@ -84,7 +83,6 @@ export function AppSidebar({
       href: "/",
       icon: FileCopy,
       label: "Página inicial",
-      routes: ["/"],
     },
     {
       href: "/galeria",
