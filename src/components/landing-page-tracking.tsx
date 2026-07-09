@@ -53,7 +53,10 @@ function renderSnippet(id: string, html: string | undefined) {
     <Fragment key={id}>
       {safeHtml ? (
         // biome-ignore lint/security/noDangerouslySetInnerHtml: snippets come from explicit account/LP configuration for published pages.
-        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: safeHtml }} />
+        <div
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: safeHtml }}
+        />
       ) : null}
       {scripts.map((script) =>
         script.src ? (

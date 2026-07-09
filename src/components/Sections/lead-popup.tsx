@@ -7,64 +7,140 @@ import {
   Close,
 } from "@material-symbols-svg/react";
 import { useEffect, useState } from "react";
+import { submitLeadAction } from "@/app/actions/leads";
+import { validatePopupAnswer } from "@/lib/landing-pages/popup/validation";
 import type { PopupQuestion } from "@/lib/landing-pages/schema";
+import { PopupQuestionField } from "./popup-question-field";
+
+export type LeadCaptureContext = {
+  officeSubdomain: string;
+  lpSlug: string;
+};
 
 /**
  * Popup de lead. Mostra as perguntas personalizadas (uma por vez) e, no final,
- * sempre o passo simples com nome + telefone. No preview é ilustrativo: o
- * "Enviar" só mostra um agradecimento (a captura real vem na publicação).
+ * sempre o passo simples com nome + telefone. No preview é ilustrativo; na LP
+ * publicada envia via submitLeadAction.
  */
 export function LeadPopup({
   open,
   onClose,
   questions,
-  emailConfig,
   demo = false,
+  leadContext,
 }: {
   open: boolean;
   onClose: () => void;
   questions: PopupQuestion[];
-  emailConfig?: { enabled: boolean; required: boolean };
-  demo?: boolean; // no preview do editor: avisa que é só demonstração
+  demo?: boolean;
+  leadContext?: LeadCaptureContext;
 }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [lead, setLead] = useState({ nome: "", telefone: "", email: "" });
+  const [lead, setLead] = useState({ nome: "", telefone: "" });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
 
-  // Ao abrir, reinicia o fluxo.
   useEffect(() => {
     if (open) {
       setStep(0);
       setAnswers({});
-      setLead({ nome: "", telefone: "", email: "" });
+      setLead({ nome: "", telefone: "" });
       setSent(false);
+      setSubmitting(false);
+      setSubmitError(null);
+      setStepError(null);
     }
   }, [open]);
 
   if (!open) return null;
 
-  const total = questions.length + 1; // perguntas + passo final
+  const total = questions.length + 1;
   const isFinal = step >= questions.length;
   const q = questions[step];
 
-  function next() {
-    setStep((s) => Math.min(total - 1, s + 1));
-  }
-  function back() {
-    setStep((s) => Math.max(0, s - 1));
+  async function handleSubmit() {
+    if (demo) {
+      setSent(true);
+      return;
+    }
+    if (!leadContext) {
+      setSubmitError("Não foi possível enviar o contato.");
+      return;
+    }
+    const nome = lead.nome.trim();
+    const telefone = lead.telefone.trim();
+    if (!nome || !telefone) {
+      setSubmitError("Preencha nome e telefone.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError(null);
+    const res = await submitLeadAction({
+      officeSubdomain: leadContext.officeSubdomain,
+      lpSlug: leadContext.lpSlug,
+      nome,
+      telefone,
+      answers,
+      pageUrl: typeof window !== "undefined" ? window.location.href : "",
+    });
+    setSubmitting(false);
+
+    if (!res.ok) {
+      setSubmitError(res.error);
+      return;
+    }
+    setSent(true);
   }
 
+  function next() {
+    setStep((s) => Math.min(total - 1, s + 1));
+    setStepError(null);
+  }
+
+  function back() {
+    setStep((s) => Math.max(0, s - 1));
+    setStepError(null);
+  }
+
+  function tryAdvanceQuestion() {
+    if (!q) return;
+    const value = answers[q.id] ?? "";
+    const err = validatePopupAnswer(q, value);
+    if (err) {
+      setStepError(err);
+      return;
+    }
+    next();
+  }
+
+  const needsAdvanceButton =
+    q &&
+    (q.type === "text" ||
+      q.type === "number" ||
+      q.type === "phone" ||
+      q.type === "email" ||
+      q.type === "url" ||
+      q.type === "currency" ||
+      q.type === "cep" ||
+      (q.type === "choice" && q.allowMultiple));
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Fechar"
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
       <div
-        className="relative w-full max-w-md rounded-[5px] bg-white p-7 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        className="relative z-10 w-full max-w-md rounded-[5px] bg-white p-7 shadow-2xl"
       >
-        {/* Topo: voltar (a partir da 2ª etapa) + fechar */}
         <div className="mb-3 flex items-center justify-between">
           {step > 0 && !sent ? (
             <button
@@ -87,7 +163,6 @@ export function LeadPopup({
           </button>
         </div>
 
-        {/* Barra de progresso */}
         {!sent ? (
           <div className="mb-5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-lp-cream-deep">
@@ -122,7 +197,6 @@ export function LeadPopup({
             </button>
           </div>
         ) : isFinal ? (
-          // ----- Passo final fixo: nome + telefone -----
           <div>
             <h3 className="font-display text-xl font-bold text-lp-brand">
               Quase lá! Deixe seu contato
@@ -152,90 +226,61 @@ export function LeadPopup({
                 inputMode="tel"
                 required
               />
-              {emailConfig?.enabled ? (
-                <input
-                  aria-label="E-mail"
-                  className="w-full rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
-                  value={lead.email}
-                  onChange={(e) =>
-                    setLead((l) => ({ ...l, email: e.target.value }))
-                  }
-                  placeholder={
-                    emailConfig.required
-                      ? "Seu e-mail"
-                      : "Seu e-mail (opcional)"
-                  }
-                  inputMode="email"
-                  required={emailConfig.required}
-                />
-              ) : null}
             </div>
+            {submitError ? (
+              <p className="mt-3 text-center text-sm text-destructive">
+                {submitError}
+              </p>
+            ) : null}
             <button
               type="button"
-              onClick={() => setSent(true)}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-lp-accent px-5 py-3 text-sm font-bold text-[var(--color-lp-accent-ink)] transition hover:bg-lp-accent-soft"
+              disabled={submitting}
+              onClick={() => void handleSubmit()}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-lp-accent px-5 py-3 text-sm font-bold text-[var(--color-lp-accent-ink)] transition hover:bg-lp-accent-soft disabled:opacity-60"
             >
-              Enviar
+              {submitting ? "Enviando…" : "Enviar"}
             </button>
           </div>
-        ) : (
-          // ----- Pergunta personalizada -----
+        ) : q ? (
           <div>
             <h3 className="font-display text-xl font-bold text-lp-brand">
               {q.label.trim() || `Pergunta ${step + 1}`}
             </h3>
 
-            {q.type === "choice" ? (
-              <div className="mt-5 space-y-2">
-                {q.options
-                  .filter((o) => o.trim())
-                  .map((opt, i) => {
-                    const selected = answers[q.id] === opt;
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setAnswers((a) => ({ ...a, [q.id]: opt }));
-                          next();
-                        }}
-                        className={`flex w-full items-center justify-between rounded-[5px] border px-4 py-3 text-left text-sm font-medium transition ${
-                          selected
-                            ? "border-lp-accent bg-lp-accent/10 text-lp-brand"
-                            : "border-lp-ink-soft/20 text-lp-ink hover:border-lp-accent/60 hover:bg-lp-accent/5"
-                        }`}
-                      >
-                        {opt}
-                        <ArrowForward size={15} className="text-lp-accent" />
-                      </button>
-                    );
-                  })}
-              </div>
-            ) : (
-              <div className="mt-5">
-                <textarea
-                  aria-label={q.label || "Resposta"}
-                  className="min-h-[110px] w-full resize-y rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
-                  value={answers[q.id] ?? ""}
-                  onChange={(e) =>
-                    setAnswers((a) => ({ ...a, [q.id]: e.target.value }))
-                  }
-                  placeholder="Sua resposta"
-                />
-              </div>
-            )}
+            <div className="mt-5">
+              <PopupQuestionField
+                question={q}
+                value={answers[q.id] ?? ""}
+                onChange={(v) => {
+                  setAnswers((a) => ({ ...a, [q.id]: v }));
+                  setStepError(null);
+                }}
+                error={stepError}
+                onChoiceSelect={
+                  q.type === "choice" && !q.allowMultiple
+                    ? () => next()
+                    : undefined
+                }
+              />
+            </div>
 
-            {q.type === "text" ? (
+            {stepError && q.type !== "cep" ? (
+              <p className="mt-3 text-center text-sm text-destructive">
+                {stepError}
+              </p>
+            ) : null}
+
+            {needsAdvanceButton ? (
               <button
                 type="button"
-                onClick={next}
+                onClick={tryAdvanceQuestion}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-[5px] bg-lp-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-lp-brand-dark"
               >
                 Avançar <ArrowForward size={16} />
               </button>
             ) : null}
           </div>
-        )}
+        ) : null}
 
         {demo ? (
           <p className="mt-4 bg-amber-50 px-3 py-2 text-center text-[0.7rem] font-medium text-amber-700">

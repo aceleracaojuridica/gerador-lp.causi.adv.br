@@ -335,31 +335,12 @@ export function useLpEditorForm(seed?: LpSeed) {
   }
   function setPopupQuestions(questions: PopupQuestion[]) {
     const buttons = form.getValues("office.buttons") ?? DEFAULT_BUTTONS;
-    const prevPopup = buttons?.popup;
     form.setValue(
       "office.buttons",
       {
         ...DEFAULT_BUTTONS,
         ...buttons,
-        popup: {
-          questions,
-          email:
-            prevPopup && "email" in prevPopup ? prevPopup.email : undefined,
-        },
-      },
-      { shouldDirty: true },
-    );
-  }
-  function setPopupEmail(
-    email: { enabled: boolean; required: boolean } | undefined,
-  ) {
-    const buttons = form.getValues("office.buttons") ?? DEFAULT_BUTTONS;
-    form.setValue(
-      "office.buttons",
-      {
-        ...DEFAULT_BUTTONS,
-        ...buttons,
-        popup: { questions: buttons?.popup?.questions ?? [], email },
+        popup: { questions },
       },
       { shouldDirty: true },
     );
@@ -838,7 +819,6 @@ export function useLpEditorForm(seed?: LpSeed) {
     setFont,
     setButtonField,
     setPopupQuestions,
-    setPopupEmail,
     applyAccountDefaults,
     customSections,
     addCustomSection,

@@ -202,8 +202,7 @@ export function VisualConfigForm({
           <CardHeader>
             <CardTitle>Subdominio da conta</CardTitle>
             <CardDescription>
-              O subdominio define o host publico das landing pages:
-              {" "}
+              O subdominio define o host publico das landing pages:{" "}
               <span className="font-mono">{`{subdominio}.causi.adv.br`}</span>.
             </CardDescription>
           </CardHeader>
@@ -256,7 +255,8 @@ export function VisualConfigForm({
                 )}
                 {availability === "reserved" && (
                   <p className="text-xs text-destructive">
-                    Este subdominio esta reservado pelo nome de outro escritorio no Causi.
+                    Este subdominio esta reservado pelo nome de outro escritorio
+                    no Causi.
                   </p>
                 )}
                 <Button

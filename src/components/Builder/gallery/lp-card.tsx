@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Delete,
-  MoreVert,
-  OpenInNew,
-  Web,
-} from "@material-symbols-svg/react";
+import { Delete, MoreVert, OpenInNew, Web } from "@material-symbols-svg/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteLpAction } from "@/app/actions/lps";

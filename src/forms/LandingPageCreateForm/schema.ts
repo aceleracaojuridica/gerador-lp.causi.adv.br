@@ -49,7 +49,8 @@ export function landingPageCreateDefaultValues(
   props?: LandingPageCreateFormProps,
 ): LandingPageCreateFormValues {
   const primaryContact =
-    props?.savedContacts?.find((c) => c.is_primary) ?? props?.savedContacts?.[0];
+    props?.savedContacts?.find((c) => c.is_primary) ??
+    props?.savedContacts?.[0];
   const allAddresses = props?.savedAddresses ?? [];
   const allSocials = props?.savedSocials ?? [];
 
@@ -70,7 +71,7 @@ export function landingPageCreateDefaultValues(
             mapsUrl: address.maps_url ?? "",
             showMaps: !!address.maps_url,
           }))
-      : [{ address: "", uf: "", cidade: "", mapsUrl: "", showMaps: false }],
+        : [{ address: "", uf: "", cidade: "", mapsUrl: "", showMaps: false }],
     showSocials: true,
     socials:
       allSocials.length > 0

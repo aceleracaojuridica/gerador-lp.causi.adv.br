@@ -257,7 +257,9 @@ function PublicLpUrlPreview({
           !isLive && "opacity-80",
         )}
       >
-        <span className="font-medium text-foreground/90">{officeSubdomain}</span>
+        <span className="font-medium text-foreground/90">
+          {officeSubdomain}
+        </span>
         <span className="text-muted-foreground/40">.{lpDomain}/</span>
         <span className="font-medium text-foreground/90">{slug}</span>
       </span>
@@ -674,16 +676,16 @@ export function Editor({
       },
       equipe: availableEquipeOptions.length
         ? {
-          label: "Equipe",
-          options: availableEquipeOptions,
-          value: equipeVariant ?? availableEquipeOptions[0].id,
-          onChange: (id) => {
-            form.setLayout((currentLayout) => ({
-              ...currentLayout,
-              equipe: id as EquipeVariant,
-            }));
-          },
-        }
+            label: "Equipe",
+            options: availableEquipeOptions,
+            value: equipeVariant ?? availableEquipeOptions[0].id,
+            onChange: (id) => {
+              form.setLayout((currentLayout) => ({
+                ...currentLayout,
+                equipe: id as EquipeVariant,
+              }));
+            },
+          }
         : undefined,
       areas: {
         label: "Áreas",
@@ -1069,11 +1071,11 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden border-border bg-card",
         isLgUp
           ? cn(
-            "flex h-full min-w-0 transition-[opacity] duration-200",
-            leftPanelCollapsed
-              ? "border-r-0 opacity-0"
-              : "border-r opacity-100",
-          )
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              leftPanelCollapsed
+                ? "border-r-0 opacity-0"
+                : "border-r opacity-100",
+            )
           : showNavigationPanel
             ? "flex border-b"
             : "hidden border-b",
@@ -1297,9 +1299,9 @@ export function Editor({
         "min-h-0 flex-col overflow-hidden bg-card",
         isLgUp
           ? cn(
-            "flex h-full min-w-0 transition-[opacity] duration-200",
-            rightPanelCollapsed ? "opacity-0" : "opacity-100",
-          )
+              "flex h-full min-w-0 transition-[opacity] duration-200",
+              rightPanelCollapsed ? "opacity-0" : "opacity-100",
+            )
           : showCmsPanel
             ? "flex"
             : "hidden",
@@ -1472,8 +1474,9 @@ export function Editor({
                     <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                       <p className="text-xs leading-relaxed text-slate-500">
                         Abre um formulário que termina sempre com{" "}
-                        <strong>nome</strong> e <strong>telefone</strong>. Você
-                        pode adicionar perguntas antes desse passo.
+                        <strong>nome</strong> e <strong>telefone</strong>.
+                        Adicione perguntas personalizadas (texto, e-mail, valor,
+                        CEP, etc.) antes desse passo.
                       </p>
                       <button
                         type="button"
@@ -1584,7 +1587,7 @@ export function Editor({
                   </BuilderField>
                 </FieldGroup>
                 {layout.sobre === SOBRE_VARIANT_PHOTO_LIST ||
-                  layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
+                layout.sobre === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT ? (
                   <FieldGroup title="Diferenciais">
                     <DiferenciaisInput form={form} />
                   </FieldGroup>
@@ -1597,9 +1600,9 @@ export function Editor({
                   previewVariantControls.equipe,
                   availableEquipeOptions.length
                     ? {
-                      value: tones.equipe,
-                      onChange: (t) => form.setTone("equipe", t),
-                    }
+                        value: tones.equipe,
+                        onChange: (t) => form.setTone("equipe", t),
+                      }
                     : undefined,
                 )}
                 <LawyerPhotosInput form={form} />

@@ -141,9 +141,6 @@ export function GalleryPageClient() {
           </HeaderHeading>
         </HeaderContent>
         <HeaderActions>
-          <Button asChild variant="outline">
-            <Link href="/">Voltar às LPs</Link>
-          </Button>
           <Button
             type="button"
             variant="outline"

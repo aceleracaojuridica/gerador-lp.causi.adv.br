@@ -57,12 +57,12 @@ export type CaptchaConfig = {
 };
 export type CustomCard = { title: string; text: string };
 
-export type PopupQuestion = {
-  id: string;
-  label: string;
-  type: "text" | "choice";
-  options: string[];
-};
+export type {
+  PopupCurrency,
+  PopupQuestion,
+  PopupQuestionBase,
+  PopupQuestionType,
+} from "../popup/types";
 
 export type Tone = "light" | "dark";
 
@@ -108,7 +108,6 @@ export type Office = {
     link: string;
     popup?: {
       questions: PopupQuestion[];
-      email?: { enabled: boolean; required: boolean };
     };
   };
   about: string;

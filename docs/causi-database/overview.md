@@ -68,7 +68,7 @@ Além dos schemas, o Supabase Storage é utilizado para arquivos — veja [stora
 |---------|-----|
 | **Supabase Auth** | Autenticação de usuários (email/senha, convite) |
 | **Supabase RLS** | Segurança em nível de linha (isolamento por `account_id`) |
-| **Supabase Edge Functions** | Webhooks de integrações (WhatsApp), cronjobs de billing, sincronização de canais, gerenciamento de assinaturas |
+| **Supabase Edge Functions** | Webhooks de integrações (WhatsApp), cronjobs de billing, sincronização de canais, gerenciamento de assinaturas, validação de subdomínio LP (`check-office-subdomain`) |
 | **Supabase Storage** | Armazenamento de arquivos (mídias, perfis, certificados) |
 | **Supabase Realtime** | Notificações em tempo real (novas mensagens, atualizações de deals) |
 
@@ -259,6 +259,7 @@ Este comando apenas ajusta a tabela técnica de controle — não altera dados d
 | [schema-billing.md](./schema-billing.md) | Detalhamento do schema `billing` |
 | [schema-classroom.md](./schema-classroom.md) | Detalhamento do schema `classroom` |
 | [functions.md](./functions.md) | Funções SQL (RPC e helpers) |
+| [edge-function-check-office-subdomain.md](./edge-function-check-office-subdomain.md) | Edge Function de validação de subdomínio LP (integração com gerador) |
 | [triggers.md](./triggers.md) | Triggers do banco de dados |
 | [rls.md](./rls.md) | Políticas de Row-Level Security |
 | [views.md](./views.md) | Views SQL |

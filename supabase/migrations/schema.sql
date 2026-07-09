@@ -13,6 +13,7 @@ CREATE TABLE public.leads (
   created_at timestamp with time zone DEFAULT now(),
   nome text,
   telefone text,
+  answers jsonb NOT NULL DEFAULT '{}'::jsonb,
   page_url text,
   subdomain text,
   CONSTRAINT leads_pkey PRIMARY KEY (id)

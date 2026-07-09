@@ -4,8 +4,7 @@ import { slugFromOfficeName } from "@/lib/landing-pages/slug";
 
 export const OFFICE_SUBDOMAIN_MIN_LENGTH = 3;
 export const OFFICE_SUBDOMAIN_MAX_LENGTH = 63;
-export const OFFICE_SUBDOMAIN_PATTERN =
-  /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
+export const OFFICE_SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
 
 export function normalizeOfficeSubdomainInput(value: string): string {
   return slugFromOfficeName(value);
@@ -35,10 +34,7 @@ export const officeSubdomainSchema = z
     (value) => OFFICE_SUBDOMAIN_PATTERN.test(value),
     "Formato inválido para subdomínio.",
   )
-  .refine(
-    (value) => !value.includes("--"),
-    "Não use hífen duplo consecutivo.",
-  )
+  .refine((value) => !value.includes("--"), "Não use hífen duplo consecutivo.")
   .refine(
     (value) => !value.startsWith("acct-"),
     "Este prefixo é reservado pelo sistema.",

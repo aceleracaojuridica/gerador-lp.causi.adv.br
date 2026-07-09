@@ -12,7 +12,10 @@ import { Etapas } from "@/components/Sections/etapas";
 import { FAQ } from "@/components/Sections/faq";
 import { Footer } from "@/components/Sections/footer";
 import { Hero } from "@/components/Sections/hero";
-import { LeadPopup } from "@/components/Sections/lead-popup";
+import {
+  type LeadCaptureContext,
+  LeadPopup,
+} from "@/components/Sections/lead-popup";
 import { PolicyPage } from "@/components/Sections/policy-page";
 import { Sobre } from "@/components/Sections/sobre";
 import { Solucao } from "@/components/Sections/solucao";
@@ -55,12 +58,15 @@ export function LandingPreview({
   schema,
   demo = true,
   editor,
+  leadContext,
 }: {
   schema: LpSchema;
   /** true no editor/preview interno; false na LP publicada */
   demo?: boolean;
   /** Habilita os seletores de variante flutuantes sobre cada seção (editor). */
   editor?: PreviewEditorConfig;
+  /** Contexto para captura de lead na LP publicada. */
+  leadContext?: LeadCaptureContext;
 }) {
   const accentRgb = hexToRgbString(schema.theme.accent);
   const brandRgb = hexToRgbString(schema.theme.brand);
@@ -350,7 +356,7 @@ export function LandingPreview({
               open={popupOpen}
               onClose={() => setPopupOpen(false)}
               questions={schema.office.buttons?.popup?.questions ?? []}
-              emailConfig={schema.office.buttons?.popup?.email}
+              leadContext={leadContext}
             />
           </>
         )}

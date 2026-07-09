@@ -117,7 +117,8 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", "font-sans", inter.className, fontVars)}
     >
-      <head>
+      <head />
+      <body>
         {showReactGrab ? (
           <Script
             src="//unpkg.com/react-grab/dist/index.global.js"
@@ -125,8 +126,6 @@ export default async function RootLayout({
             strategy="beforeInteractive"
           />
         ) : null}
-      </head>
-      <body>
         <ThemeWrapper>
           <Provider>{children}</Provider>
           <Toaster position="top-right" duration={5000} />

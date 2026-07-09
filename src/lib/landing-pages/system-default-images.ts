@@ -35,7 +35,12 @@ export type SystemGalleryImageItem = {
 };
 
 function normalizeSectionKey(value: string): SectionImageKey | null {
-  if (value === "hero" || value === "dor" || value === "sobre" || value === "solucao") {
+  if (
+    value === "hero" ||
+    value === "dor" ||
+    value === "sobre" ||
+    value === "solucao"
+  ) {
     return value;
   }
   return null;
@@ -132,7 +137,10 @@ export function pickDefaultSystemImages(
       .map((candidate) => pool.find((item) => item.id === candidate.id)?.url)
       .filter((url): url is string => Boolean(url));
     const filtered = rankedUrlPool.filter((url) => !used.has(url));
-    const chosen = pickOne(filtered.length > 0 ? filtered : rankedUrlPool, rand);
+    const chosen = pickOne(
+      filtered.length > 0 ? filtered : rankedUrlPool,
+      rand,
+    );
     if (chosen) {
       selected[key] = chosen;
       used.add(chosen);
@@ -170,7 +178,10 @@ function ensureSectionRanks(value: unknown): RankedSystemSelection {
   };
 }
 
-function buildRankerPrompt(theme: string, catalog: SystemGalleryImageItem[]): string {
+function buildRankerPrompt(
+  theme: string,
+  catalog: SystemGalleryImageItem[],
+): string {
   const candidateList = catalog.map((item) => ({
     id: item.id,
     sectionKey: item.sectionKey,

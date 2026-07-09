@@ -1,11 +1,14 @@
 /** Segmentos reservados do app — não são slugs de LP pública. */
 export const RESERVED_SEGMENTS = new Set([
+  "causi",
   "login",
   "cadastrar",
   "confirmar",
   "redefinir",
   "nova",
   "galeria",
+  "contatos",
+  "leads",
   "lp",
   "dashboard",
   "debug",

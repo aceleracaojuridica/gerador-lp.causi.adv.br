@@ -103,8 +103,9 @@ export async function resolveOfficeSubdomain(
   }
 
   const ownerBase =
-    slugFromOfficeName(session.user.name || session.user.email.split("@")[0] || "") ||
-    "owner";
+    slugFromOfficeName(
+      session.user.name || session.user.email.split("@")[0] || "",
+    ) || "owner";
 
   const subdomain = await allocateUniqueLpSlug(base, async (candidate) => {
     const [takenBySubdomain, reservedByName] = await Promise.all([
@@ -116,13 +117,16 @@ export async function resolveOfficeSubdomain(
 
   if (!subdomain) {
     const fallbackBase = `${base}-${ownerBase}`;
-    const fallback = await allocateUniqueLpSlug(fallbackBase, async (candidate) => {
-      const [takenBySubdomain, reservedByName] = await Promise.all([
-        isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
-        isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
-      ]);
-      return takenBySubdomain || reservedByName;
-    });
+    const fallback = await allocateUniqueLpSlug(
+      fallbackBase,
+      async (candidate) => {
+        const [takenBySubdomain, reservedByName] = await Promise.all([
+          isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
+          isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
+        ]);
+        return takenBySubdomain || reservedByName;
+      },
+    );
     if (!fallback) throw new Error("subdomain-conflict");
     await updateLpAccountOfficeSubdomain(session, fallback);
     return fallback;

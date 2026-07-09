@@ -81,9 +81,45 @@ export const heroFeatureSchema = z.object({
   text: z.string(),
 });
 
-export const popupQuestionSchema = z.object({
+const popupQuestionBaseSchema = z.object({
   id: z.string(),
   label: z.string(),
-  type: z.enum(["text", "choice"]),
-  options: z.array(z.string()),
+  required: z.boolean().optional(),
 });
+
+function coercePopupQuestion(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const q = raw as Record<string, unknown>;
+  const type = q.type;
+  if (type !== "choice") {
+    const { options: _options, allowMultiple: _allowMultiple, ...rest } = q;
+    return rest;
+  }
+  if (!Array.isArray(q.options)) {
+    return { ...q, options: [] };
+  }
+  return q;
+}
+
+const popupQuestionUnionSchema = z.discriminatedUnion("type", [
+  popupQuestionBaseSchema.extend({ type: z.literal("text") }),
+  popupQuestionBaseSchema.extend({ type: z.literal("number") }),
+  popupQuestionBaseSchema.extend({ type: z.literal("phone") }),
+  popupQuestionBaseSchema.extend({ type: z.literal("email") }),
+  popupQuestionBaseSchema.extend({ type: z.literal("url") }),
+  popupQuestionBaseSchema.extend({ type: z.literal("cep") }),
+  popupQuestionBaseSchema.extend({
+    type: z.literal("currency"),
+    currency: z.enum(["BRL", "USD", "EUR"]),
+  }),
+  popupQuestionBaseSchema.extend({
+    type: z.literal("choice"),
+    options: z.array(z.string()),
+    allowMultiple: z.boolean().optional(),
+  }),
+]);
+
+export const popupQuestionSchema = z.preprocess(
+  coercePopupQuestion,
+  popupQuestionUnionSchema,
+);

@@ -152,10 +152,7 @@ function PlainRow({
 }
 
 export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
-  const {
-    defaultOfficeName = "",
-    savedContacts = [],
-  } = props;
+  const { defaultOfficeName = "", savedContacts = [] } = props;
   const router = useRouter();
 
   const form = useForm<LandingPageCreateFormValues>({
@@ -899,7 +896,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                               <Input
                                 aria-label={`Link da rede ${i + 1}`}
                                 value={social.url}
-                                onChange={(e) => setSocialUrl(i, e.target.value)}
+                                onChange={(e) =>
+                                  setSocialUrl(i, e.target.value)
+                                }
                                 placeholder="Cole o link (Instagram, TikTok, YouTube...)"
                                 inputMode="url"
                                 className="flex-1"

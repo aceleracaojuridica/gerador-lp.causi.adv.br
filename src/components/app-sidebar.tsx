@@ -1,6 +1,6 @@
 "use client";
 
-import { Home } from "@material-symbols-svg/react";
+import { Group, Home } from "@material-symbols-svg/react";
 import {
   ChevronLeft,
   FileCopy,
@@ -91,6 +91,12 @@ export function AppSidebar({
       icon: Image,
       label: "Galeria de imagens",
       routes: ["/galeria"],
+    },
+    {
+      href: "/contatos",
+      icon: Group,
+      label: "Contatos",
+      routes: ["/contatos"],
     },
   ];
 

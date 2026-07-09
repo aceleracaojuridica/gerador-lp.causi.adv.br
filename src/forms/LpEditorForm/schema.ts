@@ -2,6 +2,7 @@ import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { DEFAULT_LOGO_BG } from "@/lib/landing-pages/colors";
 import { type FocoCopy, focoGenerico } from "@/lib/landing-pages/focos";
+import { normalizeOfficeButtons } from "@/lib/landing-pages/popup/normalize";
 import type {
   CustomSection,
   Layout,
@@ -165,12 +166,6 @@ const officeSchema = z.object({
       popup: z
         .object({
           questions: z.array(popupQuestionSchema),
-          email: z
-            .object({
-              enabled: z.boolean(),
-              required: z.boolean(),
-            })
-            .optional(),
         })
         .optional(),
     })
@@ -323,7 +318,8 @@ export function lpEditorDefaultValues(
 
           fonts: seed.office.fonts ?? { heading: "", body: "" },
           cardRadius: seed.office.cardRadius ?? "square",
-          buttons: seed.office.buttons ?? EMPTY_OFFICE.buttons,
+          buttons:
+            normalizeOfficeButtons(seed.office.buttons) ?? EMPTY_OFFICE.buttons,
           heroFeatures:
             seed.office.heroFeatures ??
             (copy.hero.features ?? []).map((f) => ({

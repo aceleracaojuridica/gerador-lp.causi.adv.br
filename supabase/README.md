@@ -41,6 +41,7 @@ supabase db push
 | Artefato | Uso |
 |----------|-----|
 | `reference/causi/schema.sql` | Snapshot do schema Causi para consulta local (não é migration deste repo) |
+| `reference/causi/functions/check-office-subdomain/` | Edge Function de referência — validação de subdomínio LP (deploy no Projeto A) |
 
 ## Seeds
 

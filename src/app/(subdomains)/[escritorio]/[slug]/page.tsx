@@ -107,7 +107,14 @@ export default async function PublicLpPage({ params }: Props) {
         {jsonLd}
       </script>
       <LandingPageTracking office={lp.schema.office} />
-      <LandingPreview schema={lp.schema} demo={false} />
+      <LandingPreview
+        schema={lp.schema}
+        demo={false}
+        leadContext={{
+          officeSubdomain: lp.officeSubdomain,
+          lpSlug: lp.slug,
+        }}
+      />
     </>
   );
 }

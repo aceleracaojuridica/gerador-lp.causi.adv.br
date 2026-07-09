@@ -93,16 +93,12 @@ export type CaptchaConfig = {
 /** Card simples de uma seção personalizada (sem ícone — numeração automática). */
 export type CustomCard = { title: string; text: string };
 
-/**
- * Pergunta do popup de lead personalizado. "text" = campo livre; "choice" =
- * opções clicáveis. O popup sempre termina com nome + telefone (fixos).
- */
-export type PopupQuestion = {
-  id: string;
-  label: string;
-  type: "text" | "choice";
-  options: string[]; // usado só em "choice"
-};
+export type {
+  PopupCurrency,
+  PopupQuestion,
+  PopupQuestionBase,
+  PopupQuestionType,
+} from "./popup/types";
 
 /**
  * Seção criada pelo usuário no editor. Formatos: "cards" (grade numerada),
@@ -168,7 +164,6 @@ export type Office = {
     link: string;
     popup?: {
       questions: PopupQuestion[];
-      email?: { enabled: boolean; required: boolean };
     };
   };
   about: string; // texto "sobre o escritório" (fornecido pelo usuário)
