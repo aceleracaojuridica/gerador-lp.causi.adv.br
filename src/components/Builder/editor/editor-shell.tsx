@@ -59,6 +59,7 @@ import {
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { applyLpEditorSaveErrorsToForm } from "@/forms/LpEditorForm/schema";
 import { useIsLgUp } from "@/hooks/use-media-query";
+import { useSession } from "@/hooks/use-session";
 import { isAccessDeniedError } from "@/lib/errors";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import {
@@ -88,7 +89,7 @@ import {
   SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
 } from "@/lib/landing-pages/variants";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
-import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
+import { showLpMessageError, showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { BuilderField, inputCls } from "../shared/fields";
 import {
@@ -319,6 +320,7 @@ export function Editor({
   initialAccountConfig: GlobalConfig;
 }) {
   const router = useRouter();
+  const session = useSession();
   const { office, set, layout } = form;
   const tones = layout.tones ?? DEFAULT_LAYOUT.tones;
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -885,7 +887,7 @@ export function Editor({
       const res = await saveLpAction(stored);
       if ("error" in res) {
         if (isAccessDeniedError(res.error)) {
-          showAccessDeniedToast();
+          showLpUpgradeToast(session);
         } else {
           showLpMessageError(res.error);
         }
@@ -920,7 +922,7 @@ export function Editor({
     try {
       const res = await publishLpAction(slug);
       if ("error" in res) {
-        if (isAccessDeniedError(res.error)) showAccessDeniedToast();
+        if (isAccessDeniedError(res.error)) showLpUpgradeToast(session);
         else showLpMessageError(res.error);
         setPublishState("error");
         return;
@@ -938,7 +940,7 @@ export function Editor({
       const res = await unpublishLpAction(slug);
       if (!res.ok) {
         if (res.error && isAccessDeniedError(res.error))
-          showAccessDeniedToast();
+          showLpUpgradeToast(session);
         else if (res.error) showLpMessageError(res.error);
         setPublishState("error");
         return;

@@ -1,12 +1,15 @@
 import type React from "react";
 import { SettingsNav } from "@/components/settings-nav";
 import { SettingsNavMobile } from "@/components/settings-nav-mobile";
+import { requireLpAccessOrRedirect } from "@/lib/session";
 
-export default function ConfiguracoesLayout({
+export default async function ConfiguracoesLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await requireLpAccessOrRedirect();
+
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden w-full h-full max-w-full">
       {/* Sidebar de Navegação - Apenas Desktop */}

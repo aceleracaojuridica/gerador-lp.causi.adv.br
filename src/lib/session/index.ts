@@ -1,4 +1,10 @@
-export { CAUSI_APP_URL, hasLpAccess, LP_PLAN_ID } from "./access";
+export {
+  CAUSI_APP_URL,
+  getLpUpgradeMessage,
+  hasLpAccess,
+  isSubscriptionActive,
+  LP_PLAN_ID,
+} from "./access";
 export {
   clearActiveAccountCookieAction,
   getUserAccountsAction,
@@ -6,7 +12,11 @@ export {
   syncSessionCookieAction,
 } from "./actions";
 export { getSession, shouldClearStaleAccountCookie } from "./get-session";
-export { requireAuth, requireLpSession } from "./require-auth";
+export {
+  requireAuth,
+  requireLpAccessOrRedirect,
+  requireLpSession,
+} from "./require-auth";
 export {
   requireSession,
   serverCanManageAgents,

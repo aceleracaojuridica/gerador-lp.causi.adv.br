@@ -11,7 +11,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import React from "react";
 import CausiLogoIcon from "@/components/icons/causi-logo";
-import { useLpAccess } from "@/components/lp-access-provider";
 import { SupportModal } from "@/components/support-modal";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/use-access-control";
@@ -59,7 +58,6 @@ export function AppSidebar({
   void dealsHref;
   const [localIsOpen, setLocalIsOpen] = React.useState(false);
   const [supportModalOpen, setSupportModalOpen] = React.useState(false);
-  const hasLpAccess = useLpAccess();
   const { hasFeature } = useAccessControl();
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : localIsOpen;
   const setIsOpen = externalSetIsOpen || setLocalIsOpen;
@@ -98,7 +96,7 @@ export function AppSidebar({
     },
   ];
 
-  const mainNavItems = [...(hasLpAccess ? navItems : [])];
+  const mainNavItems = navItems;
 
   const bottomItems: BottomNavItem[] = [
     {

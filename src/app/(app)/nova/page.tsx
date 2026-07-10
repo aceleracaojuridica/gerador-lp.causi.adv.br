@@ -1,5 +1,4 @@
-import { AccessDenied } from "@/components/ui/access-denied";
-import { hasLpAccess, requireAuth } from "@/lib/session";
+import { requireLpAccessOrRedirect } from "@/lib/session";
 import {
   createLpUserClient,
   sessionToLpContext,
@@ -9,8 +8,7 @@ import { NovaPageClient } from "./page.client";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const session = await requireAuth();
-  if (!hasLpAccess(session)) return <AccessDenied />;
+  const session = await requireLpAccessOrRedirect();
 
   const ctx = sessionToLpContext(session);
   const db = createLpUserClient(session);

@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/input-group";
 import { InputMask } from "@/components/ui/input-mask";
 import { Progress } from "@/components/ui/progress";
+import { useSession } from "@/hooks/use-session";
 import {
   detectLogoBackground,
   extractPalette,
@@ -59,7 +60,7 @@ import {
   TEMPLATES,
 } from "@/lib/landing-pages/templates";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
-import { showAccessDeniedToast } from "@/lib/toast";
+import { showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { LandingPageCreateFormProps } from "./landing-page-create-form.types";
 import {
@@ -154,6 +155,7 @@ function PlainRow({
 export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   const { defaultOfficeName = "", savedContacts = [] } = props;
   const router = useRouter();
+  const session = useSession();
 
   const form = useForm<LandingPageCreateFormValues>({
     defaultValues: landingPageCreateDefaultValues(props),
@@ -366,7 +368,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         images?: typeof generatedImages;
       };
       if (copyRes.status === 403 || copyData.error?.includes("acesso")) {
-        showAccessDeniedToast();
+        showLpUpgradeToast(session);
         setGerando(false);
         return;
       }
@@ -438,7 +440,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         slug?: string;
       };
       if (res.status === 403 || data.error?.includes("acesso")) {
-        showAccessDeniedToast();
+        showLpUpgradeToast(session);
         setGerando(false);
         return;
       }

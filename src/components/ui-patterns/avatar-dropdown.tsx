@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { useLpAccess } from "@/components/lp-access-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export default function AvatarDropdown() {
   const router = useRouter();
   const [isLoggingOut, startTransition] = useTransition();
   const session = useSession();
+  const hasLpAccess = useLpAccess();
 
   const avatarFallback = session.user.name.charAt(0).toUpperCase() || "U";
 
@@ -95,12 +97,14 @@ export default function AvatarDropdown() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
-            <Link href="/configuracoes">
-              <Settings />
-              Configurações
-            </Link>
-          </DropdownMenuItem>
+          {hasLpAccess ? (
+            <DropdownMenuItem className="text-muted-foreground text-xs" asChild>
+              <Link href="/configuracoes">
+                <Settings />
+                Configurações
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             className="text-muted-foreground text-xs"
             onSelect={handleLogout}

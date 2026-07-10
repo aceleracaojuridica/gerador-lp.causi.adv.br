@@ -1,11 +1,11 @@
 import { toast } from "sonner";
+import { getLpUpgradeMessage } from "@/lib/session/access";
+import type { Session } from "@/lib/session/types";
 import { type LpToastMessage, mapLpDbError, mapLpMessageError } from "./errors";
 
-export function showAccessDeniedToast(description?: string) {
+export function showLpUpgradeToast(session?: Session | null) {
   toast.error("Acesso negado", {
-    description:
-      description ??
-      "Você não tem permissão para usar o gerador de landing pages.",
+    description: getLpUpgradeMessage(session ?? null),
   });
 }
 

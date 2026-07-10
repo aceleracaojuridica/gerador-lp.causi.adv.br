@@ -4,7 +4,6 @@ import { Delete, MoreVert, OpenInNew, Web } from "@material-symbols-svg/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteLpAction } from "@/app/actions/lps";
-import { useLpAccess } from "@/components/lp-access-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,10 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
+import { useLpWriteAccess } from "@/hooks/use-lp-write-access";
+import { useSession } from "@/hooks/use-session";
 import { isAccessDeniedError } from "@/lib/errors";
 import type { LpListPreview } from "@/lib/landing-pages/lp-preview";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
-import { showAccessDeniedToast, showLpMessageError } from "@/lib/toast";
+import { showLpMessageError, showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type LpCardProps = {
@@ -49,7 +50,8 @@ export function LpCard({
   createdByLabel,
 }: LpCardProps) {
   const router = useRouter();
-  const hasLpAccess = useLpAccess();
+  const session = useSession();
+  const { guardWrite } = useLpWriteAccess();
   const { canDelete, canEdit } = useLpPermissions(createdByUserId);
   const [excluindo, setExcluindo] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,10 +60,7 @@ export function LpCard({
   const responsibleName = createdByLabel || "Usuário";
 
   function pedirExclusao() {
-    if (!hasLpAccess) {
-      showAccessDeniedToast();
-      return;
-    }
+    if (!guardWrite()) return;
     if (!canDelete) {
       showLpMessageError(
         "Somente o proprietário da conta pode excluir landing pages.",
@@ -77,7 +76,7 @@ export function LpCard({
       const res = await deleteLpAction(slug, deleteEverything);
       if ("error" in res) {
         if (isAccessDeniedError(res.error)) {
-          showAccessDeniedToast();
+          showLpUpgradeToast(session);
         } else {
           showLpMessageError(res.error);
         }
@@ -95,6 +94,7 @@ export function LpCard({
   }
 
   function openEditor() {
+    if (!guardWrite()) return;
     if (!canEdit) {
       showLpMessageError("Você só pode editar landing pages que você criou.");
       return;

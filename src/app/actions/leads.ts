@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/app/actions/lps";
-import { mapLpDbError } from "@/lib/errors";
+import { ACCESS_DENIED_ERROR, mapLpDbError } from "@/lib/errors";
 import {
   createLead,
   deleteLead,
@@ -11,12 +11,12 @@ import {
   type LeadRow,
   listLeads,
 } from "@/lib/landing-pages/lead-store";
-import { requireLpSession } from "@/lib/session";
+import { hasLpAccess, requireAuth, requireLpSession } from "@/lib/session";
 
 function toMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) {
     if (err.message === "UNAUTHENTICATED") return "Não autenticado.";
-    if (err.message === "FORBIDDEN") return "Acesso negado.";
+    if (err.message === "FORBIDDEN") return ACCESS_DENIED_ERROR;
     const mapped = mapLpDbError(err);
     return mapped.description || err.message;
   }
@@ -33,7 +33,10 @@ export async function listLeadsAction(
   | { ok: false; error: string }
 > {
   try {
-    const session = await requireLpSession();
+    const session = await requireAuth();
+    if (!hasLpAccess(session)) {
+      return { ok: true, leads: [], landingPages: [] };
+    }
     const result = await listLeads(session, filters);
     return { ok: true, ...result };
   } catch (err) {

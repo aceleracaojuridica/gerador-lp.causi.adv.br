@@ -3,7 +3,7 @@ import { AccessDenied } from "@/components/ui/access-denied";
 import { getConfig } from "@/lib/landing-pages/config";
 import { getLp, getLpMeta } from "@/lib/landing-pages/lp-store";
 import { canEditLp } from "@/lib/landing-pages/permissions";
-import { hasLpAccess, requireAuth } from "@/lib/session";
+import { requireLpAccessOrRedirect } from "@/lib/session";
 import { LpEditorPageClient } from "./page.client";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,7 @@ export default async function Page({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const session = await requireAuth();
-  if (!hasLpAccess(session)) return <AccessDenied />;
+  const session = await requireLpAccessOrRedirect();
   const { slug } = await params;
   const meta = await getLpMeta(session, slug);
   if (!meta) notFound();

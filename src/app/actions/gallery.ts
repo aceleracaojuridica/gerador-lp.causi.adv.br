@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/app/actions/lps";
-import { mapLpDbError } from "@/lib/errors";
+import { ACCESS_DENIED_ERROR, mapLpDbError } from "@/lib/errors";
 import {
   deleteGalleryImage,
   deleteOrphanedImages,
@@ -11,11 +11,12 @@ import {
   listSystemImagesForGallery,
   uploadGalleryImage,
 } from "@/lib/landing-pages/gallery-store";
-import { requireLpSession } from "@/lib/session";
+import { hasLpAccess, requireAuth, requireLpSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
 function toMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) {
+    if (err.message === "FORBIDDEN") return ACCESS_DENIED_ERROR;
     const mapped = mapLpDbError(err);
     return mapped.description || err.message;
   }
@@ -57,7 +58,10 @@ export async function listGalleryImagesAction(): Promise<
   { ok: true; images: GalleryImageDto[] } | { ok: false; error: string }
 > {
   try {
-    const session = await requireLpSession();
+    const session = await requireAuth();
+    if (!hasLpAccess(session)) {
+      return { ok: true, images: [] };
+    }
     const [accountImages, systemImages] = await Promise.all([
       listGalleryImages(session),
       listSystemImagesForGallery(session),

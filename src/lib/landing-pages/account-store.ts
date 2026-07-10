@@ -1,6 +1,7 @@
 import "server-only";
 
 import { fetchCausiOfficeSubdomainAvailability } from "@/lib/causi/check-office-subdomain";
+import { hasLpAccess } from "@/lib/session/access";
 import type { Session } from "@/lib/session/types";
 import { getCausiAccessToken } from "@/lib/supabase/causi-access-token";
 import {
@@ -20,18 +21,19 @@ function throwDbError(error: { message: string; code?: string }): never {
 }
 
 /**
- * Garante o espelho da conta Causi no Projeto B.
- * Atualiza nome/synced_at sem sobrescrever office_subdomain.
+ * Garante o espelho da conta Causi no Projeto B e sincroniza o entitlement de acesso.
+ * `lp_access_enabled` é gravado apenas via service role (não forjável pelo client).
  */
 export async function ensureLpAccount(session: Session): Promise<void> {
   const ctx = sessionToLpContext(session);
-  const db = createLpUserClient(session);
+  const admin = createLpServiceClient();
 
-  const { error } = await db.from("lp_accounts").upsert(
+  const { error } = await admin.from("lp_accounts").upsert(
     {
       id: ctx.accountId,
       name: session.account.name,
       synced_at: new Date().toISOString(),
+      lp_access_enabled: hasLpAccess(session),
     },
     { onConflict: "id" },
   );

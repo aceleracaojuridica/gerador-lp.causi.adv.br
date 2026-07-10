@@ -6,8 +6,9 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { saveConfigAction } from "@/app/actions/config";
+import { useSession } from "@/hooks/use-session";
 import { isAccessDeniedError } from "@/lib/errors";
-import { showAccessDeniedToast } from "@/lib/toast";
+import { showLpUpgradeToast } from "@/lib/toast";
 import {
   type GlobalConfigFormProps,
   type GlobalConfigFormValues,
@@ -22,6 +23,7 @@ import { globalConfigFormSchema } from "../schema";
  */
 export function useGlobalConfigForm({ initialData }: GlobalConfigFormProps) {
   const router = useRouter();
+  const session = useSession();
   const defaultValues = useMemo(
     () => globalConfigFormDefaultValues(initialData),
     [initialData],
@@ -36,7 +38,7 @@ export function useGlobalConfigForm({ initialData }: GlobalConfigFormProps) {
 
     if (!result.ok) {
       if (isAccessDeniedError(result.error)) {
-        showAccessDeniedToast();
+        showLpUpgradeToast(session);
       } else {
         toast.error(result.error);
       }

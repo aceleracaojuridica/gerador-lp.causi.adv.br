@@ -15,6 +15,13 @@ export async function requireAuth(): Promise<Session> {
   return session;
 }
 
+/** Guard para rotas de edição/config: exige plano LP ou redireciona para `/`. */
+export async function requireLpAccessOrRedirect(): Promise<Session> {
+  const session = await requireAuth();
+  if (!hasLpAccess(session)) redirect("/");
+  return session;
+}
+
 /**
  * Guard para Server Actions e Route Handlers: exige autenticação e plano LP.
  * Lança `UNAUTHENTICATED` ou `FORBIDDEN` para o chamador converter em JSON.

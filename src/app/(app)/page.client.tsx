@@ -1,7 +1,7 @@
 "use client";
 
 import { Add, Inbox } from "@material-symbols-svg/react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LpCard } from "@/components/Builder/gallery/lp-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   HeaderContent,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
+import { useLpWriteAccess } from "@/hooks/use-lp-write-access";
 import type { LpListItem } from "@/lib/landing-pages/lp-store";
 
 type HomePageClientProps = {
@@ -30,6 +31,13 @@ type HomePageClientProps = {
 };
 
 export function HomePageClient({ lps }: HomePageClientProps) {
+  const router = useRouter();
+  const { guardWrite } = useLpWriteAccess();
+
+  function goToCreate() {
+    guardWrite(() => router.push("/nova"));
+  }
+
   return (
     <Container orientation="vertical" overflow="hidden">
       <Header>
@@ -42,11 +50,9 @@ export function HomePageClient({ lps }: HomePageClientProps) {
           </HeaderHeading>
         </HeaderContent>
         <HeaderActions>
-          <Button asChild>
-            <Link href="/nova">
-              <Add />
-              Criar landing page
-            </Link>
+          <Button type="button" onClick={goToCreate}>
+            <Add />
+            Criar landing page
           </Button>
         </HeaderActions>
       </Header>
@@ -65,11 +71,9 @@ export function HomePageClient({ lps }: HomePageClientProps) {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent className="flex-row justify-center gap-3">
-              <Button asChild>
-                <Link href="/nova">
-                  <Add />
-                  Criar minha primeira página
-                </Link>
+              <Button type="button" onClick={goToCreate}>
+                <Add />
+                Criar minha primeira página
               </Button>
             </EmptyContent>
           </Empty>

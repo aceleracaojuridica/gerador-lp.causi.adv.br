@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
-import { LpAccessGate } from "@/components/lp-access-gate";
 import { LpAccessProvider } from "@/components/lp-access-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { dealsPath } from "@/lib/deals-path";
@@ -34,7 +33,7 @@ export default async function AppRouteLayout({
     >
       <LpAccessProvider hasLpAccess={hasLpAccess(session)}>
         <AppLayout dealsHref={dealsPath(pipelineCookieId)}>
-          <LpAccessGate>{children}</LpAccessGate>
+          {children}
         </AppLayout>
       </LpAccessProvider>
     </SessionProvider>

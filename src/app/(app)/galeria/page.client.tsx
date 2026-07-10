@@ -30,12 +30,14 @@ import {
   HeaderHeading,
 } from "@/components/ui-patterns/header";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
+import { useLpWriteAccess } from "@/hooks/use-lp-write-access";
+import { isAccessDeniedError } from "@/lib/errors";
 import {
   filterGalleryImages,
   type GalleryImageFilter,
 } from "@/lib/landing-pages/gallery-filters";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
-import { showLpMessageError } from "@/lib/toast";
+import { showLpMessageError, showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 function uniqueLandingPageUsages(usages: GalleryImageDto["usages"]) {
@@ -70,6 +72,7 @@ export function GalleryPageClient() {
   const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { canDeleteImage, canManageAll, session } = useLpPermissions();
+  const { guardWrite } = useLpWriteAccess();
   const accountImages = images.filter((img) => img.source === "account");
 
   const filteredImages = useMemo(
@@ -90,6 +93,7 @@ export function GalleryPageClient() {
   }, [load]);
 
   async function onUpload(file: File) {
+    if (!guardWrite()) return;
     setUploading(true);
     const reader = new FileReader();
     reader.onload = async () => {
@@ -99,7 +103,8 @@ export function GalleryPageClient() {
       );
       setUploading(false);
       if (!res.ok) {
-        showLpMessageError(res.error);
+        if (isAccessDeniedError(res.error)) showLpUpgradeToast(session);
+        else showLpMessageError(res.error);
         return;
       }
       setImages((prev) => [res.image, ...prev]);
@@ -108,12 +113,13 @@ export function GalleryPageClient() {
   }
 
   async function confirmDelete() {
-    if (!deleteId) return;
+    if (!deleteId || !guardWrite()) return;
     setDeleting(true);
     const res = await deleteGalleryImageAction(deleteId);
     setDeleting(false);
     if (!res.ok) {
-      showLpMessageError(res.error);
+      if (isAccessDeniedError(res.error)) showLpUpgradeToast(session);
+      else showLpMessageError(res.error);
       return;
     }
     setImages((prev) => prev.filter((i) => i.id !== deleteId));
@@ -121,12 +127,14 @@ export function GalleryPageClient() {
   }
 
   async function handleConfirmOrphanedDelete() {
+    if (!guardWrite()) return;
     setDeleting(true);
     const res = await deleteOrphanedImagesAction();
     setDeleting(false);
     setConfirmOrphanedDelete(false);
     if (!res.ok) {
-      showLpMessageError(res.error);
+      if (isAccessDeniedError(res.error)) showLpUpgradeToast(session);
+      else showLpMessageError(res.error);
       return;
     }
     void load();
@@ -146,7 +154,10 @@ export function GalleryPageClient() {
             variant="outline"
             className="text-destructive hover:bg-destructive/10"
             disabled={deleting || accountImages.length === 0}
-            onClick={() => setConfirmOrphanedDelete(true)}
+            onClick={() => {
+              if (!guardWrite()) return;
+              setConfirmOrphanedDelete(true);
+            }}
           >
             Limpar não utilizadas
           </Button>
@@ -164,7 +175,10 @@ export function GalleryPageClient() {
           <Button
             type="button"
             disabled={uploading}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => {
+              if (!guardWrite()) return;
+              fileRef.current?.click();
+            }}
           >
             <AddPhotoAlternate />
             {uploading ? "Enviando…" : "Enviar imagem"}
@@ -181,7 +195,13 @@ export function GalleryPageClient() {
             <p className="text-muted-foreground">
               Nenhuma imagem na galeria da conta.
             </p>
-            <Button type="button" onClick={() => fileRef.current?.click()}>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!guardWrite()) return;
+                fileRef.current?.click();
+              }}
+            >
               Enviar primeira imagem
             </Button>
           </div>
@@ -322,7 +342,10 @@ export function GalleryPageClient() {
                                     ? "Você não pode excluir esta imagem"
                                     : "Excluir"
                               }
-                              onClick={() => setDeleteId(img.id)}
+                              onClick={() => {
+                                if (!guardWrite()) return;
+                                setDeleteId(img.id);
+                              }}
                             >
                               <Delete className="size-4" />
                               <span className="sr-only">Excluir</span>
