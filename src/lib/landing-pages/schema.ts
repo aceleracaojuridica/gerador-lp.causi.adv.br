@@ -1,3 +1,4 @@
+import { PopupQuestion } from "./schema";
 import type {
   AreasVariant,
   DorVariant,

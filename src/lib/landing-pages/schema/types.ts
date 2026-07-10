@@ -1,3 +1,4 @@
+import type { PopupQuestion } from "../popup/types";
 import type {
   AreasVariant,
   DorVariant,

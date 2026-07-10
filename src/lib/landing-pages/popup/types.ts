@@ -82,7 +82,10 @@ export function createPopupQuestion(
       return {
         ...base,
         type: "currency",
-        currency: partial && "currency" in partial ? partial.currency : "BRL",
+        currency:
+          partial && "currency" in partial && partial.currency
+            ? partial.currency
+            : "BRL",
       };
     default:
       return { ...base, type };

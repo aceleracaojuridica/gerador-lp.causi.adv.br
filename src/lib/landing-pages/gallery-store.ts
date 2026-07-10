@@ -227,6 +227,9 @@ export async function uploadGalleryImage(
     height: (data.height as number | null) ?? null,
     createdAt: data.created_at as string,
     uploadedByUserId: data.uploaded_by_user_id as string,
+    source: "account",
+    readOnly: false,
+    canDelete: true,
     usages: [],
   };
 }
