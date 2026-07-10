@@ -7,14 +7,19 @@ import {
   isOfficeSubdomainTakenByOtherAccount,
   updateLpAccountOfficeSubdomain,
 } from "@/lib/landing-pages/account-store";
-import { parseOfficeSubdomain } from "@/lib/landing-pages/subdomain";
+import { validateOfficeSubdomainLocal } from "@/lib/landing-pages/subdomain";
 import { requireLpSession } from "@/lib/session";
 
-type AvailabilityResult = {
+export type AvailabilityResult = {
   available: boolean;
   reason?: "invalid" | "reserved" | "taken";
   normalized?: string;
+  message?: string;
 };
+
+const TAKEN_MESSAGE = "Este subdomínio já está em uso por outro escritório.";
+const RESERVED_MESSAGE =
+  "Este subdomínio está reservado por outro escritório do Causi.";
 
 export async function checkSubdomainAvailabilityAction(
   input: string,
@@ -22,12 +27,12 @@ export async function checkSubdomainAvailabilityAction(
   const session = await requireLpSession();
   const accountId = session.account.id;
 
-  let normalized: string;
-  try {
-    normalized = parseOfficeSubdomain(input);
-  } catch {
-    return { available: false, reason: "invalid" };
+  const local = validateOfficeSubdomainLocal(input);
+  if (!local.ok) {
+    return { available: false, reason: "invalid", message: local.message };
   }
+
+  const normalized = local.normalized;
 
   const [takenBySubdomain, reservedByName] = await Promise.all([
     isOfficeSubdomainTakenByOtherAccount(normalized, accountId),
@@ -35,10 +40,20 @@ export async function checkSubdomainAvailabilityAction(
   ]);
 
   if (takenBySubdomain) {
-    return { available: false, reason: "taken", normalized };
+    return {
+      available: false,
+      reason: "taken",
+      normalized,
+      message: TAKEN_MESSAGE,
+    };
   }
   if (reservedByName) {
-    return { available: false, reason: "reserved", normalized };
+    return {
+      available: false,
+      reason: "reserved",
+      normalized,
+      message: RESERVED_MESSAGE,
+    };
   }
 
   return { available: true, normalized };
@@ -61,13 +76,16 @@ export async function updateOfficeSubdomainAction(
 
   const availability = await checkSubdomainAvailabilityAction(input);
   if (!availability.available || !availability.normalized) {
-    const message =
-      availability.reason === "taken"
-        ? "Este subdomínio já está em uso por outro escritório."
-        : availability.reason === "reserved"
-          ? "Este subdomínio está reservado por outro escritório do Causi."
-          : "Subdomínio inválido.";
-    return { ok: false, error: message };
+    return {
+      ok: false,
+      error:
+        availability.message ??
+        (availability.reason === "taken"
+          ? TAKEN_MESSAGE
+          : availability.reason === "reserved"
+            ? RESERVED_MESSAGE
+            : "Subdomínio inválido."),
+    };
   }
 
   try {

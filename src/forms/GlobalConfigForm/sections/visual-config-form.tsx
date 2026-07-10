@@ -1,7 +1,7 @@
 "use client";
 
-import { Add } from "@material-symbols-svg/react";
-import { useEffect, useMemo, useState } from "react";
+import { Add, Check, CheckCircle, Refresh } from "@material-symbols-svg/react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -21,11 +21,26 @@ import {
 } from "@/components/ui/card";
 import { Form, FormControl, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { InputMask } from "@/components/ui/input-mask";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import type { GlobalConfig } from "@/lib/landing-pages/global-config";
 import { maskPhone } from "@/lib/landing-pages/phone";
-import { normalizeOfficeSubdomainInput } from "@/lib/landing-pages/subdomain";
+import {
+  normalizeOfficeSubdomainInput,
+  validateOfficeSubdomainLocal,
+} from "@/lib/landing-pages/subdomain";
 import { ConfigFormFooter } from "../shared/config-form-footer";
 import { FieldRow } from "../shared/field-row";
 import { FontSelect } from "../shared/font-select";
@@ -50,9 +65,10 @@ export function VisualConfigForm({
   const [savedSubdomain, setSavedSubdomain] = useState(initialOfficeSubdomain);
   const [draftSubdomain, setDraftSubdomain] = useState(initialOfficeSubdomain);
   const [isSavingSubdomain, setIsSavingSubdomain] = useState(false);
-  const [availability, setAvailability] = useState<
-    "idle" | "checking" | "available" | "invalid" | "taken" | "reserved"
-  >("idle");
+  const [subdomainVerified, setSubdomainVerified] = useState(false);
+  const [isValidatingSubdomain, setIsValidatingSubdomain] = useState(false);
+  const [validateError, setValidateError] = useState<string | null>(null);
+  const lastVerifiedSubdomainRef = useRef(initialOfficeSubdomain);
 
   const {
     fields: socials,
@@ -87,48 +103,70 @@ export function VisualConfigForm({
     () => normalizeOfficeSubdomainInput(accountName),
     [accountName],
   );
+  const localSubdomainValidation = useMemo(
+    () => validateOfficeSubdomainLocal(draftSubdomain),
+    [draftSubdomain],
+  );
   const isSubdomainDirty = draftSubdomain !== savedSubdomain;
+  const canValidateSubdomain =
+    canEditSubdomain &&
+    isSubdomainDirty &&
+    localSubdomainValidation.ok &&
+    !isValidatingSubdomain;
   const canSaveSubdomain =
     canEditSubdomain &&
     isSubdomainDirty &&
-    availability !== "checking" &&
-    availability !== "invalid" &&
-    availability !== "taken" &&
-    availability !== "reserved";
+    subdomainVerified &&
+    draftSubdomain === lastVerifiedSubdomainRef.current &&
+    !isSavingSubdomain;
 
-  useEffect(() => {
-    if (!canEditSubdomain) return;
-    if (!isSubdomainDirty) {
-      setAvailability("idle");
+  function onDraftSubdomainChange(value: string) {
+    const normalized = normalizeOfficeSubdomainInput(value);
+    setDraftSubdomain(normalized);
+    setValidateError(null);
+    if (normalized !== lastVerifiedSubdomainRef.current) {
+      setSubdomainVerified(false);
+    }
+  }
+
+  const onValidateSubdomain = useCallback(async () => {
+    setValidateError(null);
+
+    const local = validateOfficeSubdomainLocal(draftSubdomain);
+    if (!local.ok) {
+      setValidateError(local.message);
+      setSubdomainVerified(false);
       return;
     }
 
-    let cancelled = false;
-    setAvailability("checking");
+    if (!canEditSubdomain) return;
 
-    const timer = setTimeout(async () => {
+    setIsValidatingSubdomain(true);
+    try {
       const result = await checkSubdomainAvailabilityAction(draftSubdomain);
-      if (cancelled) return;
       if (result.available) {
-        setAvailability("available");
+        lastVerifiedSubdomainRef.current = draftSubdomain;
+        setSubdomainVerified(true);
+        setValidateError(null);
         return;
       }
-      if (result.reason === "taken") {
-        setAvailability("taken");
-        return;
-      }
-      if (result.reason === "reserved") {
-        setAvailability("reserved");
-        return;
-      }
-      setAvailability("invalid");
-    }, 500);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [canEditSubdomain, draftSubdomain, isSubdomainDirty]);
+      setSubdomainVerified(false);
+      setValidateError(
+        result.message ??
+          (result.reason === "taken"
+            ? "Este subdominio ja esta em uso por outro escritorio."
+            : result.reason === "reserved"
+              ? "Este subdominio esta reservado pelo nome de outro escritorio no Causi."
+              : "Subdominio invalido."),
+      );
+    } catch {
+      setSubdomainVerified(false);
+      setValidateError("Erro ao validar o subdominio. Tente novamente.");
+    } finally {
+      setIsValidatingSubdomain(false);
+    }
+  }, [canEditSubdomain, draftSubdomain]);
 
   async function onSaveSubdomain() {
     if (!canSaveSubdomain) return;
@@ -143,7 +181,9 @@ export function VisualConfigForm({
 
     setSavedSubdomain(result.officeSubdomain);
     setDraftSubdomain(result.officeSubdomain);
-    setAvailability("idle");
+    lastVerifiedSubdomainRef.current = result.officeSubdomain;
+    setSubdomainVerified(false);
+    setValidateError(null);
     toast.success("Subdominio atualizado com sucesso.");
   }
 
@@ -212,15 +252,72 @@ export function VisualConfigForm({
               description="Alterar este valor muda o host publico de todas as landing pages publicadas."
             >
               <div className="flex flex-col gap-2">
-                <Input
-                  value={draftSubdomain}
-                  onChange={(event) => setDraftSubdomain(event.target.value)}
-                  disabled={!canEditSubdomain || isSavingSubdomain}
-                  placeholder={suggestedSubdomain || "meu-escritorio"}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                />
+                <InputGroup
+                  data-disabled={
+                    !canEditSubdomain ||
+                    isSavingSubdomain ||
+                    isValidatingSubdomain
+                  }
+                >
+                  <InputGroupInput
+                    value={draftSubdomain}
+                    onChange={(event) =>
+                      onDraftSubdomainChange(event.target.value)
+                    }
+                    disabled={
+                      !canEditSubdomain ||
+                      isSavingSubdomain ||
+                      isValidatingSubdomain
+                    }
+                    placeholder={suggestedSubdomain || "meu-escritorio"}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    aria-invalid={
+                      (!localSubdomainValidation.ok && isSubdomainDirty) ||
+                      !!validateError
+                    }
+                  />
+                  <InputGroupAddon align="inline-end" className="pr-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InputGroupButton
+                          type="button"
+                          size="icon-md"
+                          variant={
+                            subdomainVerified
+                              ? "input-addon"
+                              : "input-addon-active"
+                          }
+                          disabled={!canValidateSubdomain}
+                          onClick={() => void onValidateSubdomain()}
+                          aria-label={
+                            isValidatingSubdomain
+                              ? "Validando subdominio"
+                              : subdomainVerified
+                                ? "Revalidar subdominio"
+                                : "Validar subdominio"
+                          }
+                        >
+                          {isValidatingSubdomain ? (
+                            <Spinner size="sm" variant="primary" />
+                          ) : subdomainVerified ? (
+                            <Check />
+                          ) : (
+                            <Refresh />
+                          )}
+                        </InputGroupButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isValidatingSubdomain
+                          ? "Validando..."
+                          : subdomainVerified
+                            ? "Revalidar subdominio"
+                            : "Validar subdominio"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </InputGroupAddon>
+                </InputGroup>
                 <p className="text-xs text-muted-foreground">
                   Sugestao do nome no Causi: {suggestedSubdomain || "-"}
                 </p>
@@ -233,32 +330,30 @@ export function VisualConfigForm({
                     Apenas o owner da conta pode alterar o subdominio.
                   </p>
                 )}
-                {availability === "checking" && (
-                  <p className="text-xs text-muted-foreground">
-                    Verificando disponibilidade...
+                {isSubdomainDirty &&
+                  !localSubdomainValidation.ok &&
+                  !validateError && (
+                    <p className="text-xs text-destructive">
+                      {localSubdomainValidation.message}
+                    </p>
+                  )}
+                {subdomainVerified && !validateError && (
+                  <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+                    <CheckCircle className="size-3.5 shrink-0" />
+                    Subdominio disponivel. Voce ja pode salvar.
                   </p>
                 )}
-                {availability === "available" && (
-                  <p className="text-xs text-emerald-600">
-                    Subdominio disponivel.
-                  </p>
+                {!!validateError && (
+                  <p className="text-xs text-destructive">{validateError}</p>
                 )}
-                {availability === "invalid" && (
-                  <p className="text-xs text-destructive">
-                    Formato invalido. Use kebab-case, 3-63 caracteres.
-                  </p>
-                )}
-                {availability === "taken" && (
-                  <p className="text-xs text-destructive">
-                    Este subdominio ja esta em uso por outro escritorio.
-                  </p>
-                )}
-                {availability === "reserved" && (
-                  <p className="text-xs text-destructive">
-                    Este subdominio esta reservado pelo nome de outro escritorio
-                    no Causi.
-                  </p>
-                )}
+                {isSubdomainDirty &&
+                  localSubdomainValidation.ok &&
+                  !subdomainVerified &&
+                  !validateError && (
+                    <p className="text-xs text-muted-foreground">
+                      Valide o subdominio para liberar o salvamento.
+                    </p>
+                  )}
                 <Button
                   type="button"
                   onClick={onSaveSubdomain}

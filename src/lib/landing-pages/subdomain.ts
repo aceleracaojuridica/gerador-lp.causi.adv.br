@@ -47,3 +47,22 @@ export const officeSubdomainSchema = z
 export function parseOfficeSubdomain(value: string): string {
   return officeSubdomainSchema.parse(value);
 }
+
+export type OfficeSubdomainLocalValidation =
+  | { ok: true; normalized: string }
+  | { ok: false; message: string };
+
+/** Validação local de formato e reservados — sem consulta remota. */
+export function validateOfficeSubdomainLocal(
+  value: string,
+): OfficeSubdomainLocalValidation {
+  const normalized = normalizeOfficeSubdomainInput(value);
+  const result = officeSubdomainSchema.safeParse(normalized);
+  if (result.success) {
+    return { ok: true, normalized: result.data };
+  }
+  return {
+    ok: false,
+    message: result.error.issues[0]?.message ?? "Subdomínio inválido.",
+  };
+}
