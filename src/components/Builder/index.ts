@@ -1,5 +1,4 @@
 export { MelhorarTextoButton } from "./create/melhorar-texto-button";
-export { TemplateCard } from "./create/template-card";
 export { Editor } from "./editor";
 export { LpCard } from "./gallery/lp-card";
 export { EstadoCidade } from "./shared/estado-cidade";

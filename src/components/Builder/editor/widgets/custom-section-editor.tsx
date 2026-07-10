@@ -188,8 +188,15 @@ export function CustomSectionEditor({
             value={section.youtubeId ?? ""}
             onChange={(e) => {
               const val = e.target.value;
-              const extracted = extractYouTubeId(val);
-              form.setCustomField(section.id, "youtubeId", extracted || val);
+              if (!val.trim()) {
+                form.setCustomField(section.id, "youtubeId", "");
+                return;
+              }
+              form.setCustomField(
+                section.id,
+                "youtubeId",
+                extractYouTubeId(val) || val,
+              );
             }}
             placeholder="https://www.youtube.com/watch?v=..."
           />

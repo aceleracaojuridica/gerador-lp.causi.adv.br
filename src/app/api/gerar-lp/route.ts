@@ -1,14 +1,13 @@
 import { buildSchema, type FocoCopy } from "@/lib/landing-pages/focos";
 import { imagensDoTema } from "@/lib/landing-pages/image-bank";
 import { callOpenAiForCopy } from "@/lib/landing-pages/lp-generate-copy";
+import { chooseLayoutWithAi } from "@/lib/landing-pages/lp-generate-layout";
 import {
   isLpSlugTaken,
   resolveOfficeSubdomain,
   saveLp,
 } from "@/lib/landing-pages/lp-store";
-import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
 import {
-  DEFAULT_LAYOUT,
   DEFAULT_THEME,
   type Layout,
   type Theme,
@@ -23,16 +22,15 @@ import {
   slugFromOfficeName,
 } from "@/lib/landing-pages/slug";
 import {
+  describeThemeMood,
+  listAccountImagesForRanking,
   listSystemGalleryImages,
   pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
-import {
-  createLpUserClient,
-  sessionToLpContext,
-} from "@/lib/supabase/lp-client";
+import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
 /*
   Gera a LP COMPLETA a partir do cadastro do front (self-service): escreve a
@@ -137,52 +135,72 @@ export async function POST(request: Request) {
     }
   }
 
+  const theme: Theme = p.theme ?? DEFAULT_THEME;
+  const videoId = (p.videoId ?? "").trim();
+  const lawyerCount = (p.lawyers ?? []).filter((l) => l.photo?.trim()).length;
+
+  // Layout: usa pré-gerado ou chama a IA agora
+  let baseLayout: Layout;
+  if (p.layout) {
+    baseLayout = p.layout;
+  } else {
+    const chosenLayout = await chooseLayoutWithAi(apiKey, {
+      tema,
+      about: (p.about ?? "").trim() || undefined,
+      theme,
+      lawyerCount,
+      hasVideo: Boolean(videoId),
+      hasMetrics: Boolean(
+        Array.isArray((p as { metrics?: { label?: string }[] }).metrics) &&
+          (p as { metrics: { label?: string }[] }).metrics.some((m) =>
+            m.label?.trim(),
+          ),
+      ),
+    });
+    baseLayout = chosenLayout.layout;
+  }
+
+  const layout: Layout = {
+    ...baseLayout,
+    hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : baseLayout.hero,
+  };
+
   // 2. Imagens: usa pré-geradas ou busca agora
   let images: { hero: string; dor: string; sobre: string; solucao: string };
   if (p.images) {
     images = p.images;
   } else {
     const ctx = sessionToLpContext(user);
-    const db = createLpUserClient(user);
 
-    const systemCatalog = await listSystemGalleryImages(user);
-    const systemDefaults = await pickSystemImagesWithAiRanking({
+    // Pool de candidatos por seção: catálogo global do sistema + galeria da
+    // PRÓPRIA conta (nunca de outra conta). Sem prioridade fixa de origem —
+    // a IA escolhe entre todos os elegíveis para aquela seção.
+    const [systemCatalog, accountCatalog] = await Promise.all([
+      listSystemGalleryImages(user),
+      listAccountImagesForRanking(user),
+    ]);
+    const catalog = [...accountCatalog, ...systemCatalog];
+
+    const picked = await pickSystemImagesWithAiRanking({
       apiKey,
       theme: tema,
-      catalog: systemCatalog,
+      paletteHint: describeThemeMood(theme),
+      catalog,
       seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
     });
+
+    // Só cai no banco curado (Unsplash) quando não há nenhum candidato
+    // próprio (conta + sistema) para a seção.
     const bank = imagensDoTema(tema);
-
-    // Buscar imagens da galeria da conta
-    const { data: galleryImages } = await db
-      .from("lp_account_images")
-      .select("id, storage_path")
-      .eq("account_id", ctx.accountId);
-
-    const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
-
-    const getSlotImage = (slot: string, systemUrl: string, bankUrl: string) => {
-      // 1. Qualquer imagem da galeria (com índice para distribuir)
-      if (galleryPaths.length > 0) {
-        const slotIndex = ["hero", "dor", "sobre", "solucao"].indexOf(slot);
-        const path = galleryPaths[slotIndex % galleryPaths.length];
-        return getPublicMediaUrl(path);
-      }
-      // 2. Catálogo global / Banco curado
-      return systemUrl || bankUrl;
-    };
-
     images = {
-      hero: getSlotImage("hero", systemDefaults.hero, bank.hero),
-      dor: getSlotImage("dor", systemDefaults.dor, bank.dor),
-      sobre: getSlotImage("sobre", systemDefaults.sobre, bank.sobre),
-      solucao: getSlotImage("solucao", systemDefaults.solucao, bank.solucao),
+      hero: picked.hero || bank.hero,
+      dor: picked.dor || bank.dor,
+      sobre: picked.sobre || bank.sobre,
+      solucao: picked.solucao || bank.solucao,
     };
   }
 
   // 3. Monta office + schema
-  const theme: Theme = p.theme ?? DEFAULT_THEME;
   const office = buildOfficeFromGerarLpPayload(
     {
       name,
@@ -204,24 +222,10 @@ export async function POST(request: Request) {
       socials: p.socials ?? [],
       copy,
       images,
-      layout: p.layout ?? DEFAULT_LAYOUT,
+      layout,
     },
     images,
   );
-
-  const videoId = (p.videoId ?? "").trim();
-
-  // Layout: preset escolhido no wizard (só variantes) ou DEFAULT_LAYOUT; vídeo
-  // sempre força a variant semântica do hero com mídia embutida.
-  const layout: Layout = p.layout
-    ? {
-        ...p.layout,
-        hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : p.layout.hero,
-      }
-    : {
-        ...DEFAULT_LAYOUT,
-        hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : DEFAULT_LAYOUT.hero,
-      };
 
   const schema = buildSchema(
     office,

@@ -27,6 +27,7 @@ const serverEnvSchema = z
     LP_SUPABASE_JWT_SECRET: z.string().min(1),
     LP_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     OPENAI_API_KEY: optionalSecret,
+    OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
     UNSPLASH_ACCESS_KEY: optionalSecret,
   })
   .transform((values) => ({
@@ -49,6 +50,7 @@ const runtimeServerEnv = {
   LP_SUPABASE_JWT_SECRET: process.env.LP_SUPABASE_JWT_SECRET,
   LP_SUPABASE_SERVICE_ROLE_KEY: process.env.LP_SUPABASE_SERVICE_ROLE_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: process.env.OPENAI_MODEL,
   UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY,
 };
 

@@ -22,11 +22,8 @@ import { EstadoCidade } from "@/components/Builder/create/estado-cidade";
 import { maskPhone } from "@/components/Builder/create/fields";
 import { MelhorarTextoButton } from "@/components/Builder/create/melhorar-texto-button";
 import { PalettePicker } from "@/components/Builder/create/palette-picker";
-import { TemplateCard } from "@/components/Builder/create/template-card";
-import CausiLogo from "@/components/icons/causi-logo";
 import { SocialIcon } from "@/components/icons/social-icon";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -45,6 +42,7 @@ import {
 } from "@/components/ui/input-group";
 import { InputMask } from "@/components/ui/input-mask";
 import { Progress } from "@/components/ui/progress";
+import { LandingPageFactoryLoading } from "@/components/ui-patterns/landing-page-factory-loading";
 import { useSession } from "@/hooks/use-session";
 import {
   detectLogoBackground,
@@ -52,13 +50,12 @@ import {
 } from "@/lib/landing-pages/colors";
 import type { FocoCopy } from "@/lib/landing-pages/focos";
 import { matchPalette } from "@/lib/landing-pages/palettes";
-import { DEFAULT_THEME, type Theme } from "@/lib/landing-pages/schema";
-import { detectNetwork } from "@/lib/landing-pages/socials";
 import {
-  DEFAULT_TEMPLATE_ID,
-  getTemplate,
-  TEMPLATES,
-} from "@/lib/landing-pages/templates";
+  DEFAULT_THEME,
+  type Layout,
+  type Theme,
+} from "@/lib/landing-pages/schema";
+import { detectNetwork } from "@/lib/landing-pages/socials";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -84,7 +81,7 @@ const STEP_INFO = [
   },
   {
     label: "Imagens",
-    description: "Logo, fotos, vídeo e estrutura",
+    description: "Logo, fotos e vídeo",
     icon: Photo,
   },
 ] as const;
@@ -197,8 +194,6 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   } = values;
 
   const [step, setStep] = useState(0);
-  const [selectedTemplateId, setSelectedTemplateId] =
-    useState(DEFAULT_TEMPLATE_ID);
   const [showLawyers, setShowLawyers] = useState(false);
   const hasSavedContacts = savedContacts.length > 0;
   const primarySavedContact =
@@ -338,7 +333,13 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   async function generateAndSaveLandingPage() {
     setErro("");
     setGerando(true);
-    setGerandoMsg("Escrevendo a copy sobre o tema e selecionando as imagens…");
+    setGerandoMsg(
+      "Escrevendo a copy, escolhendo o layout e selecionando as imagens…",
+    );
+
+    const lawyerCount = showLawyers
+      ? lawyers.filter((l) => l.photo.trim()).length
+      : 0;
 
     const copyPayload = {
       name: defaultOfficeName.trim(),
@@ -346,6 +347,9 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
       city: [addresses[0]?.cidade, addresses[0]?.uf].filter(Boolean).join("/"),
       about: about.trim(),
       diferenciais: diferenciais.map((d) => d.val.trim()).filter(Boolean),
+      theme,
+      lawyerCount,
+      videoId: videoId.trim(),
     };
 
     let generatedCopy: FocoCopy;
@@ -355,6 +359,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
       sobre: string;
       solucao: string;
     };
+    let generatedLayout: Layout;
 
     try {
       const copyRes = await fetch("/api/gerar-copy", {
@@ -366,16 +371,18 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         error?: string;
         copy?: FocoCopy;
         images?: typeof generatedImages;
+        layout?: Layout;
       };
       if (copyRes.status === 403 || copyData.error?.includes("acesso")) {
         showLpUpgradeToast(session);
         setGerando(false);
         return;
       }
-      if (!copyRes.ok || !copyData.copy) {
+      if (!copyRes.ok || !copyData.copy || !copyData.layout) {
         throw new Error(copyData.error || "Falha ao gerar a copy.");
       }
       generatedCopy = copyData.copy;
+      generatedLayout = copyData.layout;
       generatedImages = copyData.images ?? {
         hero: "",
         dor: "",
@@ -396,7 +403,6 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
 
     setGerandoMsg("Criando sua landing page…");
 
-    const templateLayout = getTemplate(selectedTemplateId).layout;
     const savePayload = {
       name: defaultOfficeName.trim(),
       tema: tema.trim(),
@@ -426,7 +432,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         .filter((s) => s.url),
       copy: generatedCopy,
       images: generatedImages,
-      layout: templateLayout,
+      layout: generatedLayout,
     };
 
     try {
@@ -486,26 +492,14 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
   // ── Tela de loading ──────────────────────────────────────────────────────
   if (gerando) {
     return (
-      <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center overflow-hidden bg-muted/15 px-4 sm:px-6">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="pt-8">
-            <div className="relative mx-auto mb-5 flex size-16 items-center justify-center">
-              <CausiLogo
-                className="relative size-10 animate-pulse"
-                aria-hidden
-              />
-              <span className="sr-only">Gerando copy da landing page</span>
-            </div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Criando a página de {defaultOfficeName}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {gerandoMsg ||
-                "Escrevendo a copy, buscando imagens e montando sua landing page. Leva alguns segundos."}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <LandingPageFactoryLoading
+        className="h-full min-h-0 flex-1"
+        title={`Criando a página de ${defaultOfficeName}`}
+        message={
+          gerandoMsg ||
+          "Escrevendo a copy, buscando imagens e montando sua landing page. Leva alguns segundos."
+        }
+      />
     );
   }
 
@@ -1267,29 +1261,6 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                         )}
                       />
                     ) : null}
-
-                    <div>
-                      <p className="mb-1.5 text-sm font-medium text-gray-700">
-                        Estrutura inicial{" "}
-                        <span className="font-normal text-gray-400">
-                          (opcional)
-                        </span>
-                      </p>
-                      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-                        Você pode escolher uma destas opções prontas para uso ou
-                        editar o seu depois no editor.
-                      </p>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {TEMPLATES.map((template) => (
-                          <TemplateCard
-                            key={template.id}
-                            template={template}
-                            selected={selectedTemplateId === template.id}
-                            onSelect={() => setSelectedTemplateId(template.id)}
-                          />
-                        ))}
-                      </div>
-                    </div>
 
                     <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                       As imagens de cenário (fundo do hero, dor, escritório e

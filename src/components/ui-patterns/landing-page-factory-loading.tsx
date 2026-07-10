@@ -5,6 +5,8 @@ import "./landing-page-factory-loading.css";
 
 interface LandingPageFactoryLoadingProps {
   className?: string;
+  title?: string;
+  message?: string;
 }
 
 const FACTORY_UNIT_KEYS = ["unit-a", "unit-b", "unit-c"] as const;
@@ -35,6 +37,8 @@ function FactoryLandingUnit({
 /** Fallback de rotas de criação/edição de LP — esteira montando landing pages. */
 export function LandingPageFactoryLoading({
   className,
+  title,
+  message = "Montando sua landing page...",
 }: LandingPageFactoryLoadingProps) {
   return (
     <div
@@ -70,11 +74,12 @@ export function LandingPageFactoryLoading({
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2 px-4 text-center">
         <CausiLogoIcon className="size-12 animate-pulse [animation-duration:1s]" />
-        <p className="text-sm text-muted-foreground-light">
-          Montando sua landing page...
-        </p>
+        {title ? (
+          <p className="text-base font-semibold text-foreground">{title}</p>
+        ) : null}
+        <p className="text-sm text-muted-foreground-light">{message}</p>
       </div>
     </div>
   );

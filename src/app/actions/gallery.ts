@@ -11,6 +11,10 @@ import {
   listSystemImagesForGallery,
   uploadGalleryImage,
 } from "@/lib/landing-pages/gallery-store";
+import {
+  type LeadLandingPageOption,
+  listAccountLandingPages,
+} from "@/lib/landing-pages/lead-store";
 import { hasLpAccess, requireAuth, requireLpSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,6 +30,8 @@ function toMessage(err: unknown, fallback: string): string {
 export type GalleryImageDto = GalleryImageItem & {
   uploadedByName: string;
 };
+
+export type GalleryLandingPageDto = LeadLandingPageOption;
 
 async function enrichWithUploaderNames(
   items: GalleryImageItem[],
@@ -55,20 +61,26 @@ async function enrichWithUploaderNames(
 }
 
 export async function listGalleryImagesAction(): Promise<
-  { ok: true; images: GalleryImageDto[] } | { ok: false; error: string }
+  | {
+      ok: true;
+      images: GalleryImageDto[];
+      landingPages: GalleryLandingPageDto[];
+    }
+  | { ok: false; error: string }
 > {
   try {
     const session = await requireAuth();
     if (!hasLpAccess(session)) {
-      return { ok: true, images: [] };
+      return { ok: true, images: [], landingPages: [] };
     }
-    const [accountImages, systemImages] = await Promise.all([
+    const [accountImages, systemImages, landingPages] = await Promise.all([
       listGalleryImages(session),
       listSystemImagesForGallery(session),
+      listAccountLandingPages(session),
     ]);
     const images = [...systemImages, ...accountImages];
     const enriched = await enrichWithUploaderNames(images);
-    return { ok: true, images: enriched };
+    return { ok: true, images: enriched, landingPages };
   } catch (err) {
     return { ok: false, error: toMessage(err, "Erro ao listar imagens.") };
   }

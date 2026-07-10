@@ -10,18 +10,25 @@ export const GALLERY_IMAGE_FILTER_OPTIONS: {
   { value: "system", label: "Sistema" },
 ];
 
+export const GALLERY_ALL_LPS_VALUE = "__all__";
+
+export type GaleriaFilterValues = {
+  origem: GalleryImageFilter;
+  lpSlug: string;
+};
+
 type FilterableGalleryImage = {
   source: "account" | "system";
   uploadedByUserId: string;
+  usages: { slug: string }[];
 };
 
-/** Filtra imagens da galeria por origem ou por uploader (minhas). */
-export function filterGalleryImages<T extends FilterableGalleryImage>(
+function filterByOrigem<T extends FilterableGalleryImage>(
   images: T[],
-  filter: GalleryImageFilter,
+  origem: GalleryImageFilter,
   currentUserId?: string,
 ): T[] {
-  switch (filter) {
+  switch (origem) {
     case "system":
       return images.filter((img) => img.source === "system");
     case "account":
@@ -35,6 +42,29 @@ export function filterGalleryImages<T extends FilterableGalleryImage>(
     default:
       return images;
   }
+}
+
+/** Filtra imagens da galeria por origem, uploader ou landing page. */
+export function filterGalleryImages<T extends FilterableGalleryImage>(
+  images: T[],
+  filters: GaleriaFilterValues | GalleryImageFilter,
+  currentUserId?: string,
+  allLpsValue: string = GALLERY_ALL_LPS_VALUE,
+): T[] {
+  const values: GaleriaFilterValues =
+    typeof filters === "string"
+      ? { origem: filters, lpSlug: allLpsValue }
+      : filters;
+
+  let result = filterByOrigem(images, values.origem, currentUserId);
+
+  if (values.lpSlug && values.lpSlug !== allLpsValue) {
+    result = result.filter((img) =>
+      img.usages.some((usage) => usage.slug === values.lpSlug),
+    );
+  }
+
+  return result;
 }
 
 type SemanticCandidate = {

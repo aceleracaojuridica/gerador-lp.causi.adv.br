@@ -20,7 +20,6 @@ export {
 export type DetailSectionId =
   | "identidade"
   | "imagens"
-  | "modelo"
   | "aparencia"
   | "integracoes"
   | "seo"
@@ -38,7 +37,6 @@ export type DetailSectionId =
 export const DETAIL_SECTION_IDS: DetailSectionId[] = [
   "identidade",
   "imagens",
-  "modelo",
   "aparencia",
   "integracoes",
   "seo",

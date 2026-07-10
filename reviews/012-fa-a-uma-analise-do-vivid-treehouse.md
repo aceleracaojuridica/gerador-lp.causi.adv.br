@@ -84,3 +84,54 @@ Wizard "Imagens" (sem mudança de UI além de remover a grade de templates)
 - Testar com `OPENAI_API_KEY` temporariamente inválida/ausente: confirmar que `chooseLayoutWithAi` cai no fallback determinístico sem quebrar a criação da LP (mesmo comportamento hoje já testável em `pickSystemImagesWithAiRanking`).
 - Confirmar visualmente que `/templates` e `/templates/[id]` retornam 404 (rota removida) e que o editor de uma LP existente não mostra mais a seção "Modelo".
 - Rodar `pnpm build`/typecheck para garantir que nenhuma referência a `templates.ts`/`LpTemplate` ficou pendurada.
+
+---
+
+Plano executado. A criação de LP agora centraliza as decisões da IA no pipeline, sem escolha manual de template.
+
+## O que mudou
+
+### 1. Escolha de layout via IA (`lp-generate-layout.ts`)
+- Nova função `chooseLayoutWithAi()` usa `gpt-4o-mini` com JSON estruturado validado por `aiLayoutSchema` (variantes reais de `variants.ts`)
+- Contexto no prompt: tema, about, paleta da logo, quantidade de advogados, vídeo e métricas
+- `chooseLayoutDeterministic()` como fallback (mesmo padrão do ranking de imagens)
+- Override de vídeo: `HERO_VARIANT_VIDEO_EMBEDDED` quando há `videoId`
+
+### 2. Pipeline integrado
+- **`/api/gerar-copy`**: roda copy + layout em `Promise.all`; retorna `{ copy, images, layout }`; passa `paletteHint` ao ranker de imagens
+- **`/api/gerar-lp`**: usa `layout` do payload ou chama `chooseLayoutWithAi` no fluxo direto
+- **`describeThemeMood()`**: classifica a paleta (ex.: "sóbrio, paleta escura") para melhorar o ranking semântico de imagens
+
+### 3. Wizard (`/nova`)
+- Removida a grade "Estrutura inicial" (4 templates)
+- Envia `theme`, `lawyerCount` e `videoId` para `/api/gerar-copy`
+- Salva a LP com o `layout` devolvido pela IA
+
+### 4. Templates removidos
+- Rotas `/templates` e `/templates/[id]`
+- `templates.ts`, `TemplateCard`, `ModeloPicker`, `applyTemplate`
+- Seção "Modelo" do editor
+- Assets em `public/templates/`
+
+## Premissa mantida (conforme o plano)
+
+A **extração de paleta continua 100% determinística** via `extractPalette()` no navegador — não há chamada de IA para cores. A IA usa a paleta já extraída como contexto para escolher layout e imagens.
+
+## Verificação
+
+- `pnpm build` passou
+- `/templates` não aparece mais nas rotas
+- Nenhuma referência pendente a `templates.ts` / `LpTemplate` em `src/`
+
+## Fluxo atual
+
+```
+Logo → extractPalette() [cliente, determinístico]
+  └─ POST /api/gerar-copy (paralelo):
+       ├─ callOpenAiForCopy()           → copy
+       ├─ chooseLayoutWithAi()          → layout
+       └─ pickSystemImagesWithAiRanking(paletteHint) → images
+  └─ POST /api/gerar-lp → salva tudo
+```
+
+No editor, o advogado ainda pode ajustar variantes seção a seção pelos pickers granulares existentes — só não há mais preset global de "Modelo".dd
