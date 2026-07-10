@@ -99,13 +99,17 @@ export default async function PublicLpPage({ params }: Props) {
     officeSubdomain: lp.officeSubdomain,
     lpSlug: lp.slug,
   };
-  const jsonLd = JSON.stringify(buildJsonLd(lp.schema, publicUrl));
+  const seo = resolveSeo(lp.schema, publicUrl);
+  const jsonLd =
+    seo.indexable && JSON.stringify(buildJsonLd(lp.schema, publicUrl));
 
   return (
     <>
-      <script type="application/ld+json" suppressHydrationWarning>
-        {jsonLd}
-      </script>
+      {jsonLd ? (
+        <script type="application/ld+json" suppressHydrationWarning>
+          {jsonLd}
+        </script>
+      ) : null}
       <LandingPageTracking office={lp.schema.office} />
       <LandingPreview
         schema={lp.schema}

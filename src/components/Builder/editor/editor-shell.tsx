@@ -183,7 +183,7 @@ function getSectionDescription(sectionId: DetailSectionId): string {
     case "aparencia":
       return "Tipografia, botões e detalhes visuais";
     case "integracoes":
-      return "Tracking, scripts, domínio e captcha";
+      return "Tracking, scripts e visibilidade nos buscadores";
     case "seo":
       return "Título, descrição e indexação";
     case "hero":
@@ -314,7 +314,9 @@ export function Editor({
 }) {
   const router = useRouter();
   const session = useSession();
-  const { office, set, layout } = form;
+  const { office, set, layout, copy } = form;
+  const seoIndexable =
+    copy.seo?.indexable ?? form.schema.seo?.indexable ?? false;
   const tones = layout.tones ?? DEFAULT_LAYOUT.tones;
   const previewRef = useRef<HTMLIFrameElement>(null);
   const leftPanelRef = useRef<PanelImperativeHandle>(null);
@@ -423,6 +425,12 @@ export function Editor({
     return [];
   }, [lawyerCount, layout.equipe]);
 
+  useEffect(() => {
+    if (!seoIndexable && detailSection === "seo") {
+      setDetailSection(null);
+    }
+  }, [seoIndexable, detailSection]);
+
   const editorSections = useMemo((): WorkspaceSectionMeta[] => {
     const items: WorkspaceSectionMeta[] = [
       {
@@ -463,7 +471,7 @@ export function Editor({
         previewTarget: "sec-hero",
         description: getSectionDescription("seo"),
         stage: "foundation",
-        enabled: true,
+        enabled: seoIndexable,
       },
       {
         id: "hero",
@@ -566,7 +574,7 @@ export function Editor({
       },
     ];
     return items;
-  }, [layout]);
+  }, [layout, seoIndexable]);
 
   const currentDetail =
     detailSection === null
@@ -1673,7 +1681,7 @@ export function Editor({
           open={restoreDefaultsOpen}
           onOpenChange={setRestoreDefaultsOpen}
           title="Restaurar padrão da conta"
-          description="Isso substitui o tracking, os scripts, o captcha e o domínio desta página pelos valores padrão da conta. Continuar?"
+          description="Isso substitui o tracking e os scripts desta página pelos valores padrão da conta. Continuar?"
           confirmLabel="Restaurar"
           variant="destructive"
           onConfirm={restoreAccountDefaults}

@@ -1,6 +1,7 @@
 import Script from "next/script";
 import { Fragment } from "react";
 import type { Office } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 
 const COMPLETE_SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
 
@@ -80,18 +81,31 @@ function renderSnippet(id: string, html: string | undefined) {
  * Injeta os scripts e snippets de tracking da LP publicada.
  *
  * @remarks
- * O projeto prioriza IDs estruturados por provedor e só mantém snippets HTML
- * como recurso avançado. Os snippets são renderizados apenas na rota pública.
+ * Só injeta provedores com toggle ativo e ID preenchido.
  */
 export function LandingPageTracking({ office }: { office: Office }) {
-  const tracking = office.tracking;
-  const gtagLoaderId =
-    tracking?.ga4MeasurementId || tracking?.googleAdsId || "";
+  const tracking = normalizeTracking(office.tracking);
+  const ga4Id =
+    tracking.ga4.enabled && tracking.ga4.measurementId.trim()
+      ? tracking.ga4.measurementId.trim()
+      : "";
+  const gtmId =
+    tracking.gtm.enabled && tracking.gtm.containerId.trim()
+      ? tracking.gtm.containerId.trim()
+      : "";
+  const metaPixelId =
+    tracking.metaPixel.enabled && tracking.metaPixel.pixelId.trim()
+      ? tracking.metaPixel.pixelId.trim()
+      : "";
+  const googleAdsId =
+    tracking.googleAds.enabled && tracking.googleAds.adsId.trim()
+      ? tracking.googleAds.adsId.trim()
+      : "";
+
+  const gtagLoaderId = ga4Id || googleAdsId;
   const gtagConfigs = [
-    tracking?.ga4MeasurementId
-      ? `gtag('config', '${tracking.ga4MeasurementId}');`
-      : "",
-    tracking?.googleAdsId ? `gtag('config', '${tracking.googleAdsId}');` : "",
+    ga4Id ? `gtag('config', '${ga4Id}');` : "",
+    googleAdsId ? `gtag('config', '${googleAdsId}');` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -100,18 +114,18 @@ export function LandingPageTracking({ office }: { office: Office }) {
     <>
       {renderSnippet("lp-tracking-head", office.tags?.head)}
 
-      {tracking?.gtmContainerId ? (
+      {gtmId ? (
         <>
           <Script id="lp-gtm" strategy="afterInteractive">
             {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${tracking.gtmContainerId}');`}
+})(window,document,'script','dataLayer','${gtmId}');`}
           </Script>
           <noscript>
             <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${tracking.gtmContainerId}`}
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
               height="0"
               width="0"
               style={{ display: "none", visibility: "hidden" }}
@@ -138,7 +152,7 @@ ${gtagConfigs}`}
         </Script>
       ) : null}
 
-      {tracking?.metaPixelId ? (
+      {metaPixelId ? (
         <>
           <Script id="lp-meta-pixel" strategy="afterInteractive">
             {`!function(f,b,e,v,n,t,s)
@@ -149,7 +163,7 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${tracking.metaPixelId}');
+fbq('init', '${metaPixelId}');
 fbq('track', 'PageView');`}
           </Script>
           <noscript>
@@ -159,7 +173,7 @@ fbq('track', 'PageView');`}
               height="1"
               width="1"
               style={{ display: "none" }}
-              src={`https://www.facebook.com/tr?id=${tracking.metaPixelId}&ev=PageView&noscript=1`}
+              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
             />
           </noscript>
         </>

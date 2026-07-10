@@ -5,7 +5,6 @@ import {
   Analytics,
   Code,
   Palette,
-  Shield,
 } from "@material-symbols-svg/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,11 +37,6 @@ const navItems: NavItem[] = [
     href: "/configuracoes/scripts",
     label: "Scripts",
     icon: Code,
-  },
-  {
-    href: "/configuracoes/captcha",
-    label: "Captcha",
-    icon: Shield,
   },
 ];
 

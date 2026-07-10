@@ -8,9 +8,13 @@ import {
 } from "@material-symbols-svg/react";
 import { useEffect, useState } from "react";
 import { submitLeadAction } from "@/app/actions/leads";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import { validatePopupAnswer } from "@/lib/landing-pages/popup/validation";
 import type { PopupQuestion } from "@/lib/landing-pages/schema";
 import { PopupQuestionField } from "./popup-question-field";
+
+const TURNSTILE_SITE_KEY =
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
 
 export type LeadCaptureContext = {
   officeSubdomain: string;
@@ -42,6 +46,7 @@ export function LeadPopup({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -52,6 +57,7 @@ export function LeadPopup({
       setSubmitting(false);
       setSubmitError(null);
       setStepError(null);
+      setCaptchaToken("");
     }
   }, [open]);
 
@@ -76,6 +82,10 @@ export function LeadPopup({
       setSubmitError("Preencha nome e telefone.");
       return;
     }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setSubmitError("Confirme o captcha antes de enviar.");
+      return;
+    }
 
     setSubmitting(true);
     setSubmitError(null);
@@ -86,6 +96,7 @@ export function LeadPopup({
       telefone,
       answers,
       pageUrl: typeof window !== "undefined" ? window.location.href : "",
+      captchaToken: captchaToken || undefined,
     });
     setSubmitting(false);
 
@@ -227,6 +238,15 @@ export function LeadPopup({
                 required
               />
             </div>
+            {TURNSTILE_SITE_KEY && !demo ? (
+              <div className="mt-4">
+                <TurnstileWidget
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onToken={setCaptchaToken}
+                  onExpire={() => setCaptchaToken("")}
+                />
+              </div>
+            ) : null}
             {submitError ? (
               <p className="mt-3 text-center text-sm text-destructive">
                 {submitError}

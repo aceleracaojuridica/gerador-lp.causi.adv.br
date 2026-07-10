@@ -1,16 +1,15 @@
 import type {
-  CaptchaConfig,
   ConversionTags,
   Office,
   SocialNetwork,
   TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 
 export type GlobalConfig = {
   fonts: { heading: string; body: string };
   tags: ConversionTags;
   tracking: TrackingProviderConfig;
-  captcha: CaptchaConfig;
   address?: {
     address: string;
     cidade: string;
@@ -25,25 +24,12 @@ export type GlobalConfig = {
   socials?: { network: SocialNetwork; url: string }[];
 };
 
-export const DEFAULT_TRACKING: TrackingProviderConfig = {
-  ga4MeasurementId: "",
-  gtmContainerId: "",
-  metaPixelId: "",
-  googleAdsId: "",
-  googleAdsLabel: "",
-};
-
-export const DEFAULT_CAPTCHA: CaptchaConfig = {
-  provider: "none",
-  siteKey: "",
-  widgetTheme: "auto",
-};
+export const DEFAULT_TRACKING: TrackingProviderConfig = normalizeTracking();
 
 export const DEFAULT_CONFIG: GlobalConfig = {
   fonts: { heading: "", body: "" },
   tags: { head: "", body: "", footer: "" },
   tracking: DEFAULT_TRACKING,
-  captcha: DEFAULT_CAPTCHA,
 };
 
 function pickString(
@@ -56,37 +42,69 @@ function pickString(
   return value?.trim() ? value : fallback;
 }
 
+function pickBoolean(
+  value: boolean | undefined,
+  fallback: boolean,
+  overwrite: boolean,
+): boolean {
+  if (overwrite) return fallback;
+  return value ?? fallback;
+}
+
+function mergeProvider<T extends { enabled: boolean }>(
+  current: T | undefined,
+  incoming: T,
+  overwrite: boolean,
+  idKey: keyof T,
+): T {
+  const id = pickString(
+    String(current?.[idKey] ?? ""),
+    String(incoming[idKey] ?? ""),
+    overwrite,
+  );
+  const enabled = pickBoolean(current?.enabled, incoming.enabled, overwrite);
+  return {
+    ...incoming,
+    ...current,
+    enabled,
+    [idKey]: id,
+  } as T;
+}
+
 function mergeTracking(
   current: TrackingProviderConfig | undefined,
   incoming: TrackingProviderConfig,
   overwrite: boolean,
 ): TrackingProviderConfig {
+  const base = normalizeTracking(current);
+  const defaults = normalizeTracking(incoming);
+
   return {
-    ga4MeasurementId: pickString(
-      current?.ga4MeasurementId,
-      incoming.ga4MeasurementId,
+    ga4: mergeProvider(base.ga4, defaults.ga4, overwrite, "measurementId"),
+    gtm: mergeProvider(base.gtm, defaults.gtm, overwrite, "containerId"),
+    metaPixel: mergeProvider(
+      base.metaPixel,
+      defaults.metaPixel,
       overwrite,
+      "pixelId",
     ),
-    gtmContainerId: pickString(
-      current?.gtmContainerId,
-      incoming.gtmContainerId,
-      overwrite,
-    ),
-    metaPixelId: pickString(
-      current?.metaPixelId,
-      incoming.metaPixelId,
-      overwrite,
-    ),
-    googleAdsId: pickString(
-      current?.googleAdsId,
-      incoming.googleAdsId,
-      overwrite,
-    ),
-    googleAdsLabel: pickString(
-      current?.googleAdsLabel,
-      incoming.googleAdsLabel,
-      overwrite,
-    ),
+    googleAds: {
+      enabled: pickBoolean(
+        base.googleAds.enabled,
+        defaults.googleAds.enabled,
+        overwrite,
+      ),
+      adsId: pickString(
+        base.googleAds.adsId,
+        defaults.googleAds.adsId,
+        overwrite,
+      ),
+      conversionLabel: pickString(
+        base.googleAds.conversionLabel,
+        defaults.googleAds.conversionLabel,
+        overwrite,
+      ),
+    },
   };
 }
 
@@ -99,32 +117,6 @@ function mergeTags(
     head: pickString(current?.head, incoming.head, overwrite),
     body: pickString(current?.body, incoming.body, overwrite),
     footer: pickString(current?.footer, incoming.footer, overwrite),
-  };
-}
-
-function mergeCaptcha(
-  current: CaptchaConfig | undefined,
-  incoming: CaptchaConfig,
-  overwrite: boolean,
-): CaptchaConfig {
-  if (overwrite) {
-    return {
-      provider: incoming.provider,
-      siteKey: incoming.siteKey,
-      widgetTheme: incoming.widgetTheme,
-    };
-  }
-
-  return {
-    provider:
-      current?.provider && current.provider !== "none"
-        ? current.provider
-        : incoming.provider,
-    siteKey: current?.siteKey?.trim() ? current.siteKey : incoming.siteKey,
-    widgetTheme:
-      current?.widgetTheme && current.widgetTheme !== "auto"
-        ? current.widgetTheme
-        : incoming.widgetTheme,
   };
 }
 
@@ -141,18 +133,7 @@ export function normalizeGlobalConfig(
       body: value?.tags?.body ?? "",
       footer: value?.tags?.footer ?? "",
     },
-    tracking: {
-      ga4MeasurementId: value?.tracking?.ga4MeasurementId ?? "",
-      gtmContainerId: value?.tracking?.gtmContainerId ?? "",
-      metaPixelId: value?.tracking?.metaPixelId ?? "",
-      googleAdsId: value?.tracking?.googleAdsId ?? "",
-      googleAdsLabel: value?.tracking?.googleAdsLabel ?? "",
-    },
-    captcha: {
-      provider: value?.captcha?.provider ?? "none",
-      siteKey: value?.captcha?.siteKey ?? "",
-      widgetTheme: value?.captcha?.widgetTheme ?? "auto",
-    },
+    tracking: normalizeTracking(value?.tracking),
     address: value?.address
       ? {
           address: value.address.address ?? "",
@@ -183,20 +164,24 @@ export function applyGlobalConfigToOffice(
   options?: { overwrite?: boolean },
 ): Office {
   const overwrite = options?.overwrite ?? false;
+  const normalized = normalizeGlobalConfig(config);
 
   return {
     ...office,
     fonts: {
       heading: pickString(
         office.fonts?.heading,
-        config.fonts.heading,
+        normalized.fonts.heading,
         overwrite,
       ),
-      body: pickString(office.fonts?.body, config.fonts.body, overwrite),
+      body: pickString(office.fonts?.body, normalized.fonts.body, overwrite),
     },
-    tags: mergeTags(office.tags, config.tags, overwrite),
-    tracking: mergeTracking(office.tracking, config.tracking, overwrite),
-    captcha: mergeCaptcha(office.captcha, config.captcha, overwrite),
+    tags: mergeTags(office.tags, normalized.tags, overwrite),
+    tracking: mergeTracking(
+      normalizeTracking(office.tracking),
+      normalized.tracking,
+      overwrite,
+    ),
   };
 }
 
@@ -205,6 +190,5 @@ export function extractGlobalConfigFromOffice(office: Office): GlobalConfig {
     fonts: office.fonts,
     tags: office.tags,
     tracking: office.tracking,
-    captcha: office.captcha,
   });
 }

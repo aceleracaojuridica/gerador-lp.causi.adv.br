@@ -8,33 +8,39 @@ import {
 } from "@thesvg/react";
 import Link from "next/link";
 import { AutoTextarea } from "@/components/auto-textarea";
+import { IntegrationProviderCard } from "@/components/integrations/integration-provider-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import type { GlobalConfig } from "@/lib/landing-pages/global-config";
+import type { SeoMeta } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import { BuilderField } from "../../shared/fields";
-import { FieldGroup, Segmented } from "../controls/editor-controls";
+import { FieldGroup } from "../controls/editor-controls";
 
-const CAPTCHA_OPTIONS = [
-  { id: "none", label: "Desativado" },
-  { id: "turnstile", label: "Cloudflare Turnstile" },
-] as const;
-
-const WIDGET_THEME_OPTIONS = [
-  { id: "auto", label: "Automático" },
-  { id: "light", label: "Claro" },
-  { id: "dark", label: "Escuro" },
-] as const;
-
-/** Padrão da conta ou "não configurado", usado como dica dos campos abaixo. */
-function defaultHint(value: string) {
-  return `Padrão da conta: ${value.trim() ? value : "não configurado"}`;
+function accountProviderHint(
+  account: GlobalConfig,
+  provider: "ga4" | "gtm" | "metaPixel" | "googleAds",
+): string {
+  const tracking = normalizeTracking(account.tracking);
+  const p = tracking[provider];
+  if (!p.enabled) return "Padrão da conta: desativado";
+  const id =
+    provider === "ga4"
+      ? tracking.ga4.measurementId
+      : provider === "gtm"
+        ? tracking.gtm.containerId
+        : provider === "metaPixel"
+          ? tracking.metaPixel.pixelId
+          : tracking.googleAds.adsId;
+  return `Padrão da conta: ${id.trim() || "não configurado"}`;
 }
 
 /**
- * Painel "Integrações" do editor da LP — override por página de tracking,
- * scripts e captcha. Campos vazios herdam o padrão da conta
- * (configurado em Configurações); ver `applyGlobalConfigToOffice`.
+ * Painel "Integrações" do editor da LP — override por página de tracking
+ * e scripts. Campos vazios herdam o padrão da conta.
  */
 export function IntegracoesPanel({
   form,
@@ -46,10 +52,10 @@ export function IntegracoesPanel({
   onRestoreDefaults: () => void;
 }) {
   const { office } = form;
-  const tracking = office.tracking;
+  const tracking = normalizeTracking(office.tracking);
   const tags = office.tags;
-  const captcha = office.captcha;
-  const provider = captcha?.provider ?? "none";
+  const seo: Partial<SeoMeta> = form.copy.seo ?? form.schema.seo ?? {};
+  const indexable = seo.indexable ?? false;
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,75 +64,121 @@ export function IntegracoesPanel({
         Deixe em branco para herdar o valor configurado em Configurações.
       </p>
 
+      <FieldGroup title="Visibilidade nos buscadores">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <Label htmlFor="lp-indexable" className="text-sm font-medium">
+              Aparecer no Google?
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Desligado por padrão — ideal para tráfego pago (Meta e Google
+              Ads). Ative só se quiser indexação orgânica desta página.
+            </p>
+          </div>
+          <Switch
+            id="lp-indexable"
+            checked={indexable}
+            onCheckedChange={(checked) =>
+              form.setSeoField("indexable", checked)
+            }
+          />
+        </div>
+      </FieldGroup>
+
       <FieldGroup title="Tracking">
-        <BuilderField
-          label="GA4 Measurement ID"
-          hint={defaultHint(accountConfig.tracking.ga4MeasurementId)}
-          labelAction={
-            <GoogleAnalytics className="size-4 text-muted-foreground" />
+        <IntegrationProviderCard
+          icon={<GoogleAnalytics className="size-4" />}
+          name="Google Analytics 4"
+          description="Measurement ID desta landing page."
+          accountHint={accountProviderHint(accountConfig, "ga4")}
+          enabled={tracking.ga4.enabled}
+          onEnabledChange={(enabled) =>
+            form.setTrackingProvider("ga4", { enabled })
           }
         >
           <Input
-            value={tracking?.ga4MeasurementId ?? ""}
+            value={tracking.ga4.measurementId}
             onChange={(e) =>
-              form.setTrackingField("ga4MeasurementId", e.target.value)
+              form.setTrackingProvider("ga4", {
+                measurementId: e.target.value,
+              })
             }
             placeholder="G-XXXXXXXXXX"
+            aria-label="GA4 Measurement ID"
           />
-        </BuilderField>
-        <BuilderField
-          label="Google Tag Manager (container ID)"
-          hint={defaultHint(accountConfig.tracking.gtmContainerId)}
-          labelAction={
-            <GoogleTagManager className="size-4 text-muted-foreground" />
+        </IntegrationProviderCard>
+
+        <IntegrationProviderCard
+          icon={<GoogleTagManager className="size-4" />}
+          name="Google Tag Manager"
+          description="Container ID desta landing page."
+          accountHint={accountProviderHint(accountConfig, "gtm")}
+          enabled={tracking.gtm.enabled}
+          onEnabledChange={(enabled) =>
+            form.setTrackingProvider("gtm", { enabled })
           }
         >
           <Input
-            value={tracking?.gtmContainerId ?? ""}
+            value={tracking.gtm.containerId}
             onChange={(e) =>
-              form.setTrackingField("gtmContainerId", e.target.value)
+              form.setTrackingProvider("gtm", { containerId: e.target.value })
             }
             placeholder="GTM-XXXXXXX"
+            aria-label="GTM Container ID"
           />
-        </BuilderField>
-        <BuilderField
-          label="Meta Pixel ID"
-          hint={defaultHint(accountConfig.tracking.metaPixelId)}
-          labelAction={<Meta className="size-4 text-muted-foreground" />}
+        </IntegrationProviderCard>
+
+        <IntegrationProviderCard
+          icon={<Meta className="size-4" />}
+          name="Meta Pixel"
+          description="Pixel para campanhas do Facebook e Instagram Ads."
+          accountHint={accountProviderHint(accountConfig, "metaPixel")}
+          enabled={tracking.metaPixel.enabled}
+          onEnabledChange={(enabled) =>
+            form.setTrackingProvider("metaPixel", { enabled })
+          }
         >
           <Input
-            value={tracking?.metaPixelId ?? ""}
+            value={tracking.metaPixel.pixelId}
             onChange={(e) =>
-              form.setTrackingField("metaPixelId", e.target.value)
+              form.setTrackingProvider("metaPixel", { pixelId: e.target.value })
             }
             placeholder="000000000000000"
+            aria-label="Meta Pixel ID"
           />
-        </BuilderField>
-        <BuilderField
-          label="Google Ads ID"
-          hint={defaultHint(accountConfig.tracking.googleAdsId)}
-          labelAction={<GoogleAds className="size-4 text-muted-foreground" />}
+        </IntegrationProviderCard>
+
+        <IntegrationProviderCard
+          icon={<GoogleAds className="size-4" />}
+          name="Google Ads"
+          description="Tag de conversão desta landing page."
+          accountHint={accountProviderHint(accountConfig, "googleAds")}
+          enabled={tracking.googleAds.enabled}
+          onEnabledChange={(enabled) =>
+            form.setTrackingProvider("googleAds", { enabled })
+          }
         >
-          <Input
-            value={tracking?.googleAdsId ?? ""}
-            onChange={(e) =>
-              form.setTrackingField("googleAdsId", e.target.value)
-            }
-            placeholder="AW-XXXXXXXXX"
-          />
-        </BuilderField>
-        <BuilderField
-          label="Google Ads — rótulo de conversão"
-          hint={defaultHint(accountConfig.tracking.googleAdsLabel)}
-        >
-          <Input
-            value={tracking?.googleAdsLabel ?? ""}
-            onChange={(e) =>
-              form.setTrackingField("googleAdsLabel", e.target.value)
-            }
-            placeholder="AbC-D_efG-h12_34-567"
-          />
-        </BuilderField>
+          <div className="flex flex-col gap-3">
+            <Input
+              value={tracking.googleAds.adsId}
+              onChange={(e) =>
+                form.setTrackingProvider("googleAds", { adsId: e.target.value })
+              }
+              placeholder="AW-XXXXXXXXX"
+              aria-label="Google Ads ID"
+            />
+            <Input
+              value={tracking.googleAds.conversionLabel}
+              onChange={(e) =>
+                form.setTrackingProvider("googleAds", {
+                  conversionLabel: e.target.value,
+                })
+              }
+              placeholder="AbC-D_efG-h12_34-567"
+              aria-label="Rótulo de conversão Google Ads"
+            />
+          </div>
+        </IntegrationProviderCard>
       </FieldGroup>
 
       <FieldGroup title="Scripts personalizados">
@@ -154,34 +206,6 @@ export function IntegracoesPanel({
             className="min-h-[70px] resize-y font-mono text-xs"
           />
         </BuilderField>
-      </FieldGroup>
-
-      <FieldGroup title="Captcha do formulário">
-        <Segmented
-          label="Provedor"
-          value={provider}
-          onChange={(v) => form.setCaptchaField("provider", v)}
-          options={CAPTCHA_OPTIONS}
-        />
-        {provider === "turnstile" ? (
-          <>
-            <BuilderField label="Site key">
-              <Input
-                value={captcha?.siteKey ?? ""}
-                onChange={(e) =>
-                  form.setCaptchaField("siteKey", e.target.value)
-                }
-                placeholder="0x4AAAAAAA..."
-              />
-            </BuilderField>
-            <Segmented
-              label="Tema do widget"
-              value={captcha?.widgetTheme ?? "auto"}
-              onChange={(v) => form.setCaptchaField("widgetTheme", v)}
-              options={WIDGET_THEME_OPTIONS}
-            />
-          </>
-        ) : null}
       </FieldGroup>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">

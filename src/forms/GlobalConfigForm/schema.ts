@@ -1,37 +1,6 @@
 import { z } from "zod";
 import { validateCustomScript } from "@/lib/landing-pages/validation/script-validator";
-
-const ga4MeasurementIdSchema = z
-  .string()
-  .trim()
-  .refine(
-    (value) => value === "" || /^G-[A-Z0-9]+$/i.test(value),
-    "Use um ID no formato G-XXXXXXXXXX.",
-  );
-
-const gtmContainerIdSchema = z
-  .string()
-  .trim()
-  .refine(
-    (value) => value === "" || /^GTM-[A-Z0-9]+$/i.test(value),
-    "Use um container no formato GTM-XXXXXXX.",
-  );
-
-const metaPixelIdSchema = z
-  .string()
-  .trim()
-  .refine(
-    (value) => value === "" || /^\d+$/.test(value),
-    "Use apenas numeros no Meta Pixel ID.",
-  );
-
-const googleAdsIdSchema = z
-  .string()
-  .trim()
-  .refine(
-    (value) => value === "" || /^AW-\d+$/i.test(value),
-    "Use um ID no formato AW-XXXXXXXXX.",
-  );
+import { trackingProviderConfigStrictSchema } from "@/lib/landing-pages/validation/tracking-schema";
 
 const addressSchema = z.object({
   address: z.string().trim(),
@@ -71,60 +40,39 @@ const socialItemSchema = z.object({
     ),
 });
 
-export const globalConfigFormSchema = z
-  .object({
-    fonts: z.object({
-      heading: z.string(),
-      body: z.string(),
-    }),
-    tracking: z.object({
-      ga4MeasurementId: ga4MeasurementIdSchema,
-      gtmContainerId: gtmContainerIdSchema,
-      metaPixelId: metaPixelIdSchema,
-      googleAdsId: googleAdsIdSchema,
-      googleAdsLabel: z.string().trim(),
-    }),
-    tags: z.object({
-      head: z.string().superRefine((val, ctx) => {
-        const res = validateCustomScript(val);
-        if (!res.valid) {
-          for (const err of res.errors) {
-            ctx.addIssue({ code: "custom", message: err });
-          }
+export const globalConfigFormSchema = z.object({
+  fonts: z.object({
+    heading: z.string(),
+    body: z.string(),
+  }),
+  tracking: trackingProviderConfigStrictSchema,
+  tags: z.object({
+    head: z.string().superRefine((val, ctx) => {
+      const res = validateCustomScript(val);
+      if (!res.valid) {
+        for (const err of res.errors) {
+          ctx.addIssue({ code: "custom", message: err });
         }
-      }),
-      body: z.string().superRefine((val, ctx) => {
-        const res = validateCustomScript(val);
-        if (!res.valid) {
-          for (const err of res.errors) {
-            ctx.addIssue({ code: "custom", message: err });
-          }
-        }
-      }),
-      footer: z.string().superRefine((val, ctx) => {
-        const res = validateCustomScript(val);
-        if (!res.valid) {
-          for (const err of res.errors) {
-            ctx.addIssue({ code: "custom", message: err });
-          }
-        }
-      }),
+      }
     }),
-    captcha: z.object({
-      provider: z.enum(["none", "turnstile"]),
-      siteKey: z.string().trim(),
-      widgetTheme: z.enum(["auto", "light", "dark"]),
+    body: z.string().superRefine((val, ctx) => {
+      const res = validateCustomScript(val);
+      if (!res.valid) {
+        for (const err of res.errors) {
+          ctx.addIssue({ code: "custom", message: err });
+        }
+      }
     }),
-    address: addressSchema.optional(),
-    contact: contactSchema.optional(),
-    socials: z.array(socialItemSchema).optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.captcha.provider === "turnstile" && !value.captcha.siteKey) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["captcha", "siteKey"],
-        message: "A site key e obrigatoria quando o Turnstile estiver ativo.",
-      });
-    }
-  });
+    footer: z.string().superRefine((val, ctx) => {
+      const res = validateCustomScript(val);
+      if (!res.valid) {
+        for (const err of res.errors) {
+          ctx.addIssue({ code: "custom", message: err });
+        }
+      }
+    }),
+  }),
+  address: addressSchema.optional(),
+  contact: contactSchema.optional(),
+  socials: z.array(socialItemSchema).optional(),
+});

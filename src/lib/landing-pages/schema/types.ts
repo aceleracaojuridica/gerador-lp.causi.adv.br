@@ -44,17 +44,21 @@ export type SocialNetwork =
 export type Social = { network: SocialNetwork; url: string };
 
 export type ConversionTags = { head: string; body: string; footer: string };
-export type TrackingProviderConfig = {
-  ga4MeasurementId: string;
-  gtmContainerId: string;
-  metaPixelId: string;
-  googleAdsId: string;
-  googleAdsLabel: string;
+
+export type Ga4Tracking = { enabled: boolean; measurementId: string };
+export type GtmTracking = { enabled: boolean; containerId: string };
+export type MetaPixelTracking = { enabled: boolean; pixelId: string };
+export type GoogleAdsTracking = {
+  enabled: boolean;
+  adsId: string;
+  conversionLabel: string;
 };
-export type CaptchaConfig = {
-  provider: "none" | "turnstile";
-  siteKey: string;
-  widgetTheme: "auto" | "light" | "dark";
+
+export type TrackingProviderConfig = {
+  ga4: Ga4Tracking;
+  gtm: GtmTracking;
+  metaPixel: MetaPixelTracking;
+  googleAds: GoogleAdsTracking;
 };
 export type CustomCard = { title: string; text: string };
 
@@ -99,7 +103,6 @@ export type Office = {
   extraContacts?: ExtraContact[];
   tags?: ConversionTags;
   tracking?: TrackingProviderConfig;
-  captcha?: CaptchaConfig;
   privacyPolicy?: string;
   fonts?: { heading: string; body: string };
   cardRadius?: "rounded" | "square";

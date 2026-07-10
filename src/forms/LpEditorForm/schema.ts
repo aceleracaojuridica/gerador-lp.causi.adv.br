@@ -2,6 +2,7 @@ import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { DEFAULT_LOGO_BG } from "@/lib/landing-pages/colors";
 import { type FocoCopy, focoGenerico } from "@/lib/landing-pages/focos";
+import { DEFAULT_TRACKING } from "@/lib/landing-pages/global-config";
 import { normalizeOfficeButtons } from "@/lib/landing-pages/popup/normalize";
 import type {
   CustomSection,
@@ -10,10 +11,12 @@ import type {
   Theme,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_LAYOUT, DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import {
   refineRequiredEmail,
   refineRequiredWhatsapp,
 } from "@/lib/landing-pages/validation/contact";
+import { trackingProviderConfigSchema } from "@/lib/landing-pages/validation/tracking-schema";
 import {
   AREAS_VARIANTS,
   DOR_VARIANTS,
@@ -139,22 +142,7 @@ const officeSchema = z.object({
       footer: customScriptTagSchema,
     })
     .optional(),
-  tracking: z
-    .object({
-      ga4MeasurementId: z.string(),
-      gtmContainerId: z.string(),
-      metaPixelId: z.string(),
-      googleAdsId: z.string(),
-      googleAdsLabel: z.string(),
-    })
-    .optional(),
-  captcha: z
-    .object({
-      provider: z.enum(["none", "turnstile"]),
-      siteKey: z.string(),
-      widgetTheme: z.enum(["auto", "light", "dark"]),
-    })
-    .optional(),
+  tracking: trackingProviderConfigSchema.optional(),
   privacyPolicy: z.string().optional(),
   fonts: z.object({ heading: z.string(), body: z.string() }).optional(),
   cardRadius: z.enum(["rounded", "square"]).optional(),
@@ -265,18 +253,7 @@ export const EMPTY_OFFICE: LpEditorFormValues["office"] = {
   extraAddresses: [],
   extraContacts: [],
   tags: { head: "", body: "", footer: "" },
-  tracking: {
-    ga4MeasurementId: "",
-    gtmContainerId: "",
-    metaPixelId: "",
-    googleAdsId: "",
-    googleAdsLabel: "",
-  },
-  captcha: {
-    provider: "none",
-    siteKey: "",
-    widgetTheme: "auto",
-  },
+  tracking: { ...DEFAULT_TRACKING },
 
   fonts: { heading: "", body: "" },
   cardRadius: "square",
@@ -313,8 +290,7 @@ export function lpEditorDefaultValues(
           extraAddresses: seed.office.extraAddresses ?? [],
           extraContacts: seed.office.extraContacts ?? [],
           tags: seed.office.tags ?? { head: "", body: "", footer: "" },
-          tracking: seed.office.tracking ?? EMPTY_OFFICE.tracking,
-          captcha: seed.office.captcha ?? EMPTY_OFFICE.captcha,
+          tracking: normalizeTracking(seed.office.tracking),
 
           fonts: seed.office.fonts ?? { heading: "", body: "" },
           cardRadius: seed.office.cardRadius ?? "square",

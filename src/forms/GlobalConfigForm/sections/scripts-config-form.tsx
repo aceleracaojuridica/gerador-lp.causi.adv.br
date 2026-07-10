@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoTextarea } from "@/components/auto-textarea";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Form, FormControl, FormField } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
 import type { GlobalConfigFormProps } from "../global-config-form.types";
 import { ConfigFormFooter } from "../shared/config-form-footer";
 import { FieldRow } from "../shared/field-row";
@@ -39,9 +39,9 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   description="HTML/JS avancado injetado no head da landing page publicada."
                 >
                   <FormControl>
-                    <Textarea
+                    <AutoTextarea
                       {...field}
-                      className="min-h-28 font-mono text-xs"
+                      className="min-h-[70px] resize-y font-mono text-xs"
                       placeholder="<script>...</script>"
                     />
                   </FormControl>
@@ -58,9 +58,9 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   description="Snippets renderizados no inicio do body."
                 >
                   <FormControl>
-                    <Textarea
+                    <AutoTextarea
                       {...field}
-                      className="min-h-28 font-mono text-xs"
+                      className="min-h-[70px] resize-y font-mono text-xs"
                       placeholder="<script>...</script>"
                     />
                   </FormControl>
@@ -78,9 +78,9 @@ export function ScriptsConfigForm({ initialData }: GlobalConfigFormProps) {
                   borderless
                 >
                   <FormControl>
-                    <Textarea
+                    <AutoTextarea
                       {...field}
-                      className="min-h-28 font-mono text-xs"
+                      className="min-h-[70px] resize-y font-mono text-xs"
                       placeholder="<script>...</script>"
                     />
                   </FormControl>
