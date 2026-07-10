@@ -1,5 +1,5 @@
-import { HomePageSkeleton } from "@/components/ui-patterns/skeletons";
+import { PageLoading } from "@/components/ui-patterns/page-loading";
 
 export default function AppLoading() {
-  return <HomePageSkeleton />;
+  return <PageLoading />;
 }

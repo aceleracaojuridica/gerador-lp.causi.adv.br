@@ -1,5 +1,5 @@
-import { GalleryPageSkeleton } from "@/components/ui-patterns/skeletons";
+import { PageLoading } from "@/components/ui-patterns/page-loading";
 
 export default function GalleryLoading() {
-  return <GalleryPageSkeleton />;
+  return <PageLoading />;
 }

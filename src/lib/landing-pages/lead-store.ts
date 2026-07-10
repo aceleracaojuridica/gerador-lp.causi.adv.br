@@ -90,6 +90,15 @@ async function getAccountSubdomains(
   return { subdomains, lps };
 }
 
+/** Landing pages da conta — usado em filtros (contatos, galeria). */
+export async function listAccountLandingPages(
+  session: Session,
+): Promise<LeadLandingPageOption[]> {
+  const ctx = sessionToLpContext(session);
+  const { lps } = await getAccountSubdomains(ctx.accountId);
+  return lps;
+}
+
 /** Lista leads da conta ativa, opcionalmente filtrados por LP. */
 export async function listLeads(
   session: Session,

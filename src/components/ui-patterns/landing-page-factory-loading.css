@@ -1,0 +1,72 @@
+/* Esteira de montagem — animação de LP sendo construída */
+
+@keyframes lp-factory-belt-scroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 32px 0;
+  }
+}
+
+@keyframes lp-factory-travel {
+  from {
+    transform: translateX(calc(-100% - 24px));
+  }
+  to {
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+@keyframes lp-factory-section-in {
+  0%,
+  12% {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
+  24%,
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.lp-factory-belt {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--muted-foreground) 18%, transparent) 0,
+    color-mix(in oklch, var(--muted-foreground) 18%, transparent) 12px,
+    transparent 12px,
+    transparent 24px
+  );
+  animation: lp-factory-belt-scroll 0.8s linear infinite;
+}
+
+.lp-factory-unit {
+  animation: lp-factory-travel 5s linear infinite;
+}
+
+.lp-factory-unit--delay-1 {
+  animation-delay: -1.6s;
+}
+
+.lp-factory-unit--delay-2 {
+  animation-delay: -3.2s;
+}
+
+.lp-factory-section {
+  transform-origin: top center;
+  animation: lp-factory-section-in 5s ease-in-out infinite;
+}
+
+.lp-factory-section--hero {
+  animation-delay: 0s;
+}
+
+.lp-factory-section--body {
+  animation-delay: 0.35s;
+}
+
+.lp-factory-section--cta {
+  animation-delay: 0.7s;
+}

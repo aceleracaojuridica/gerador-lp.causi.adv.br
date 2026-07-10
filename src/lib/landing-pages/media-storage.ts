@@ -70,8 +70,10 @@ export function getPublicMediaUrl(path: string): string {
 }
 
 /**
- * Envia data URL ou URL externa para a galeria da conta.
- * URLs já no bucket são mantidas.
+ * Envia data URL para a galeria da conta.
+ * URLs já no bucket ou externas (Unsplash, catálogo de sistema) são mantidas
+ * sem criar cópia na galeria — evita duplicar logo/favicon e poluir a galeria
+ * com fotos de banco curado.
  */
 export async function persistMediaToGallery(
   session: Session,
@@ -81,6 +83,7 @@ export async function persistMediaToGallery(
   const trimmed = source.trim();
   if (!trimmed) return "";
   if (isGeradorStorageUrl(trimmed)) return trimmed;
+  if (!isDataUrl(trimmed)) return trimmed;
 
   const item = await uploadGalleryImage(session, trimmed, originalFilename);
   return item.url;
@@ -102,9 +105,30 @@ export async function persistLpSchemaMedia(
 ): Promise<LpSchema> {
   const office = { ...schema.office };
   const sectionImages = { ...office.sectionImages };
+  const originalLogoSrc = office.logoSrc?.trim() ?? "";
+  const originalSectionImages = { ...schema.office.sectionImages };
+
+  /** Evita upload duplicado quando logo, favicon e outras mídias usam o mesmo data URL. */
+  const uploadCache = new Map<string, string>();
+  const persistOnce = async (
+    source: string,
+    originalFilename?: string,
+  ): Promise<string> => {
+    const trimmed = source.trim();
+    if (!trimmed) return "";
+    const cached = uploadCache.get(trimmed);
+    if (cached) return cached;
+    const url = await persistMediaToGallery(
+      ctx.session,
+      trimmed,
+      originalFilename,
+    );
+    uploadCache.set(trimmed, url);
+    return url;
+  };
 
   if (office.logoSrc) {
-    office.logoSrc = await persistMediaToGallery(ctx.session, office.logoSrc);
+    office.logoSrc = await persistOnce(office.logoSrc);
   }
 
   office.lawyers = await Promise.all(
@@ -112,7 +136,7 @@ export async function persistLpSchemaMedia(
       if (!lawyer.photo) return lawyer;
       return {
         ...lawyer,
-        photo: await persistMediaToGallery(ctx.session, lawyer.photo),
+        photo: await persistOnce(lawyer.photo),
       };
     }),
   );
@@ -120,17 +144,32 @@ export async function persistLpSchemaMedia(
   for (const key of Object.keys(sectionImages) as SectionImageKey[]) {
     const src = sectionImages[key];
     if (!src) continue;
-    sectionImages[key] = await persistMediaToGallery(ctx.session, src);
+    sectionImages[key] = await persistOnce(src);
   }
   office.sectionImages = sectionImages;
 
   const seo = schema.seo ? { ...schema.seo } : undefined;
   if (seo) {
     if (seo.ogImage) {
-      seo.ogImage = await persistMediaToGallery(ctx.session, seo.ogImage);
+      const og = seo.ogImage.trim();
+      const originalHero = originalSectionImages.hero?.trim();
+      if (originalHero && og === originalHero) {
+        seo.ogImage = sectionImages.hero;
+      } else {
+        seo.ogImage = await persistOnce(seo.ogImage);
+      }
     }
     if (seo.favicon) {
-      seo.favicon = await persistMediaToGallery(ctx.session, seo.favicon);
+      const fav = seo.favicon.trim();
+      if (
+        fav === originalLogoSrc ||
+        fav === office.logoSrc ||
+        (originalLogoSrc && uploadCache.get(originalLogoSrc) === office.logoSrc)
+      ) {
+        seo.favicon = office.logoSrc;
+      } else {
+        seo.favicon = await persistOnce(seo.favicon);
+      }
     }
   }
 

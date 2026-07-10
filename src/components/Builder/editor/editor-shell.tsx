@@ -75,7 +75,6 @@ import {
   type StoredLp,
   type Tone,
 } from "@/lib/landing-pages/schema";
-import { TEMPLATES } from "@/lib/landing-pages/templates";
 import {
   EQUIPE_VARIANT_SOLO_PORTRAIT,
   getAutoEquipeVariant,
@@ -142,11 +141,7 @@ import {
 } from "./panels/hero-inputs";
 import { IdentidadePanel } from "./panels/identidade-panel";
 import { IntegracoesPanel } from "./panels/integracoes-panel";
-import {
-  ImagensPanel,
-  ModeloPicker,
-  ReorderPanel,
-} from "./panels/layout-panel";
+import { ImagensPanel, ReorderPanel } from "./panels/layout-panel";
 import { SeoPanel } from "./panels/seo-panel";
 import { SectionVariantPicker } from "./section-variant-picker";
 import {
@@ -185,8 +180,6 @@ function getSectionDescription(sectionId: DetailSectionId): string {
       return "Logo, tema e paleta da página";
     case "imagens":
       return "Fotos das seções e retratos da equipe";
-    case "modelo":
-      return "Combinação visual base para a landing page";
     case "aparencia":
       return "Tipografia, botões e detalhes visuais";
     case "integracoes":
@@ -430,19 +423,6 @@ export function Editor({
     return [];
   }, [lawyerCount, layout.equipe]);
 
-  // Detecta qual template está aplicado no momento (match parcial por variantes).
-  const currentTemplateId = useMemo(() => {
-    return TEMPLATES.find(
-      (t) =>
-        t.layout.hero === layout.hero &&
-        t.layout.dor === layout.dor &&
-        t.layout.solucao === layout.solucao &&
-        t.layout.sobre === layout.sobre &&
-        t.layout.areas === layout.areas &&
-        t.layout.etapas === layout.etapas,
-    )?.id;
-  }, [layout]);
-
   const editorSections = useMemo((): WorkspaceSectionMeta[] => {
     const items: WorkspaceSectionMeta[] = [
       {
@@ -458,14 +438,6 @@ export function Editor({
         label: "Imagens",
         previewTarget: "sec-hero",
         description: getSectionDescription("imagens"),
-        stage: "foundation",
-        enabled: true,
-      },
-      {
-        id: "modelo",
-        label: "Modelo",
-        previewTarget: "sec-hero",
-        description: getSectionDescription("modelo"),
         stage: "foundation",
         enabled: true,
       },
@@ -641,6 +613,9 @@ export function Editor({
             ...currentLayout,
             hero: id as Layout["hero"],
           }));
+          if (id !== HERO_VARIANT_VIDEO_EMBEDDED && form.videoId) {
+            form.setVideoId("");
+          }
         },
       },
       dor: {
@@ -969,8 +944,6 @@ export function Editor({
         return <Storefront size={18} />;
       case "imagens":
         return <Image size={18} />;
-      case "modelo":
-        return <GridView size={18} />;
       case "aparencia":
         return <Tune size={18} />;
       case "integracoes":
@@ -1360,9 +1333,6 @@ export function Editor({
           <div className="min-w-0 max-w-full space-y-3">
             {detailSection === "identidade" && <IdentidadePanel form={form} />}
             {detailSection === "imagens" && <ImagensPanel form={form} />}
-            {detailSection === "modelo" && (
-              <ModeloPicker form={form} currentId={currentTemplateId} />
-            )}
             {detailSection === "seo" && <SeoPanel form={form} />}
             {detailSection === "integracoes" && (
               <IntegracoesPanel
@@ -1392,11 +1362,26 @@ export function Editor({
                         <Input
                           aria-label="Link do vídeo do YouTube"
                           value={form.videoId}
-                          onChange={(e) =>
-                            form.setVideoId(extractYouTubeId(e.target.value))
-                          }
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (!raw.trim()) {
+                              form.setVideoId("");
+                              return;
+                            }
+                            form.setVideoId(extractYouTubeId(raw));
+                          }}
                           placeholder="Cole o link (ex: youtube.com/watch?v=...)"
                         />
+                        {form.videoId ? (
+                          <button
+                            type="button"
+                            aria-label="Remover vídeo"
+                            onClick={() => form.setVideoId("")}
+                            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Close size={16} />
+                          </button>
+                        ) : null}
                       </div>
                     </BuilderField>
                   </FieldGroup>

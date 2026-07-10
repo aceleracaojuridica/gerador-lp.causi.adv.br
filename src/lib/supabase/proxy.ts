@@ -19,9 +19,7 @@ function isPublicRoute(pathname: string) {
   return (
     AUTH_ROUTES.has(pathname) ||
     pathname.startsWith("/auth/callback") ||
-    pathname.startsWith("/auth/") ||
-    pathname === "/templates" ||
-    pathname.startsWith("/templates/")
+    pathname.startsWith("/auth/")
   );
 }
 

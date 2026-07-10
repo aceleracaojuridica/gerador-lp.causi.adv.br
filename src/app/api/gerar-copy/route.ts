@@ -1,7 +1,6 @@
 /*
   Gera a copy da LP SEM salvar no banco.
-  Retorna { copy, images } para o wizard montar o picker de layout.
-  O advogado ainda não escolheu layout/variantes — isso acontece no step seguinte.
+  Retorna { copy, images, layout } para o wizard montar a LP.
 */
 
 import type { FocoCopy } from "@/lib/landing-pages/focos";
@@ -10,19 +9,30 @@ import {
   type CopyPayload,
   callOpenAiForCopy,
 } from "@/lib/landing-pages/lp-generate-copy";
-import { getPublicMediaUrl } from "@/lib/landing-pages/media-storage";
+import { chooseLayoutWithAi } from "@/lib/landing-pages/lp-generate-layout";
 import {
+  DEFAULT_THEME,
+  type Layout,
+  type Theme,
+} from "@/lib/landing-pages/schema";
+import {
+  describeThemeMood,
+  listAccountImagesForRanking,
   listSystemGalleryImages,
   pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
-import {
-  createLpUserClient,
-  sessionToLpContext,
-} from "@/lib/supabase/lp-client";
+import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
 export const runtime = "nodejs";
+
+type GerarCopyBody = CopyPayload & {
+  theme?: Theme;
+  lawyerCount?: number;
+  videoId?: string;
+  hasMetrics?: boolean;
+};
 
 export async function POST(request: Request) {
   let session: Session;
@@ -44,9 +54,9 @@ export async function POST(request: Request) {
     );
   }
 
-  let p: CopyPayload;
+  let p: GerarCopyBody;
   try {
-    p = (await request.json()) as CopyPayload;
+    p = (await request.json()) as GerarCopyBody;
   } catch {
     return Response.json({ error: "Corpo inválido." }, { status: 400 });
   }
@@ -59,75 +69,67 @@ export async function POST(request: Request) {
     );
   }
 
+  const theme = p.theme ?? DEFAULT_THEME;
+  const lawyerCount = Math.max(0, p.lawyerCount ?? 0);
+  const videoId = (p.videoId ?? "").trim();
+  const layoutInput = {
+    tema,
+    about: (p.about ?? "").trim() || undefined,
+    theme,
+    lawyerCount,
+    hasVideo: Boolean(videoId),
+    hasMetrics: Boolean(p.hasMetrics),
+  };
+
   let copy: FocoCopy;
+  let layout: Layout;
+  let layoutSource: "ai" | "fallback" = "ai";
   try {
-    const result = await callOpenAiForCopy(apiKey, p);
-    copy = result.copy;
+    const [copyResult, chosenLayout] = await Promise.all([
+      callOpenAiForCopy(apiKey, p),
+      chooseLayoutWithAi(apiKey, layoutInput),
+    ]);
+    copy = copyResult.copy;
+    layout = chosenLayout.layout;
+    layoutSource = chosenLayout.source;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao gerar a copy.";
     return Response.json({ error: msg }, { status: 502 });
   }
 
   const ctx = sessionToLpContext(session);
-  const db = createLpUserClient(session);
+  const paletteHint = describeThemeMood(theme);
 
-  // Imagens: galeria da conta + catálogo global do sistema.
-  const systemCatalog = await listSystemGalleryImages(session);
-  const systemDefaults = await pickSystemImagesWithAiRanking({
+  // Pool de candidatos por seção: catálogo global do sistema + galeria da
+  // PRÓPRIA conta (nunca de outra conta — escopo em listAccountImagesForRanking).
+  // Sem prioridade fixa de origem: a IA escolhe entre todos os elegíveis.
+  const [systemCatalog, accountCatalog] = await Promise.all([
+    listSystemGalleryImages(session),
+    listAccountImagesForRanking(session),
+  ]);
+  const catalog = [...accountCatalog, ...systemCatalog];
+
+  const picked = await pickSystemImagesWithAiRanking({
     apiKey,
     theme: tema,
-    catalog: systemCatalog,
+    paletteHint,
+    catalog,
     seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
   });
+
+  // Só cai no banco curado (Unsplash) quando não há nenhum candidato próprio
+  // (conta + sistema) para a seção.
   const bank = imagensDoTema(tema);
-
-  // Buscar imagens da galeria da conta
-  const { data: galleryImages } = await db
-    .from("lp_account_images")
-    .select("id, storage_path")
-    .eq("account_id", ctx.accountId);
-
-  const galleryPaths = (galleryImages || []).map((img) => img.storage_path);
-
-  console.log("[gerar-copy] galleryPaths.length:", galleryPaths.length);
-  console.log("[gerar-copy] galleryPaths:", galleryPaths);
-  console.log("[gerar-copy] systemCatalog.length:", systemCatalog.length);
-  console.log("[gerar-copy] bank images:", bank);
-
-  const SLOTS = ["hero", "dor", "sobre", "solucao"] as const;
-
-  /**
-   * Cada slot recebe uma imagem diferente da galeria (por índice).
-   * Se a galeria tiver menos imagens do que slots, os slots excedentes
-   * caem no Unsplash / banco curado — nunca repetem a mesma foto.
-   */
-  const getSlotImage = (
-    slotIndex: number,
-    systemUrl: string,
-    bankUrl: string,
-  ) => {
-    if (slotIndex < galleryPaths.length) {
-      return getPublicMediaUrl(galleryPaths[slotIndex]);
-    }
-    return systemUrl || bankUrl;
-  };
-
   const images = {
-    hero: getSlotImage(SLOTS.indexOf("hero"), systemDefaults.hero, bank.hero),
-    dor: getSlotImage(SLOTS.indexOf("dor"), systemDefaults.dor, bank.dor),
-    sobre: getSlotImage(
-      SLOTS.indexOf("sobre"),
-      systemDefaults.sobre,
-      bank.sobre,
-    ),
-    solucao: getSlotImage(
-      SLOTS.indexOf("solucao"),
-      systemDefaults.solucao,
-      bank.solucao,
-    ),
+    hero: picked.hero || bank.hero,
+    dor: picked.dor || bank.dor,
+    sobre: picked.sobre || bank.sobre,
+    solucao: picked.solucao || bank.solucao,
   };
 
-  console.log("[gerar-copy] images resolvidas:", images);
-
-  return Response.json({ copy, images });
+  const response: Record<string, unknown> = { copy, images, layout };
+  if (process.env.NODE_ENV === "development") {
+    response._layoutSource = layoutSource;
+  }
+  return Response.json(response);
 }

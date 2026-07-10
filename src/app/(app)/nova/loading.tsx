@@ -1,5 +1,5 @@
-import { NovaWizardSkeleton } from "@/components/ui-patterns/skeletons";
+import { LandingPageFactoryLoading } from "@/components/ui-patterns/landing-page-factory-loading";
 
 export default function NovaLoading() {
-  return <NovaWizardSkeleton />;
+  return <LandingPageFactoryLoading />;
 }

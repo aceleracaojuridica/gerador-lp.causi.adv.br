@@ -1,5 +1,5 @@
-import { LpEditorSkeleton } from "@/components/ui-patterns/skeletons";
+import { LandingPageFactoryLoading } from "@/components/ui-patterns/landing-page-factory-loading";
 
 export default function LpEditorLoading() {
-  return <LpEditorSkeleton />;
+  return <LandingPageFactoryLoading />;
 }

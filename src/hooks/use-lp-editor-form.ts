@@ -37,8 +37,10 @@ import type {
   Tone,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
-import type { LpTemplate } from "@/lib/landing-pages/templates";
-
+import {
+  HERO_VARIANT_CENTERED_FOCUS,
+  HERO_VARIANT_VIDEO_EMBEDDED,
+} from "@/lib/landing-pages/variants";
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
   office: Office;
@@ -59,7 +61,7 @@ const DEFAULT_BUTTONS = {
 
 function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
   if (!seed) return lpEditorDefaultValues();
-  return lpEditorDefaultValues({
+  const values = lpEditorDefaultValues({
     office: seed.office,
     theme: seed.theme,
     layout: seed.layout,
@@ -69,6 +71,16 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
     customSections: seed.customSections,
     autoTheme: true,
   });
+  if (
+    !values.videoId.trim() &&
+    values.layout.hero === HERO_VARIANT_VIDEO_EMBEDDED
+  ) {
+    values.layout = {
+      ...values.layout,
+      hero: HERO_VARIANT_CENTERED_FOCUS,
+    };
+  }
+  return values;
 }
 
 /**
@@ -704,19 +716,6 @@ export function useLpEditorForm(seed?: LpSeed) {
     form.setValue("autoTheme", true, { shouldDirty: true });
   }
 
-  function applyTemplate(template: LpTemplate) {
-    const l = form.getValues("layout");
-    form.setValue(
-      "layout",
-      {
-        ...template.layout,
-        order: l.order,
-        hidden: { ...template.layout.hidden, ...l.hidden },
-      },
-      { shouldDirty: true },
-    );
-  }
-
   function setTema(value: string) {
     form.setValue("tema", value, { shouldDirty: true });
   }
@@ -728,7 +727,19 @@ export function useLpEditorForm(seed?: LpSeed) {
   }
 
   function setVideoId(value: string) {
-    form.setValue("videoId", value, { shouldDirty: true });
+    const trimmed = value.trim();
+    form.setValue("videoId", trimmed, { shouldDirty: true });
+
+    if (!trimmed) {
+      const currentLayout = form.getValues("layout");
+      if (currentLayout.hero === HERO_VARIANT_VIDEO_EMBEDDED) {
+        form.setValue(
+          "layout",
+          { ...currentLayout, hero: HERO_VARIANT_CENTERED_FOCUS },
+          { shouldDirty: true },
+        );
+      }
+    }
   }
 
   const focoMeta = matchFoco(tema);
@@ -838,7 +849,6 @@ export function useLpEditorForm(seed?: LpSeed) {
     autoTheme,
     resetTheme,
     applyPalette,
-    applyTemplate,
     tema,
     setTema,
     layout,

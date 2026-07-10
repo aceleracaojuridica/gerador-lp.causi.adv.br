@@ -4,11 +4,6 @@ import { Check, DragIndicator, Lock } from "@material-symbols-svg/react";
 import { useState } from "react";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
-import {
-  type LpTemplate,
-  TEMPLATES,
-  templatePreviewSrc,
-} from "@/lib/landing-pages/templates";
 import { LawyerPhotosInput } from "../widgets/lawyer-row";
 import { SectionImageInput } from "../widgets/section-image-input";
 
@@ -129,64 +124,6 @@ export function ImagensPanel({ form }: { form: LpEditorForm }) {
           label="Foto de Como você ajuda"
         />
       </div>
-    </div>
-  );
-}
-
-export function ModeloPicker({
-  form,
-  currentId,
-}: {
-  form: LpEditorForm;
-  currentId: string | undefined;
-}) {
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="text-xs leading-relaxed text-slate-500">
-        Aplica um estilo visual completo (layouts e fundos de todas as seções).
-        Textos e imagens não são alterados.
-      </p>
-      {TEMPLATES.map((template: LpTemplate) => {
-        const active = currentId === template.id;
-        return (
-          <button
-            key={template.id}
-            type="button"
-            onClick={() => form.applyTemplate(template)}
-            className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
-              active
-                ? "border-ui bg-ui-soft/60"
-                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-            }`}
-          >
-            <div
-              role="img"
-              aria-label={template.name}
-              className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center ring-1 ring-slate-200"
-              style={{
-                backgroundImage: `url('${templatePreviewSrc(template.id)}')`,
-              }}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="mb-0.5 flex items-center gap-2">
-                <span
-                  className={`text-sm font-semibold ${active ? "text-ui" : "text-slate-800"}`}
-                >
-                  {template.name}
-                </span>
-                {active ? (
-                  <span className="rounded-[5px] bg-ui px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
-                    Atual
-                  </span>
-                ) : null}
-              </div>
-              <span className="text-xs text-slate-400">
-                {template.description}
-              </span>
-            </div>
-          </button>
-        );
-      })}
     </div>
   );
 }
