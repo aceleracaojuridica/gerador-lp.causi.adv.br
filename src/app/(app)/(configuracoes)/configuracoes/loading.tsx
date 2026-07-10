@@ -1,5 +1,5 @@
-import { SettingsFormSkeleton } from "@/components/ui-patterns/skeletons";
+import { PageLoading } from "@/components/ui-patterns/page-loading";
 
 export default function ConfiguracoesLoading() {
-  return <SettingsFormSkeleton />;
+  return <PageLoading />;
 }
