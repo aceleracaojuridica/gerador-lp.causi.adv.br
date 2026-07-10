@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import type { ActionResult } from "@/app/actions/lps";
 import { ACCESS_DENIED_ERROR, mapLpDbError } from "@/lib/errors";
 import {
@@ -12,6 +13,7 @@ import {
   listLeads,
 } from "@/lib/landing-pages/lead-store";
 import { hasLpAccess, requireAuth, requireLpSession } from "@/lib/session";
+import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 function toMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) {
@@ -62,6 +64,7 @@ export type SubmitLeadPayload = {
   telefone: string;
   answers?: Record<string, string>;
   pageUrl: string;
+  captchaToken?: string;
 };
 
 /** Captura pública — sem autenticação de usuário. */
@@ -69,6 +72,20 @@ export async function submitLeadAction(
   payload: SubmitLeadPayload,
 ): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
   try {
+    if (isTurnstileConfigured()) {
+      const token = payload.captchaToken?.trim();
+      if (!token) {
+        return { ok: false, error: "Confirme o captcha antes de enviar." };
+      }
+      const headerStore = await headers();
+      const forwarded = headerStore.get("x-forwarded-for");
+      const remoteIp = forwarded?.split(",")[0]?.trim();
+      const valid = await verifyTurnstileToken(token, remoteIp);
+      if (!valid) {
+        return { ok: false, error: "Captcha inválido. Tente novamente." };
+      }
+    }
+
     const id = await createLead(payload);
     return { ok: true, id };
   } catch (err) {

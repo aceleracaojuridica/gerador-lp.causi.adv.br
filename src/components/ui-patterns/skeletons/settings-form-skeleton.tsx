@@ -6,7 +6,6 @@ const SETTINGS_NAV_KEYS = [
   "nav-tracking",
   "nav-pixels",
   "nav-scripts",
-  "nav-captcha",
 ] as const;
 
 export function SettingsFormSkeleton() {

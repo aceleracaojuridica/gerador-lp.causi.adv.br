@@ -6,7 +6,10 @@ import {
   getConfig,
   saveConfig,
 } from "@/lib/landing-pages/config";
-import { DEFAULT_CONFIG } from "@/lib/landing-pages/global-config";
+import {
+  DEFAULT_CONFIG,
+  normalizeGlobalConfig,
+} from "@/lib/landing-pages/global-config";
 import { requireLpSession } from "@/lib/session";
 
 /** Lê a configuração global da conta para landing pages. */
@@ -32,50 +35,7 @@ export async function saveConfigAction(
   }
 
   try {
-    await saveConfig({
-      fonts: {
-        heading: c.fonts?.heading ?? "",
-        body: c.fonts?.body ?? "",
-      },
-      tags: {
-        head: c.tags?.head ?? "",
-        body: c.tags?.body ?? "",
-        footer: c.tags?.footer ?? "",
-      },
-      tracking: {
-        ga4MeasurementId: c.tracking?.ga4MeasurementId ?? "",
-        gtmContainerId: c.tracking?.gtmContainerId ?? "",
-        metaPixelId: c.tracking?.metaPixelId ?? "",
-        googleAdsId: c.tracking?.googleAdsId ?? "",
-        googleAdsLabel: c.tracking?.googleAdsLabel ?? "",
-      },
-      captcha: {
-        provider: c.captcha?.provider ?? "none",
-        siteKey: c.captcha?.siteKey ?? "",
-        widgetTheme: c.captcha?.widgetTheme ?? "auto",
-      },
-      address: c.address
-        ? {
-            address: c.address.address ?? "",
-            cidade: c.address.cidade ?? "",
-            uf: c.address.uf ?? "",
-            mapsUrl: c.address.mapsUrl ?? "",
-          }
-        : undefined,
-      contact: c.contact
-        ? {
-            whatsapp: c.contact.whatsapp ?? "",
-            whatsappDisplay: c.contact.whatsappDisplay ?? "",
-            email: c.contact.email ?? "",
-          }
-        : undefined,
-      socials: c.socials
-        ? c.socials.map((s) => ({
-            network: s.network ?? "",
-            url: s.url ?? "",
-          }))
-        : undefined,
-    });
+    await saveConfig(normalizeGlobalConfig(c));
     return { ok: true };
   } catch (err) {
     return {

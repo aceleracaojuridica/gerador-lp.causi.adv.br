@@ -2,7 +2,6 @@
 
 import { AutoTextarea } from "@/components/auto-textarea";
 import { BuilderField } from "@/components/Builder/shared/fields";
-import { Badge } from "@/components/ui/badge";
 import { FormControl, FormField, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
@@ -51,13 +50,12 @@ export function SeoPanel({ form }: { form: LpEditorForm }) {
   const descLen = (rawSeo.description ?? seo.description ?? "").length;
   const titleStatus = seoCharStatus(titleLen, SEO_TITLE_IDEAL, SEO_TITLE_MAX);
   const descStatus = seoCharStatus(descLen, SEO_DESC_IDEAL, SEO_DESC_MAX);
-  const indexable = rawSeo.indexable ?? seo.indexable ?? false;
 
   return (
     <div className="flex flex-col gap-3">
       <p className="rounded-lg border border-border bg-muted/60 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-        Gerados automaticamente pela IA. Edite aqui para personalizar o que
-        aparece nos resultados de busca e no compartilhamento em redes sociais.
+        Opcional: personalize o que aparece nos resultados de busca e no
+        compartilhamento. O foco principal das landing pages é tráfego pago.
       </p>
 
       <FieldGroup title="Título e descrição">
@@ -137,24 +135,7 @@ export function SeoPanel({ form }: { form: LpEditorForm }) {
         />
       </FieldGroup>
 
-      <FieldGroup title="Indexação e redes sociais">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground">
-              Indexável nos buscadores
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Desative para LPs de tráfego pago (Google/Meta Ads).
-            </p>
-          </div>
-          <Badge
-            variant="secondary"
-            className="shrink-0 cursor-pointer"
-            onClick={() => form.setSeoField("indexable", !indexable)}
-          >
-            {indexable ? "Indexável" : "Noindex"}
-          </Badge>
-        </div>
+      <FieldGroup title="Redes sociais e compartilhamento">
         <FormField
           control={rhf.control}
           name="copy.seo.ogImage"

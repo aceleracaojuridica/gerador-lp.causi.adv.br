@@ -97,6 +97,7 @@ const fontVars = [
 export const metadata: Metadata = {
   title: "Causi",
   description: "O Motor de Honorários da Advocacia Moderna",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

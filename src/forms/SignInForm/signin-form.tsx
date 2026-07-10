@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -180,7 +179,7 @@ export default function SigninForm({
 
         <div className="flex justify-start">
           <Button type="button" variant="link" className="h-auto px-0" asChild>
-            <Link href="/redefinir">Esqueci minha senha</Link>
+            <a href="https://app.causi.com.br">Voltar para o Causi</a>
           </Button>
         </div>
 

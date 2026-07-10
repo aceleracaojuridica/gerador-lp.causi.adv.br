@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       "@material-symbols-svg/react/rounded",
       "@material-symbols-svg/react/sharp",
     ],
-  }
+  },
 };
 
 export default nextConfig;

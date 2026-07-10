@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { LpAccessProvider } from "@/components/lp-access-provider";
@@ -9,6 +10,10 @@ import {
   hasLpAccess,
   shouldClearStaleAccountCookie,
 } from "@/lib/session";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AppRouteLayout({
   children,

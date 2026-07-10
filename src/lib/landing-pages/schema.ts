@@ -75,20 +75,21 @@ export type Social = { network: SocialNetwork; url: string };
 /** Scripts/tags de conversão injetados na página publicada (GTM, Pixel, gtag). */
 export type ConversionTags = { head: string; body: string; footer: string };
 
-/** IDs/configuração estruturada dos provedores de tracking suportados. */
-export type TrackingProviderConfig = {
-  ga4MeasurementId: string;
-  gtmContainerId: string;
-  metaPixelId: string;
-  googleAdsId: string;
-  googleAdsLabel: string;
+export type Ga4Tracking = { enabled: boolean; measurementId: string };
+export type GtmTracking = { enabled: boolean; containerId: string };
+export type MetaPixelTracking = { enabled: boolean; pixelId: string };
+export type GoogleAdsTracking = {
+  enabled: boolean;
+  adsId: string;
+  conversionLabel: string;
 };
 
-/** Configuração pública do captcha exibido no formulário da LP. */
-export type CaptchaConfig = {
-  provider: "none" | "turnstile";
-  siteKey: string;
-  widgetTheme: "auto" | "light" | "dark";
+/** IDs e toggles dos provedores de tracking suportados. */
+export type TrackingProviderConfig = {
+  ga4: Ga4Tracking;
+  gtm: GtmTracking;
+  metaPixel: MetaPixelTracking;
+  googleAds: GoogleAdsTracking;
 };
 
 /** Card simples de uma seção personalizada (sem ícone — numeração automática). */
@@ -149,7 +150,6 @@ export type Office = {
   // compatibilidade com LPs salvas antes desses campos.
   tags?: ConversionTags; // scripts no <head>, início do <body> e rodapé
   tracking?: TrackingProviderConfig; // ids de GA4, GTM, Meta Pixel e Google Ads
-  captcha?: CaptchaConfig; // config pública do Turnstile/captcha da LP
   privacyPolicy?: string; // texto da Política de Privacidade (link no rodapé)
   // Tipografia escolhida no editor (ids de lib/fonts). "" = padrão do site.
   fonts?: { heading: string; body: string };

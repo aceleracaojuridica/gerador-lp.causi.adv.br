@@ -1,18 +1,11 @@
 "use client";
 
 import { GoogleAds, Meta } from "@thesvg/react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { IntegrationProviderCard } from "@/components/integrations/integration-provider-card";
 import { Form, FormControl, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { GlobalConfigFormProps } from "../global-config-form.types";
 import { ConfigFormFooter } from "../shared/config-form-footer";
-import { FieldRow } from "../shared/field-row";
 import { useGlobalConfigForm } from "../shared/use-global-config-form";
 
 export function PixelsConfigForm({ initialData }: GlobalConfigFormProps) {
@@ -23,74 +16,78 @@ export function PixelsConfigForm({ initialData }: GlobalConfigFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-6 pb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pixels de conversao</CardTitle>
-            <CardDescription>
-              IDs padrao usados para atribuir conversoes de anuncios nas landing
-              pages.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
+        <FormField
+          control={form.control}
+          name="tracking.metaPixel.enabled"
+          render={({ field: enabledField }) => (
             <FormField
               control={form.control}
-              name="tracking.metaPixelId"
-              render={({ field }) => (
-                <FieldRow
-                  label={
-                    <span className="inline-flex items-center gap-2">
-                      <Meta className="size-4" />
-                      Meta Pixel ID
-                    </span>
-                  }
-                  description="Use apenas numeros do pixel padrao da conta."
+              name="tracking.metaPixel.pixelId"
+              render={({ field: idField }) => (
+                <IntegrationProviderCard
+                  icon={<Meta className="size-4" />}
+                  name="Meta Pixel"
+                  description="Pixel de rastreamento para campanhas do Facebook e Instagram Ads."
+                  enabled={enabledField.value}
+                  onEnabledChange={enabledField.onChange}
                 >
                   <FormControl>
-                    <Input {...field} placeholder="000000000000000" />
+                    <Input
+                      {...idField}
+                      placeholder="000000000000000"
+                      aria-label="Meta Pixel ID"
+                    />
                   </FormControl>
-                </FieldRow>
+                </IntegrationProviderCard>
               )}
             />
+          )}
+        />
 
+        <FormField
+          control={form.control}
+          name="tracking.googleAds.enabled"
+          render={({ field: enabledField }) => (
             <FormField
               control={form.control}
-              name="tracking.googleAdsId"
-              render={({ field }) => (
-                <FieldRow
-                  label={
-                    <span className="inline-flex items-center gap-2">
-                      <GoogleAds className="size-4" />
-                      Google Ads ID
-                    </span>
-                  }
-                  description="Formato esperado: AW-XXXXXXXXX."
-                >
-                  <FormControl>
-                    <Input {...field} placeholder="AW-XXXXXXXXX" />
-                  </FormControl>
-                </FieldRow>
+              name="tracking.googleAds.adsId"
+              render={({ field: idField }) => (
+                <FormField
+                  control={form.control}
+                  name="tracking.googleAds.conversionLabel"
+                  render={({ field: labelField }) => (
+                    <IntegrationProviderCard
+                      icon={<GoogleAds className="size-4" />}
+                      name="Google Ads"
+                      description="Tag de conversao para campanhas do Google Ads."
+                      enabled={enabledField.value}
+                      onEnabledChange={enabledField.onChange}
+                    >
+                      <div className="flex flex-col gap-3">
+                        <FormControl>
+                          <Input
+                            {...idField}
+                            placeholder="AW-XXXXXXXXX"
+                            aria-label="Google Ads ID"
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <Input
+                            {...labelField}
+                            placeholder="AbC-D_efG-h12_34-567"
+                            aria-label="Rotulo de conversao Google Ads"
+                          />
+                        </FormControl>
+                      </div>
+                    </IntegrationProviderCard>
+                  )}
+                />
               )}
             />
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="tracking.googleAdsLabel"
-              render={({ field }) => (
-                <FieldRow
-                  label="Rotulo de conversao"
-                  description="Label de conversao usado com o Google Ads."
-                  borderless
-                >
-                  <FormControl>
-                    <Input {...field} placeholder="AbC-D_efG-h12_34-567" />
-                  </FormControl>
-                </FieldRow>
-              )}
-            />
-          </CardContent>
-
-          <ConfigFormFooter form={form} defaultValues={defaultValues} />
-        </Card>
+        <ConfigFormFooter form={form} defaultValues={defaultValues} />
       </form>
     </Form>
   );

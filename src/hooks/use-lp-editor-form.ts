@@ -35,8 +35,10 @@ import type {
   Theme,
   ToggleableSection,
   Tone,
+  TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import {
   HERO_VARIANT_CENTERED_FOCUS,
   HERO_VARIANT_VIDEO_EMBEDDED,
@@ -382,41 +384,17 @@ export function useLpEditorForm(seed?: LpSeed) {
     form.setValue("office.tags", { ...tags, [part]: v }, { shouldDirty: true });
   }
 
-  function setTrackingField(
-    key:
-      | "ga4MeasurementId"
-      | "gtmContainerId"
-      | "metaPixelId"
-      | "googleAdsId"
-      | "googleAdsLabel",
-    value: string,
+  function setTrackingProvider<K extends keyof TrackingProviderConfig>(
+    provider: K,
+    patch: Partial<TrackingProviderConfig[K]>,
   ) {
-    const tracking = form.getValues("office.tracking") ?? {
-      ga4MeasurementId: "",
-      gtmContainerId: "",
-      metaPixelId: "",
-      googleAdsId: "",
-      googleAdsLabel: "",
-    };
+    const tracking = normalizeTracking(form.getValues("office.tracking"));
     form.setValue(
       "office.tracking",
-      { ...tracking, [key]: value },
-      { shouldDirty: true },
-    );
-  }
-
-  function setCaptchaField(
-    key: "provider" | "siteKey" | "widgetTheme",
-    value: string,
-  ) {
-    const captcha = form.getValues("office.captcha") ?? {
-      provider: "none" as const,
-      siteKey: "",
-      widgetTheme: "auto" as const,
-    };
-    form.setValue(
-      "office.captcha",
-      { ...captcha, [key]: value },
+      {
+        ...tracking,
+        [provider]: { ...tracking[provider], ...patch },
+      },
       { shouldDirty: true },
     );
   }
@@ -825,8 +803,7 @@ export function useLpEditorForm(seed?: LpSeed) {
     removeContact,
     setSeoField,
     setTag,
-    setTrackingField,
-    setCaptchaField,
+    setTrackingProvider,
     setFont,
     setButtonField,
     setPopupQuestions,

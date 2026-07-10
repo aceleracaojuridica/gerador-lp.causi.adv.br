@@ -1,7 +1,3 @@
-/*
-  Configuração GLOBAL por conta (`account_id`). Vale como padrão para todas
-  as LPs da conta: tipografia, tracking, snippets e domínio.
-*/
 import "server-only";
 import {
   DEFAULT_CONFIG,
@@ -9,6 +5,7 @@ import {
   normalizeGlobalConfig,
 } from "@/lib/landing-pages/global-config";
 import type { SocialNetwork } from "@/lib/landing-pages/schema";
+import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import { getSession } from "@/lib/session";
 import {
   createLpUserClient,
@@ -22,7 +19,6 @@ type AccountSettingsRow = {
   body_font: string | null;
   tracking_scripts: Partial<GlobalConfig["tags"]> | null;
   tracking_providers: Partial<GlobalConfig["tracking"]> | null;
-  captcha_config: Partial<GlobalConfig["captcha"]> | null;
 };
 
 type LpAccountSocialRow = {
@@ -43,9 +39,7 @@ export async function getConfig(): Promise<GlobalConfig> {
 
   const { data } = await db
     .from("lp_account_settings")
-    .select(
-      "heading_font,body_font,tracking_scripts,tracking_providers,captcha_config",
-    )
+    .select("heading_font,body_font,tracking_scripts,tracking_providers")
     .eq("account_id", ctx.accountId)
     .maybeSingle<AccountSettingsRow>();
 
@@ -80,18 +74,9 @@ export async function getConfig(): Promise<GlobalConfig> {
     tags: data
       ? { ...DEFAULT_CONFIG.tags, ...(data.tracking_scripts ?? {}) }
       : undefined,
-    tracking: data
-      ? {
-          ...DEFAULT_CONFIG.tracking,
-          ...(data.tracking_providers ?? {}),
-        }
-      : undefined,
-    captcha: data
-      ? {
-          ...DEFAULT_CONFIG.captcha,
-          ...(data.captcha_config ?? {}),
-        }
-      : undefined,
+    tracking: normalizeTracking(
+      data?.tracking_providers as Parameters<typeof normalizeTracking>[0],
+    ),
   });
 
   return {
@@ -135,7 +120,6 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
       body_font: normalized.fonts.body,
       tracking_scripts: normalized.tags,
       tracking_providers: normalized.tracking,
-      captcha_config: normalized.captcha,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "account_id" },
@@ -218,7 +202,6 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
     );
     const incomingNetworks = new Set(normalized.socials.map((s) => s.network));
 
-    // Upsert das que foram recebidas
     for (const social of normalized.socials) {
       const existingId = existingMap.get(social.network);
       if (existingId) {
@@ -239,7 +222,6 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
       }
     }
 
-    // Delete das que não vieram no payload
     const toDeleteIds = (existingSocials ?? [])
       .filter((s) => !incomingNetworks.has(s.network))
       .map((s) => s.id);
