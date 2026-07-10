@@ -29,6 +29,7 @@ import {
   HeaderContent,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
+import { GalleryTableSkeleton } from "@/components/ui-patterns/skeletons";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
 import { useLpWriteAccess } from "@/hooks/use-lp-write-access";
 import { isAccessDeniedError } from "@/lib/errors";
@@ -188,7 +189,7 @@ export function GalleryPageClient() {
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
+          <GalleryTableSkeleton />
         ) : images.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <Image className="size-12 text-muted-foreground" />

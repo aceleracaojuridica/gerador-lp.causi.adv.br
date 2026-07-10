@@ -47,6 +47,7 @@ import {
   HeaderContent,
   HeaderHeading,
 } from "@/components/ui-patterns/header";
+import { ContatosTableSkeleton } from "@/components/ui-patterns/skeletons";
 import {
   ContatosFilterForm,
   type ContatosFilterValues,
@@ -344,9 +345,11 @@ export function ContatosPageClient() {
 
       <ContainerSection grow overflow="hidden" className="min-h-0">
         {loading ? (
-          <p className="p-4 text-sm text-muted-foreground sm:p-6">
-            Carregando…
-          </p>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-border">
+            <div className="flex-1 overflow-y-auto">
+              <ContatosTableSkeleton />
+            </div>
+          </div>
         ) : leads.length === 0 ? (
           <div className="flex flex-col items-center py-16">
             <Empty>
