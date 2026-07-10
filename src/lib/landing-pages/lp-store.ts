@@ -3,9 +3,8 @@ import "server-only";
 import {
   ensureLpAccount,
   getLpAccount,
-  isOfficeSubdomainReservedByAccountName,
-  isOfficeSubdomainTakenByOtherAccount,
-  updateLpAccountOfficeSubdomain,
+  isBackfillOfficeSubdomain,
+  provisionOfficeSubdomainIfNeeded,
 } from "@/lib/landing-pages/account-store";
 import type { Session } from "@/lib/session/types";
 import type { LpDbClient } from "@/lib/supabase/lp-client";
@@ -23,7 +22,6 @@ import { persistLpSchemaMedia } from "./media-storage";
 import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
-import { allocateUniqueLpSlug, slugFromOfficeName } from "./slug";
 import {
   normalizeAreasVariant,
   normalizeDorVariant,
@@ -41,8 +39,6 @@ const safeSlug = (s: string) =>
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const OFFICE_SUBDOMAIN_BACKFILL_PREFIX = "acct-";
-
 type LandingPageRow = {
   id: string;
   slug: string;
@@ -57,10 +53,6 @@ type LandingPageRow = {
 
 function throwDbError(error: { message: string; code?: string }): never {
   throw Object.assign(new Error(error.message), { code: error.code });
-}
-
-function isBackfillOfficeSubdomain(value: string): boolean {
-  return value.startsWith(OFFICE_SUBDOMAIN_BACKFILL_PREFIX);
 }
 
 /** Verifica se um slug de LP já está em uso na conta. */
@@ -82,13 +74,12 @@ export async function isLpSlugTaken(
 }
 
 /**
- * Subdomínio fixo do escritório (derivado do nome da conta).
- * Persistido em todas as LPs da conta; único globalmente entre contas.
+ * Subdomínio fixo do escritório (derivado do slug da conta no Causi).
+ * Persistido em `lp_accounts`; provisionado no primeiro acesso via `ensureLpAccount`.
  */
 export async function resolveOfficeSubdomain(
   session: Session,
 ): Promise<string> {
-  const ctx = sessionToLpContext(session);
   await ensureLpAccount(session);
   const account = await getLpAccount(session);
 
@@ -97,44 +88,14 @@ export async function resolveOfficeSubdomain(
     return current;
   }
 
-  const base = slugFromOfficeName(session.account.name);
-  if (!base) {
-    throw new Error("Nome da conta inválido para subdomínio do escritório.");
+  await provisionOfficeSubdomainIfNeeded(session);
+  const refreshed = await getLpAccount(session);
+  const subdomain = refreshed?.office_subdomain?.trim();
+  if (subdomain && !isBackfillOfficeSubdomain(subdomain)) {
+    return subdomain;
   }
 
-  const ownerBase =
-    slugFromOfficeName(
-      session.user.name || session.user.email.split("@")[0] || "",
-    ) || "owner";
-
-  const subdomain = await allocateUniqueLpSlug(base, async (candidate) => {
-    const [takenBySubdomain, reservedByName] = await Promise.all([
-      isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
-      isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
-    ]);
-    return takenBySubdomain || reservedByName;
-  });
-
-  if (!subdomain) {
-    const fallbackBase = `${base}-${ownerBase}`;
-    const fallback = await allocateUniqueLpSlug(
-      fallbackBase,
-      async (candidate) => {
-        const [takenBySubdomain, reservedByName] = await Promise.all([
-          isOfficeSubdomainTakenByOtherAccount(candidate, ctx.accountId),
-          isOfficeSubdomainReservedByAccountName(candidate, ctx.accountId),
-        ]);
-        return takenBySubdomain || reservedByName;
-      },
-    );
-    if (!fallback) throw new Error("subdomain-conflict");
-    await updateLpAccountOfficeSubdomain(session, fallback);
-    return fallback;
-  }
-
-  await updateLpAccountOfficeSubdomain(session, subdomain);
-
-  return subdomain;
+  throw new Error("subdomain-conflict");
 }
 
 async function resolveProfileId(
