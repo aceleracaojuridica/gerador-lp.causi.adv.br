@@ -38,6 +38,7 @@ import { BODY_FONTS, HEADING_FONTS } from "@/lib/landing-pages/fonts";
 import type { GlobalConfig } from "@/lib/landing-pages/global-config";
 import { maskPhone } from "@/lib/landing-pages/phone";
 import {
+  formatOfficeSubdomainDraft,
   normalizeOfficeSubdomainInput,
   validateOfficeSubdomainLocal,
 } from "@/lib/landing-pages/subdomain";
@@ -62,13 +63,17 @@ export function VisualConfigForm({
   const { form, defaultValues, onSubmit } = useGlobalConfigForm({
     initialData,
   });
-  const [savedSubdomain, setSavedSubdomain] = useState(initialOfficeSubdomain);
-  const [draftSubdomain, setDraftSubdomain] = useState(initialOfficeSubdomain);
+  const initialSubdomain = useMemo(
+    () => normalizeOfficeSubdomainInput(initialOfficeSubdomain),
+    [initialOfficeSubdomain],
+  );
+  const [savedSubdomain, setSavedSubdomain] = useState(initialSubdomain);
+  const [draftSubdomain, setDraftSubdomain] = useState(initialSubdomain);
   const [isSavingSubdomain, setIsSavingSubdomain] = useState(false);
   const [subdomainVerified, setSubdomainVerified] = useState(false);
   const [isValidatingSubdomain, setIsValidatingSubdomain] = useState(false);
   const [validateError, setValidateError] = useState<string | null>(null);
-  const lastVerifiedSubdomainRef = useRef(initialOfficeSubdomain);
+  const lastVerifiedSubdomainRef = useRef(initialSubdomain);
 
   const {
     fields: socials,
@@ -103,28 +108,48 @@ export function VisualConfigForm({
     () => normalizeOfficeSubdomainInput(accountName),
     [accountName],
   );
-  const localSubdomainValidation = useMemo(
-    () => validateOfficeSubdomainLocal(draftSubdomain),
+  const canonicalDraftSubdomain = useMemo(
+    () => normalizeOfficeSubdomainInput(draftSubdomain),
     [draftSubdomain],
   );
-  const isSubdomainDirty = draftSubdomain !== savedSubdomain;
+  const localSubdomainValidation = useMemo(
+    () => validateOfficeSubdomainLocal(canonicalDraftSubdomain),
+    [canonicalDraftSubdomain],
+  );
+  const isSubdomainDirty = canonicalDraftSubdomain !== savedSubdomain;
+  const isCurrentSubdomain = !isSubdomainDirty && savedSubdomain.length > 0;
   const canValidateSubdomain =
     canEditSubdomain &&
     isSubdomainDirty &&
+    !isCurrentSubdomain &&
     localSubdomainValidation.ok &&
     !isValidatingSubdomain;
   const canSaveSubdomain =
     canEditSubdomain &&
     isSubdomainDirty &&
     subdomainVerified &&
-    draftSubdomain === lastVerifiedSubdomainRef.current &&
+    canonicalDraftSubdomain === lastVerifiedSubdomainRef.current &&
     !isSavingSubdomain;
 
-  function onDraftSubdomainChange(value: string) {
-    const normalized = normalizeOfficeSubdomainInput(value);
-    setDraftSubdomain(normalized);
+  const syncSubdomainToSaved = useCallback((value: string) => {
+    setSavedSubdomain(value);
+    setDraftSubdomain(value);
+    lastVerifiedSubdomainRef.current = value;
+    setSubdomainVerified(false);
     setValidateError(null);
-    if (normalized !== lastVerifiedSubdomainRef.current) {
+  }, []);
+
+  function onDraftSubdomainChange(value: string) {
+    const formatted = formatOfficeSubdomainDraft(value);
+    const canonical = normalizeOfficeSubdomainInput(formatted);
+    setDraftSubdomain(formatted);
+    setValidateError(null);
+    if (canonical === savedSubdomain) {
+      setSubdomainVerified(false);
+      lastVerifiedSubdomainRef.current = savedSubdomain;
+      return;
+    }
+    if (canonical !== lastVerifiedSubdomainRef.current) {
       setSubdomainVerified(false);
     }
   }
@@ -132,7 +157,12 @@ export function VisualConfigForm({
   const onValidateSubdomain = useCallback(async () => {
     setValidateError(null);
 
-    const local = validateOfficeSubdomainLocal(draftSubdomain);
+    const canonical = normalizeOfficeSubdomainInput(draftSubdomain);
+    if (canonical === savedSubdomain && savedSubdomain) {
+      return;
+    }
+
+    const local = validateOfficeSubdomainLocal(canonical);
     if (!local.ok) {
       setValidateError(local.message);
       setSubdomainVerified(false);
@@ -143,9 +173,13 @@ export function VisualConfigForm({
 
     setIsValidatingSubdomain(true);
     try {
-      const result = await checkSubdomainAvailabilityAction(draftSubdomain);
+      const result = await checkSubdomainAvailabilityAction(canonical);
+      if (result.reason === "unchanged" && result.normalized) {
+        syncSubdomainToSaved(result.normalized);
+        return;
+      }
       if (result.available) {
-        lastVerifiedSubdomainRef.current = draftSubdomain;
+        lastVerifiedSubdomainRef.current = canonical;
         setSubdomainVerified(true);
         setValidateError(null);
         return;
@@ -166,12 +200,13 @@ export function VisualConfigForm({
     } finally {
       setIsValidatingSubdomain(false);
     }
-  }, [canEditSubdomain, draftSubdomain]);
+  }, [canEditSubdomain, draftSubdomain, savedSubdomain, syncSubdomainToSaved]);
 
   async function onSaveSubdomain() {
     if (!canSaveSubdomain) return;
+    const canonical = normalizeOfficeSubdomainInput(draftSubdomain);
     setIsSavingSubdomain(true);
-    const result = await updateOfficeSubdomainAction(draftSubdomain);
+    const result = await updateOfficeSubdomainAction(canonical);
     setIsSavingSubdomain(false);
 
     if (!result.ok) {
@@ -181,7 +216,9 @@ export function VisualConfigForm({
 
     setSavedSubdomain(result.officeSubdomain);
     setDraftSubdomain(result.officeSubdomain);
-    lastVerifiedSubdomainRef.current = result.officeSubdomain;
+    lastVerifiedSubdomainRef.current = normalizeOfficeSubdomainInput(
+      result.officeSubdomain,
+    );
     setSubdomainVerified(false);
     setValidateError(null);
     toast.success("Subdominio atualizado com sucesso.");
@@ -323,7 +360,7 @@ export function VisualConfigForm({
                 </p>
                 <p className="text-xs text-muted-foreground">
                   URL publica de exemplo:{" "}
-                  <span className="font-mono">{`https://${draftSubdomain || "subdominio"}.causi.adv.br/previdenciario`}</span>
+                  <span className="font-mono">{`https://${canonicalDraftSubdomain || "subdominio"}.causi.adv.br/previdenciario`}</span>
                 </p>
                 {!canEditSubdomain && (
                   <p className="text-xs text-muted-foreground">
@@ -337,7 +374,13 @@ export function VisualConfigForm({
                       {localSubdomainValidation.message}
                     </p>
                   )}
-                {subdomainVerified && !validateError && (
+                {isCurrentSubdomain && (
+                  <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+                    <CheckCircle className="size-3.5 shrink-0" />
+                    Este e o subdominio atual da conta.
+                  </p>
+                )}
+                {subdomainVerified && isSubdomainDirty && !validateError && (
                   <p className="flex items-center gap-1.5 text-xs text-emerald-600">
                     <CheckCircle className="size-3.5 shrink-0" />
                     Subdominio disponivel. Voce ja pode salvar.

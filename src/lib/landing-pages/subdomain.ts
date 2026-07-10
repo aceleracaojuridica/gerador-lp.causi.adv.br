@@ -10,6 +10,21 @@ export function normalizeOfficeSubdomainInput(value: string): string {
   return slugFromOfficeName(value);
 }
 
+/**
+ * Formata o subdomínio enquanto o usuário digita: remove acentos, minúsculas,
+ * espaços viram hífen e caracteres inválidos são removidos.
+ * Mantém hífen final para feedback imediato ao pressionar espaço.
+ */
+export function formatOfficeSubdomainDraft(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 export function isReservedOfficeSubdomain(value: string): boolean {
   return isReservedSegment(value);
 }

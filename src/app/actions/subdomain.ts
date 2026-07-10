@@ -7,12 +7,15 @@ import {
   isOfficeSubdomainTakenByOtherAccount,
   updateLpAccountOfficeSubdomain,
 } from "@/lib/landing-pages/account-store";
-import { validateOfficeSubdomainLocal } from "@/lib/landing-pages/subdomain";
+import {
+  normalizeOfficeSubdomainInput,
+  validateOfficeSubdomainLocal,
+} from "@/lib/landing-pages/subdomain";
 import { requireLpSession } from "@/lib/session";
 
 export type AvailabilityResult = {
   available: boolean;
-  reason?: "invalid" | "reserved" | "taken";
+  reason?: "invalid" | "reserved" | "taken" | "unchanged";
   normalized?: string;
   message?: string;
 };
@@ -20,6 +23,16 @@ export type AvailabilityResult = {
 const TAKEN_MESSAGE = "Este subdomínio já está em uso por outro escritório.";
 const RESERVED_MESSAGE =
   "Este subdomínio está reservado por outro escritório do Causi.";
+const UNCHANGED_MESSAGE = "Este já é o subdomínio atual da conta.";
+
+async function getCurrentOfficeSubdomain(
+  session: Awaited<ReturnType<typeof requireLpSession>>,
+): Promise<string> {
+  await ensureLpAccount(session);
+  const account = await getLpAccount(session);
+  const raw = account?.office_subdomain?.trim() ?? "";
+  return raw ? normalizeOfficeSubdomainInput(raw) : "";
+}
 
 export async function checkSubdomainAvailabilityAction(
   input: string,
@@ -33,6 +46,15 @@ export async function checkSubdomainAvailabilityAction(
   }
 
   const normalized = local.normalized;
+  const current = await getCurrentOfficeSubdomain(session);
+  if (current && current === normalized) {
+    return {
+      available: false,
+      reason: "unchanged",
+      normalized,
+      message: UNCHANGED_MESSAGE,
+    };
+  }
 
   const [takenBySubdomain, reservedByName] = await Promise.all([
     isOfficeSubdomainTakenByOtherAccount(normalized, accountId),
@@ -84,12 +106,13 @@ export async function updateOfficeSubdomainAction(
           ? TAKEN_MESSAGE
           : availability.reason === "reserved"
             ? RESERVED_MESSAGE
-            : "Subdomínio inválido."),
+            : availability.reason === "unchanged"
+              ? UNCHANGED_MESSAGE
+              : "Subdomínio inválido."),
     };
   }
 
   try {
-    await ensureLpAccount(session);
     await updateLpAccountOfficeSubdomain(session, availability.normalized);
     return { ok: true, officeSubdomain: availability.normalized };
   } catch (error) {
