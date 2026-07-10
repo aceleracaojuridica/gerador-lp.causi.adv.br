@@ -67,14 +67,12 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@faker-js/faker": "^10.4.0",
-    "@react-grab/mcp": "^0.1.37",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "husky": "^9.1.7",
-    "react-grab": "^0.1.48",
     "shadcn": "^3.8.5",
     "supabase": "^2.84.4",
     "tailwindcss": "^4",
@@ -87,11 +85,10 @@
       "@types/react-dom": "19.2.3"
     },
     "onlyBuiltDependencies": [
+      "sharp",
       "supabase"
     ],
     "ignoredBuiltDependencies": [
-      "react-grab",
-      "sharp",
       "unrs-resolver"
     ]
   }

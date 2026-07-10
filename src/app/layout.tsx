@@ -11,12 +11,9 @@ import {
   Raleway,
   Roboto,
 } from "next/font/google";
-import { headers } from "next/headers";
-import Script from "next/script";
 import "./globals.css";
 import { ThemeWrapper } from "@/components/theme-wrapper";
 import { Toaster } from "@/components/ui/sonner";
-import { officeSubdomainFromHost } from "@/lib/landing-pages/public-routing";
 import { cn } from "@/lib/utils";
 import { Provider } from "@/provider";
 
@@ -102,15 +99,11 @@ export const metadata: Metadata = {
   description: "O Motor de Honorários da Advocacia Moderna",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const host = (await headers()).get("host") ?? "";
-  const showReactGrab =
-    process.env.NODE_ENV === "development" && !officeSubdomainFromHost(host);
-
   return (
     <html
       lang="pt-BR"
@@ -119,13 +112,6 @@ export default async function RootLayout({
     >
       <head />
       <body>
-        {showReactGrab ? (
-          <Script
-            src="//unpkg.com/react-grab/dist/index.global.js"
-            crossOrigin="anonymous"
-            strategy="beforeInteractive"
-          />
-        ) : null}
         <ThemeWrapper>
           <Provider>{children}</Provider>
           <Toaster position="top-right" duration={5000} />
