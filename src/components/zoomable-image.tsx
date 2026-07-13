@@ -17,11 +17,14 @@ export function ZoomableImage({
   alt,
   className = "",
   fit = "cover",
+  position = "center",
 }: {
   src: string;
   alt: string;
   className?: string;
   fit?: "cover" | "contain";
+  /** Âncora do recorte. "top" evita cortar a cabeça em retratos baixos. */
+  position?: "center" | "top";
 }) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -52,7 +55,10 @@ export function ZoomableImage({
             fill
             unoptimized
             sizes="(max-width: 480px) 100vw, 480px"
-            className={fit === "contain" ? "object-contain" : "object-cover"}
+            className={cn(
+              fit === "contain" ? "object-contain" : "object-cover",
+              position === "top" && "object-top",
+            )}
           />
         </div>
       </button>

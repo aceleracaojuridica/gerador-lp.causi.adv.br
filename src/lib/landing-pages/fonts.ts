@@ -26,6 +26,13 @@ export const BODY_FONTS: FontOption[] = [
   { id: "raleway", label: "Raleway", cssVar: "var(--font-raleway)" },
 ];
 
+/**
+ * Fonte de título padrão nas LPs geradas (aplicada em /api/gerar-lp).
+ * O usuário pode trocar depois em Aparência → Tipografia.
+ * Os títulos usam peso 600 (`.section-title`), disponível nesta família.
+ */
+export const DEFAULT_HEADING_FONT_ID = "cormorant";
+
 export function headingFontVar(id?: string): string | undefined {
   return HEADING_FONTS.find((f) => f.id === id)?.cssVar;
 }

@@ -1,6 +1,7 @@
 import type { LandingPageCreateFormValues } from "@/forms/LandingPageCreateForm/schema";
 import type { FocoCopy } from "../focos";
 import { matchFoco } from "../focos";
+import { DEFAULT_HEADING_FONT_ID } from "../fonts";
 import {
   DEFAULT_THEME,
   type Lawyer,
@@ -136,5 +137,8 @@ export function buildOfficeFromGerarLpPayload(
       : [],
     sectionImages: images,
     metrics: [],
+    // Tipografia padrão da LP gerada: Cormorant Garamond nos títulos (peso 600).
+    // Corpo fica no padrão do site. Editável em Aparência → Tipografia.
+    fonts: { heading: DEFAULT_HEADING_FONT_ID, body: "" },
   };
 }

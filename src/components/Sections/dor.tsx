@@ -33,10 +33,11 @@ import { Reveal } from "@/components/ui/reveal";
 import { cardImageOverlay } from "@/lib/landing-pages/colors";
 import type { DorContent, DorVariant, Tone } from "@/lib/landing-pages/schema";
 import {
+  DOR_VARIANT_IMAGE_ICON_LIST,
   DOR_VARIANT_IMAGE_LIST,
-  DOR_VARIANT_WITH_IMAGE_CARDS,
 } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
+import { ImageIconListBlock } from "./image-icon-list-block";
 import { ImageListBlock } from "./image-list-block";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -147,39 +148,47 @@ export function Dor({
       <div className="relative mx-auto max-w-7xl px-6 md:px-10">
         {variant === DOR_VARIANT_IMAGE_LIST ? (
           <DorImageList content={content} dark={dark} image={image} />
+        ) : variant === DOR_VARIANT_IMAGE_ICON_LIST ? (
+          <ImageIconListBlock
+            eyebrow={content.eyebrow}
+            headline={content.headline}
+            intro={content.intro}
+            items={content.cards.map((d) => ({
+              icon: d.icon,
+              title: d.title,
+              text: d.text,
+              key: `${d.title}-${d.text}`,
+            }))}
+            image={image}
+            dark={dark}
+          />
         ) : (
           <>
-            {variant === DOR_VARIANT_WITH_IMAGE_CARDS ? (
-              <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
-                <Reveal>
-                  <Header content={content} dark={dark} />
-                </Reveal>
-                <Reveal delay={120}>
-                  <div
-                    className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
-                    style={
-                      image
-                        ? {
-                            backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : undefined
-                    }
-                  >
-                    <div
-                      aria-hidden
-                      className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full border-2"
-                      style={{ borderColor: `rgba(${accentRgb},0.4)` }}
-                    />
-                  </div>
-                </Reveal>
-              </div>
-            ) : (
-              <Reveal className="mx-auto max-w-2xl text-center">
-                <Header content={content} dark={dark} centered />
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+              <Reveal>
+                <Header content={content} dark={dark} />
               </Reveal>
-            )}
+              <Reveal delay={120}>
+                <div
+                  className="relative h-72 overflow-hidden rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand md:h-80"
+                  style={
+                    image
+                      ? {
+                          backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : undefined
+                  }
+                >
+                  <div
+                    aria-hidden
+                    className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full border-2"
+                    style={{ borderColor: `rgba(${accentRgb},0.4)` }}
+                  />
+                </div>
+              </Reveal>
+            </div>
 
             <CardGrid content={content} dark={dark} />
           </>
@@ -189,15 +198,7 @@ export function Dor({
   );
 }
 
-function Header({
-  content,
-  dark,
-  centered,
-}: {
-  content: DorContent;
-  dark: boolean;
-  centered?: boolean;
-}) {
+function Header({ content, dark }: { content: DorContent; dark: boolean }) {
   return (
     <>
       <p
@@ -212,7 +213,7 @@ function Header({
         />
       </h2>
       <p
-        className={`mt-5 text-lg leading-relaxed ${centered ? "" : ""} ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
+        className={`mt-5 text-lg leading-relaxed ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
       >
         {content.intro}
       </p>

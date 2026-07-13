@@ -2,6 +2,7 @@
 
 import {
   Add,
+  Check,
   Close,
   OpenWith,
   ProgressActivity,
@@ -10,6 +11,7 @@ import {
 } from "@material-symbols-svg/react";
 import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
+import { AutoTextarea } from "@/components/auto-textarea";
 import { Input } from "@/components/ui/input";
 import { ZoomableImage } from "@/components/zoomable-image";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
@@ -27,14 +29,17 @@ import type { Lawyer } from "@/lib/landing-pages/schema";
 
 export const clampPct = (n: number) => Math.max(0, Math.min(100, n));
 
-function FocalPicker({
+/** A própria foto vira a superfície de arrasto do enquadramento. */
+function FocalDragSurface({
   src,
   value,
   onChange,
+  className,
 }: {
   src: string;
   value: { x: number; y: number };
   onChange: (v: { x: number; y: number }) => void;
+  className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{
@@ -62,38 +67,19 @@ function FocalPicker({
   }
 
   return (
-    <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
-      <div className="flex items-start gap-3">
-        <div
-          ref={ref}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className="relative aspect-[3/4] w-28 shrink-0 cursor-move touch-none select-none overflow-hidden rounded-lg bg-lp-brand ring-1 ring-slate-300"
-          style={{
-            backgroundImage: `url('${src}')`,
-            backgroundSize: "cover",
-            backgroundPosition: `${value.x}% ${value.y}%`,
-          }}
-        >
-          <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/40" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-xs text-slate-500">
-            Arraste a foto para encaixar o rosto. O recorte vale para a página
-            (topo, sobre e equipe).
-          </p>
-          <button
-            type="button"
-            onClick={() => onChange({ x: 50, y: 50 })}
-            className="inline-flex items-center gap-1 text-xs text-slate-400 transition hover:text-slate-700"
-          >
-            <Undo size={13} /> Centralizar
-          </button>
-        </div>
-      </div>
-    </div>
+    <div
+      ref={ref}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      className={`cursor-move touch-none select-none overflow-hidden bg-lp-brand ${className ?? ""}`}
+      style={{
+        backgroundImage: `url('${src}')`,
+        backgroundSize: "cover",
+        backgroundPosition: `${value.x}% ${value.y}%`,
+      }}
+    />
   );
 }
 
@@ -126,47 +112,79 @@ function LawyerRow({
   return (
     <div className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white p-3">
       <div className="relative min-w-0 max-w-full">
-        <ZoomableImage
-          src={lawyer.photo}
-          alt={`advogado ${index + 1}`}
-          className="h-[140px] w-full rounded-lg ring-1 ring-slate-200"
-        />
-        <button
-          type="button"
-          aria-label="Remover advogado"
-          onClick={(e) => {
-            e.stopPropagation();
-            form.removeLawyerPhoto(index);
-          }}
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-        >
-          <Close size={14} />
-        </button>
-        <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+        {framing ? (
+          <FocalDragSurface
+            src={lawyer.photo}
+            value={lawyer.focal ?? { x: 50, y: 50 }}
+            onChange={(v) => form.setLawyerFocal(index, v)}
+            className="h-[140px] w-full rounded-lg ring-2 ring-ui"
+          />
+        ) : (
+          <ZoomableImage
+            src={lawyer.photo}
+            alt={`advogado ${index + 1}`}
+            position="top"
+            className="h-[140px] w-full rounded-lg ring-1 ring-slate-200"
+          />
+        )}
+
+        {framing ? (
+          <span className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">
+            Arraste para encaixar o rosto
+          </span>
+        ) : (
           <button
             type="button"
+            aria-label="Remover advogado"
             onClick={(e) => {
               e.stopPropagation();
-              melhorar();
+              form.removeLawyerPhoto(index);
             }}
-            disabled={loading}
-            title="Aumenta resolução e nitidez da foto, mantendo a pessoa"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-ui-soft/95 px-2.5 py-1.5 text-xs font-medium text-ui shadow-sm backdrop-blur transition hover:bg-ui-soft disabled:opacity-60"
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
           >
-            {loading ? (
-              <ProgressActivity size={14} className="animate-spin" />
-            ) : (
-              <WandStars size={14} />
-            )}
-            {loading ? "Melhorando…" : "Melhorar foto"}
+            <Close size={14} />
           </button>
+        )}
+
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+          {framing ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                form.setLawyerFocal(index, { x: 50, y: 50 });
+              }}
+              title="Centralizar o enquadramento"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm backdrop-blur transition hover:bg-white"
+            >
+              <Undo size={14} /> Centralizar
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                melhorar();
+              }}
+              disabled={loading}
+              title="Aumenta resolução e nitidez da foto, mantendo a pessoa"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-ui-soft/95 px-2.5 py-1.5 text-xs font-medium text-ui shadow-sm backdrop-blur transition hover:bg-ui-soft disabled:opacity-60"
+            >
+              {loading ? (
+                <ProgressActivity size={14} className="animate-spin" />
+              ) : (
+                <WandStars size={14} />
+              )}
+              {loading ? "Melhorando…" : "Melhorar foto"}
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setFraming((v) => !v);
             }}
-            aria-label="Enquadrar"
+            aria-label={framing ? "Concluir enquadramento" : "Enquadrar"}
             title="Reposiciona a foto para o rosto não ser cortado"
             className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur transition ${
               framing
@@ -174,7 +192,7 @@ function LawyerRow({
                 : "bg-white/90 text-slate-600 hover:bg-white"
             }`}
           >
-            <OpenWith size={16} />
+            {framing ? <Check size={16} /> : <OpenWith size={16} />}
           </button>
         </div>
       </div>
@@ -187,9 +205,9 @@ function LawyerRow({
           onChange={(e) => form.setLawyerField(index, "name", e.target.value)}
           placeholder="Nome do advogado"
         />
-        <Input
-          aria-label={`Cargo do advogado ${index + 1}`}
-          className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-500 outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
+        <AutoTextarea
+          aria-label={`Descrição do advogado ${index + 1}`}
+          className="w-full resize-y rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-500 outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
           value={lawyer.role}
           onChange={(e) => form.setLawyerField(index, "role", e.target.value)}
           placeholder="Cargo e OAB (ex: Sócio · OAB/SP 000)"
@@ -197,15 +215,6 @@ function LawyerRow({
       </div>
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
-      {framing ? (
-        <div className="mt-2">
-          <FocalPicker
-            src={lawyer.photo}
-            value={lawyer.focal ?? { x: 50, y: 50 }}
-            onChange={(v) => form.setLawyerFocal(index, v)}
-          />
-        </div>
-      ) : null}
 
       {result ? (
         <ComparePhotoModal

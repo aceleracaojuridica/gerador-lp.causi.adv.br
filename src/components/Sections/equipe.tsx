@@ -69,7 +69,7 @@ function SoloPortrait({ lawyer, dark }: { lawyer: Lawyer; dark: boolean }) {
     <Reveal className="mt-10">
       <div className="grid items-center gap-8 lg:grid-cols-[42%_58%] lg:gap-12">
         <div
-          className="h-[26rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand shadow-md md:h-[30rem]"
+          className="h-[26rem] w-full rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand shadow-md md:h-[30rem]"
           style={
             lawyer.photo
               ? {
@@ -124,7 +124,7 @@ function SplitAlternado({
               {/* Foto — altura contida para não inflar a seção */}
               <div className={fotoDireita ? "lg:order-2" : ""}>
                 <div
-                  className="h-56 w-full rounded-tl-[2rem] rounded-br-[2rem] bg-lp-brand bg-cover shadow-md md:h-64 lg:h-72"
+                  className="h-56 w-full rounded-tl-[var(--lp-corner-sm)] rounded-br-[var(--lp-corner-sm)] bg-lp-brand bg-cover shadow-md md:h-64 lg:h-72"
                   style={
                     l.photo
                       ? {

@@ -51,6 +51,11 @@ const iconCardSchema = z.object({
   text: z.string(),
 });
 
+/** Área: card com ícone/título/texto + sub-itens em bullets. */
+const areaCardSchema = iconCardSchema.extend({
+  items: z.array(z.string()).optional(),
+});
+
 const faqItemSchema = z.object({
   q: z.string(),
   a: z.string(),
@@ -99,7 +104,7 @@ const focoCopySchema = z.object({
     eyebrow: z.string(),
     headline: headlineSchema,
     sub: z.string(),
-    cards: z.array(iconCardSchema),
+    cards: z.array(areaCardSchema),
     cta: z.string().optional(),
   }),
   etapas: z

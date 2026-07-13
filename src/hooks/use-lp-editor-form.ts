@@ -38,11 +38,9 @@ import type {
   TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { detectNetwork } from "@/lib/landing-pages/socials";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
-import {
-  HERO_VARIANT_CENTERED_FOCUS,
-  HERO_VARIANT_VIDEO_EMBEDDED,
-} from "@/lib/landing-pages/variants";
+
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
   office: Office;
@@ -73,15 +71,8 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
     customSections: seed.customSections,
     autoTheme: true,
   });
-  if (
-    !values.videoId.trim() &&
-    values.layout.hero === HERO_VARIANT_VIDEO_EMBEDDED
-  ) {
-    values.layout = {
-      ...values.layout,
-      hero: HERO_VARIANT_CENTERED_FOCUS,
-    };
-  }
+  // Sem rebaixar a variante de vídeo ao abrir a LP: se o usuário escolheu o
+  // Topo com vídeo, ele continua escolhido — mesmo que o link ainda não exista.
   return values;
 }
 
@@ -246,14 +237,14 @@ export function useLpEditorForm(seed?: LpSeed) {
   function setSocialField(i: number, key: "network" | "url", value: string) {
     form.setValue(
       "office.socials",
-      form.getValues("office.socials").map((s, idx) =>
-        idx === i
-          ? {
-              ...s,
-              [key]: key === "network" ? (value as SocialNetwork) : value,
-            }
-          : s,
-      ),
+      form.getValues("office.socials").map((s, idx) => {
+        if (idx !== i) return s;
+        // Ao editar a URL, a rede é re-inferida dela (senão o `network` ficaria
+        // congelado no padrão e o ícone sairia errado na LP).
+        if (key === "url")
+          return { ...s, url: value, network: detectNetwork(value) };
+        return { ...s, network: value as SocialNetwork };
+      }),
       { shouldDirty: true },
     );
   }
@@ -486,6 +477,9 @@ export function useLpEditorForm(seed?: LpSeed) {
       [...form.getValues("customSections"), base],
       { shouldDirty: true },
     );
+    // Devolve o id para quem precisa preencher a seção logo após criá-la
+    // (ex.: a seção de vídeo já nasce com o YouTube do Topo).
+    return id;
   }
   function setCustomField(
     id: string,
@@ -704,20 +698,13 @@ export function useLpEditorForm(seed?: LpSeed) {
     form.setValue("layout", next, { shouldDirty: true });
   }
 
+  /**
+   * Só grava o vídeo. NÃO troca a variante do Topo: a de vídeo é a 3ª e é uma
+   * escolha do usuário como qualquer outra — trocá-la sozinho ao remover o link
+   * mudava o layout dele pelas costas.
+   */
   function setVideoId(value: string) {
-    const trimmed = value.trim();
-    form.setValue("videoId", trimmed, { shouldDirty: true });
-
-    if (!trimmed) {
-      const currentLayout = form.getValues("layout");
-      if (currentLayout.hero === HERO_VARIANT_VIDEO_EMBEDDED) {
-        form.setValue(
-          "layout",
-          { ...currentLayout, hero: HERO_VARIANT_CENTERED_FOCUS },
-          { shouldDirty: true },
-        );
-      }
-    }
+    form.setValue("videoId", value.trim(), { shouldDirty: true });
   }
 
   const focoMeta = matchFoco(tema);

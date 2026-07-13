@@ -152,11 +152,14 @@ export type SolucaoContent = {
   cards: IconCard[];
 };
 
+/** Card de área: além do ícone/título/texto, traz sub-itens (2 a 6). */
+export type AreaCard = IconCard & { items?: string[] };
+
 export type AreasContent = {
   eyebrow: string;
   headline: Headline;
   sub: string;
-  cards: IconCard[];
+  cards: AreaCard[];
   cta: string;
 };
 

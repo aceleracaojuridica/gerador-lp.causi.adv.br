@@ -122,7 +122,7 @@ Regra transversal do Hero: é a **única** seção onde a logo do escritório po
 | Variante | Diferença estrutural |
 |---|---|
 | `causi_lp_section_dor_with_image_cards` | Bloco superior com imagem + texto de empatia (2 colunas), bloco inferior com cards de dor específicos. |
-| `causi_lp_section_dor_cards_compact` | Sem bloco de imagem — resume tudo em cards, mais compacto, para quando o formulário não tem imagem de contexto boa. |
+| `causi_lp_section_dor_image_icon_list` | Imagem à esquerda; à direita eyebrow, título, texto curto, um separador e as dores como itens (ícone circular + titulinho + frase) em 2 colunas. Sem botão. |
 | `causi_lp_section_dor_image_list` | Header + dores em lista enxuta (bullets, 2 colunas, sem ícones) à esquerda; imagem enquadrada e alinhada verticalmente à direita. 2 a 6 dores (padrão 4). |
 
 Ambas devem manter o mesmo tom emocional: reconhecer o problema do cliente antes de apresentar a solução, nunca alarmista.
@@ -132,7 +132,7 @@ Ambas devem manter o mesmo tom emocional: reconhecer o problema do cliente antes
 | Variante | Diferença estrutural |
 |---|---|
 | `causi_lp_section_solucao_with_image_cards` | Apoio visual + cards, mesma lógica de "Dor com imagem" mas em tom propositivo. |
-| `causi_lp_section_solucao_cards_compact` | Só cards, leitura rápida. |
+| `causi_lp_section_solucao_image_icon_list` | Mesmo layout da Dor "Imagem + itens" (via `ImageIconListBlock`), em tom propositivo. |
 | `causi_lp_section_solucao_image_list` | Header + solução em lista enxuta (bullets, 2 colunas, sem ícones) à esquerda; imagem enquadrada e alinhada verticalmente à direita. Mesmo layout compartilhado com a Dor via `ImageListBlock`. |
 
 ### 3.4 Sobre
@@ -158,7 +158,7 @@ A escolha entre estas três não é só estética, é funcional (`getAutoEquipeV
 | Variante | Diferença estrutural |
 |---|---|
 | `causi_lp_section_areas_grid_icon_cards` | Cards em grade com ícone. |
-| `causi_lp_section_areas_list_bands` | Faixas de leitura vertical, mais editorial. |
+| `causi_lp_section_areas_quadrant_grid` | Header à esquerda e áreas numa grade dividida por linhas (sem fundo de card): ícone + título, descrição, sub-itens em bullets (2 a 6) e um link de CTA por quadrante. |
 
 ### 3.7 Etapas
 

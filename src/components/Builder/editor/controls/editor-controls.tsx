@@ -33,6 +33,55 @@ export function FieldGroup({
   );
 }
 
+/**
+ * Igual ao FieldGroup, mas colapsável. Usado nos grupos que não são de texto
+ * (cards, passos, perguntas, métricas...) para o painel não virar uma parede
+ * de campos. Fechado por padrão.
+ */
+export function FieldGroupAccordion({
+  title,
+  hint,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-t border-border pt-2 first:border-t-0 first:pt-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open ? "true" : "false"}
+        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-muted/60"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-foreground">
+            {title}
+          </span>
+          {hint ? (
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              {hint}
+            </span>
+          ) : null}
+        </span>
+        <KeyboardArrowDown
+          size={18}
+          className={cn(
+            "shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open ? <div className="mt-3 space-y-3 px-0.5">{children}</div> : null}
+    </div>
+  );
+}
+
 export function EditorSectionAccordion({
   title,
   defaultOpen,

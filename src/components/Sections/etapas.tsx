@@ -48,7 +48,8 @@ function Header({
   );
 }
 
-/* ===== Tema 1 — Numerado (horizontal) ===== */
+/* ===== Tema 1 — Numerado (colunas centradas, sem linha conectora) =====
+   Número grande em serifa acima, título e texto centralizados. */
 function Numerado({
   content,
   dark,
@@ -56,6 +57,18 @@ function Numerado({
   content: EtapasContent;
   dark: boolean;
 }) {
+  // A grade acompanha a quantidade de passos para as colunas ficarem sempre
+  // cheias e centradas (3 passos não deixam um vão de 4ª coluna).
+  const count = content.steps.length;
+  const colsCls =
+    count >= 4
+      ? "sm:grid-cols-2 lg:grid-cols-4"
+      : count === 3
+        ? "sm:grid-cols-3"
+        : count === 2
+          ? "sm:grid-cols-2"
+          : "grid-cols-1";
+
   return (
     <section
       className={`py-20 md:py-28 ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
@@ -64,29 +77,26 @@ function Numerado({
         <Reveal>
           <Header content={content} dark={dark} centered />
         </Reveal>
-        <div className="relative mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Linha conectora horizontal no desktop */}
-          <div
-            aria-hidden
-            className="absolute left-0 right-0 top-6 hidden h-0.5 bg-lp-accent/20 lg:block z-0"
-          />
+        <div
+          className={`mt-16 grid grid-cols-1 gap-x-10 gap-y-12 md:gap-x-14 ${colsCls}`}
+        >
           {content.steps.map((s, i) => (
-            <Reveal
-              key={`${s.title}-${s.text}`}
-              delay={i * 80}
-              className="relative z-10"
-            >
-              <div className="text-center lg:text-left">
-                <span className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-lp-accent bg-white font-display text-lg font-bold text-lp-brand shadow-sm lg:mx-0">
-                  {i + 1}
+            <Reveal key={`${s.title}-${s.text}`} delay={i * 80}>
+              <div className="mx-auto max-w-xs text-center">
+                <span
+                  className={`block font-display text-5xl leading-none md:text-6xl ${
+                    dark ? "text-white/30" : "text-lp-brand/25"
+                  }`}
+                >
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3
-                  className={`font-display text-lg font-semibold leading-snug ${dark ? "text-white" : "text-lp-brand"}`}
+                  className={`mt-6 font-display text-xl font-semibold leading-snug ${dark ? "text-white" : "text-lp-brand"}`}
                 >
                   {s.title}
                 </h3>
                 <p
-                  className={`mt-2 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
+                  className={`mt-3 text-[1.05rem] leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
                 >
                   {s.text}
                 </p>
