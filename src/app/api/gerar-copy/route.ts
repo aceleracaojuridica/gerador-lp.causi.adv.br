@@ -72,6 +72,13 @@ export async function POST(request: Request) {
   const theme = p.theme ?? DEFAULT_THEME;
   const lawyerCount = Math.max(0, p.lawyerCount ?? 0);
   const videoId = (p.videoId ?? "").trim();
+  const ctx = sessionToLpContext(session);
+  const log = {
+    action: "CREATE",
+    context: "create_landing_page",
+    accountId: ctx.accountId,
+    createdByUserId: ctx.userId,
+  };
 
   let accountExamples = "";
   try {
@@ -88,6 +95,7 @@ export async function POST(request: Request) {
     hasVideo: Boolean(videoId),
     hasMetrics: Boolean(p.hasMetrics),
     accountExamples: accountExamples || undefined,
+    log,
   };
 
   let copy: FocoCopy;
@@ -101,14 +109,18 @@ export async function POST(request: Request) {
   let layoutSource: "ai" | "fallback" = "ai";
   try {
     const [copyResult, chosenLayout] = await Promise.all([
-      callOpenAiForCopy(apiKey, {
-        name: p.name,
-        tema: p.tema,
-        city: p.city,
-        about: p.about,
-        diferenciais: p.diferenciais,
-        accountExamples: accountExamples || undefined,
-      }),
+      callOpenAiForCopy(
+        apiKey,
+        {
+          name: p.name,
+          tema: p.tema,
+          city: p.city,
+          about: p.about,
+          diferenciais: p.diferenciais,
+          accountExamples: accountExamples || undefined,
+        },
+        log,
+      ),
       chooseLayoutWithAi(apiKey, layoutInput),
     ]);
     copy = copyResult.copy;
@@ -120,7 +132,6 @@ export async function POST(request: Request) {
     return Response.json({ error: msg }, { status: 502 });
   }
 
-  const ctx = sessionToLpContext(session);
   const paletteHint = describeThemeMood(theme);
 
   const [systemCatalog, accountCatalog] = await Promise.all([
@@ -136,6 +147,7 @@ export async function POST(request: Request) {
     catalog,
     imageQueries,
     seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+    log,
   });
 
   const response: Record<string, unknown> = { copy, images, layout };

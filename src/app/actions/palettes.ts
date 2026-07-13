@@ -3,7 +3,9 @@
 import type { Theme } from "@/lib/landing-pages/schema";
 import { callOpenAiForSimilarPalette } from "@/lib/landing-pages/sugerir-paletas";
 import { themeSchema } from "@/lib/landing-pages/validation/zod-primitives";
+import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
+import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
 export type SuggestSimilarPaletteResult =
   | { ok: true; theme: Theme }
@@ -17,8 +19,9 @@ export async function suggestSimilarPaletteAction(
   baseTheme: unknown,
   avoidTheme?: unknown,
 ): Promise<SuggestSimilarPaletteResult> {
+  let session: Session;
   try {
-    await requireLpSession();
+    session = await requireLpSession();
   } catch (err) {
     const forbidden = err instanceof Error && err.message === "FORBIDDEN";
     return {
@@ -43,10 +46,27 @@ export async function suggestSimilarPaletteAction(
     };
   }
 
+  const lpCtx = sessionToLpContext(session);
+  const log = {
+    action: "UPDATE",
+    context: "suggest_palette",
+    accountId: lpCtx.accountId,
+    createdByUserId: lpCtx.userId,
+  };
+
   try {
-    const theme = await callOpenAiForSimilarPalette(apiKey, parsed.data, avoid);
+    const theme = await callOpenAiForSimilarPalette(
+      apiKey,
+      parsed.data,
+      avoid,
+      log,
+    );
     if (!theme) {
-      return { ok: false, error: "A IA não retornou uma paleta válida." };
+      return {
+        ok: false,
+        error:
+          "A IA não retornou uma paleta válida. Tente novamente em instantes.",
+      };
     }
     return { ok: true, theme };
   } catch (err) {

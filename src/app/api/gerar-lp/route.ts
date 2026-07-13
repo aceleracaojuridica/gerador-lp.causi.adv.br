@@ -117,6 +117,14 @@ export async function POST(request: Request) {
   }
 
   const needsAiGeneration = !p.copy || !p.layout || !p.images;
+  const lpCtx = sessionToLpContext(user);
+  const log = {
+    action: "CREATE",
+    context: "create_landing_page",
+    accountId: lpCtx.accountId,
+    createdByUserId: lpCtx.userId,
+  };
+
   let accountExamples = "";
   if (needsAiGeneration) {
     try {
@@ -138,14 +146,18 @@ export async function POST(request: Request) {
     copy = p.copy;
   } else {
     try {
-      const result = await callOpenAiForCopy(apiKey, {
-        name,
-        tema,
-        city: (p.city ?? "").trim() || undefined,
-        about: (p.about ?? "").trim() || undefined,
-        diferenciais: p.diferenciais?.filter(Boolean),
-        accountExamples: accountExamples || undefined,
-      });
+      const result = await callOpenAiForCopy(
+        apiKey,
+        {
+          name,
+          tema,
+          city: (p.city ?? "").trim() || undefined,
+          about: (p.about ?? "").trim() || undefined,
+          diferenciais: p.diferenciais?.filter(Boolean),
+          accountExamples: accountExamples || undefined,
+        },
+        log,
+      );
       copy = result.copy;
       imageQueries = result.imageQueries;
     } catch (err) {
@@ -175,6 +187,7 @@ export async function POST(request: Request) {
           ),
       ),
       accountExamples: accountExamples || undefined,
+      log,
     });
     baseLayout = chosenLayout.layout;
   }
@@ -188,7 +201,6 @@ export async function POST(request: Request) {
   if (p.images) {
     images = p.images;
   } else {
-    const ctx = sessionToLpContext(user);
     const [systemCatalog, accountCatalog] = await Promise.all([
       listSystemGalleryImages(user),
       listAccountImagesForRanking(user),
@@ -201,7 +213,8 @@ export async function POST(request: Request) {
       paletteHint: describeThemeMood(theme),
       catalog,
       imageQueries,
-      seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+      seedInput: `${lpCtx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+      log,
     });
   }
 

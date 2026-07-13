@@ -2,7 +2,11 @@ import "server-only";
 
 import OpenAI from "openai";
 import { z } from "zod";
-import { getServerEnv } from "@/lib/env";
+import { getOpenAiReasoningModel, openAiTokenLimit } from "@/lib/env";
+import {
+  type ExternalApiLogMeta,
+  logExternalApiCall,
+} from "./lp-external-api-log";
 import { DEFAULT_LAYOUT, type Layout, type Theme } from "./schema";
 import { describeThemeMood } from "./system-default-images";
 import {
@@ -69,6 +73,8 @@ export type LayoutChooseInput = {
   hasMetrics: boolean;
   /** Bloco leve: URL + resumo semântico das LPs da conta (sem schema/variants). */
   accountExamples?: string;
+  /** Metadados para auditoria de API externa (opcional). */
+  log?: ExternalApiLogMeta;
 };
 
 export type LayoutChooseResult = {
@@ -373,39 +379,69 @@ export async function chooseLayoutWithAi(
   input: LayoutChooseInput,
 ): Promise<LayoutChooseResult> {
   let raw = "{}";
+  const model = getOpenAiReasoningModel();
+  const messages = [
+    {
+      role: "system" as const,
+      content:
+        "Você é designer de landing pages jurídicas brasileiras. Escolhe variantes e tons entre opções fixas. Responda apenas com JSON válido usando somente os IDs do menu.",
+    },
+    { role: "user" as const, content: buildLayoutPrompt(input) },
+  ];
+  const requestPayload = {
+    model,
+    // Budget alto: reasoning models consomem tokens no "thinking" antes do JSON.
+    ...openAiTokenLimit(model, 4000),
+    response_format: {
+      type: "json_schema" as const,
+      json_schema: {
+        name: "lp_layout",
+        schema: z.toJSONSchema(aiLayoutSchema),
+        strict: true,
+      },
+    },
+    messages,
+  };
+  const started = Date.now();
+
   try {
     const client = new OpenAI({ apiKey });
-    const completion = await client.chat.completions.create({
-      model: getServerEnv().OPENAI_MODEL,
-      max_completion_tokens: 800,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "lp_layout",
-          schema: z.toJSONSchema(aiLayoutSchema),
-          strict: true,
-        },
-      },
-      messages: [
-        {
-          role: "system",
-          content:
-            "Você é designer de landing pages jurídicas brasileiras. Escolhe variantes e tons entre opções fixas. Responda apenas com JSON válido usando somente os IDs do menu.",
-        },
-        { role: "user", content: buildLayoutPrompt(input) },
-      ],
-    });
+    const completion = await client.chat.completions.create(requestPayload);
 
     raw = completion.choices[0]?.message?.content ?? "{}";
     const json = JSON.parse(raw) as unknown;
     const parsed = parseAiLayoutJson(json, input.lawyerCount);
     const layout = parsedToLayout(parsed, input.lawyerCount);
-    return {
+    const result: LayoutChooseResult = {
       layout: applyVideoHeroOverride(layout, input.hasVideo),
       source: "ai",
     };
+    if (input.log) {
+      void logExternalApiCall({
+        ...input.log,
+        provider: "openai",
+        operation: "chat.completions",
+        requestPayload,
+        responsePayload: { layout: result.layout, source: result.source, raw },
+        durationMs: Date.now() - started,
+        ok: true,
+      });
+    }
+    return result;
   } catch (err) {
     logLayoutFallback(err, raw);
+    if (input.log) {
+      void logExternalApiCall({
+        ...input.log,
+        provider: "openai",
+        operation: "chat.completions",
+        requestPayload,
+        responsePayload: { raw, source: "fallback" },
+        durationMs: Date.now() - started,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
     return {
       layout: chooseLayoutDeterministic(input),
       source: "fallback",

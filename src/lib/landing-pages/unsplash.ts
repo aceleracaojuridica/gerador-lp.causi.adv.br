@@ -12,6 +12,10 @@ import "server-only";
   Sem a chave, devolve strings vazias e a seção fica no bloco da cor da marca.
 */
 
+import {
+  type ExternalApiLogMeta,
+  logExternalApiCall,
+} from "./lp-external-api-log";
 import { EMPTY_SECTION_IMAGES, type SectionImages } from "./section-images";
 
 // Consultas-base (inglês) quando a IA não sugere termos.
@@ -22,12 +26,17 @@ const FALLBACK_QUERIES: SectionImages = {
   solucao: "lawyer consulting client at desk professional",
 };
 
-async function buscarUma(query: string, accessKey: string): Promise<string> {
+async function buscarUma(
+  query: string,
+  accessKey: string,
+  log?: ExternalApiLogMeta,
+): Promise<string> {
   const url =
     "https://api.unsplash.com/search/photos" +
     `?query=${encodeURIComponent(query)}` +
     "&orientation=landscape&per_page=10&content_filter=high";
 
+  const started = Date.now();
   const res = await fetch(url, {
     headers: {
       Authorization: `Client-ID ${accessKey}`,
@@ -35,16 +44,40 @@ async function buscarUma(query: string, accessKey: string): Promise<string> {
     },
     cache: "no-store",
   });
-  if (!res.ok) return "";
+
+  const finish = (ok: boolean, photoUrl: string, error?: string) => {
+    if (!log) return;
+    void logExternalApiCall({
+      ...log,
+      provider: "unsplash",
+      operation: "unsplash.search",
+      requestPayload: { query, orientation: "landscape", per_page: 10 },
+      responsePayload: { url: photoUrl || null },
+      statusCode: res.status,
+      durationMs: Date.now() - started,
+      ok,
+      error,
+    });
+  };
+
+  if (!res.ok) {
+    finish(false, "", `HTTP ${res.status}`);
+    return "";
+  }
 
   const data = (await res.json()) as {
     results?: { urls?: { regular?: string } }[];
   };
   const results = data.results ?? [];
-  if (!results.length) return "";
+  if (!results.length) {
+    finish(false, "", "no_results");
+    return "";
+  }
   // Pega aleatoriamente entre os primeiros resultados para maior variedade
   const pick = results[Math.floor(Math.random() * results.length)];
-  return pick?.urls?.regular ?? "";
+  const photoUrl = pick?.urls?.regular ?? "";
+  finish(Boolean(photoUrl), photoUrl);
+  return photoUrl;
 }
 
 /**
@@ -52,13 +85,17 @@ async function buscarUma(query: string, accessKey: string): Promise<string> {
  * tende a trazer uma diferente). Vazio se não houver chave ou resultado.
  * Usada pelo botão "IA escolhe" do editor.
  */
-export async function buscarUmaImagem(query: string): Promise<string> {
+export async function buscarUmaImagem(
+  query: string,
+  log?: ExternalApiLogMeta,
+): Promise<string> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return "";
   const url =
     "https://api.unsplash.com/search/photos" +
     `?query=${encodeURIComponent(query)}` +
     "&orientation=landscape&per_page=24&content_filter=high";
+  const started = Date.now();
   try {
     const res = await fetch(url, {
       headers: {
@@ -67,15 +104,67 @@ export async function buscarUmaImagem(query: string): Promise<string> {
       },
       cache: "no-store",
     });
-    if (!res.ok) return "";
+    if (!res.ok) {
+      if (log) {
+        void logExternalApiCall({
+          ...log,
+          provider: "unsplash",
+          operation: "unsplash.search",
+          requestPayload: { query, per_page: 24 },
+          statusCode: res.status,
+          durationMs: Date.now() - started,
+          ok: false,
+          error: `HTTP ${res.status}`,
+        });
+      }
+      return "";
+    }
     const data = (await res.json()) as {
       results?: { urls?: { regular?: string } }[];
     };
     const results = data.results ?? [];
-    if (!results.length) return "";
+    if (!results.length) {
+      if (log) {
+        void logExternalApiCall({
+          ...log,
+          provider: "unsplash",
+          operation: "unsplash.search",
+          requestPayload: { query, per_page: 24 },
+          statusCode: res.status,
+          durationMs: Date.now() - started,
+          ok: false,
+          error: "no_results",
+        });
+      }
+      return "";
+    }
     const pick = results[Math.floor(Math.random() * results.length)];
-    return pick?.urls?.regular ?? "";
-  } catch {
+    const photoUrl = pick?.urls?.regular ?? "";
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "unsplash",
+        operation: "unsplash.search",
+        requestPayload: { query, per_page: 24 },
+        responsePayload: { url: photoUrl || null },
+        statusCode: res.status,
+        durationMs: Date.now() - started,
+        ok: Boolean(photoUrl),
+      });
+    }
+    return photoUrl;
+  } catch (err) {
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "unsplash",
+        operation: "unsplash.search",
+        requestPayload: { query, per_page: 24 },
+        durationMs: Date.now() - started,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
     return "";
   }
 }
@@ -85,7 +174,10 @@ export async function buscarUmaImagem(query: string): Promise<string> {
  * Cada chamada retorna uma foto diferente — ideal para o botão "IA escolhe"
  * no editor, onde queremos variação garantida sem repetição.
  */
-export async function buscarImagemAleatoria(query: string): Promise<string> {
+export async function buscarImagemAleatoria(
+  query: string,
+  log?: ExternalApiLogMeta,
+): Promise<string> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return "";
 
@@ -94,6 +186,7 @@ export async function buscarImagemAleatoria(query: string): Promise<string> {
     `?query=${encodeURIComponent(query)}` +
     "&orientation=landscape&content_filter=high&count=1";
 
+  const started = Date.now();
   try {
     const res = await fetch(url, {
       headers: {
@@ -106,7 +199,20 @@ export async function buscarImagemAleatoria(query: string): Promise<string> {
     console.log("[unsplash/random] status:", res.status, "query:", query);
 
     if (!res.ok) {
-      console.log("[unsplash/random] erro:", await res.text());
+      const errText = await res.text();
+      console.log("[unsplash/random] erro:", errText);
+      if (log) {
+        void logExternalApiCall({
+          ...log,
+          provider: "unsplash",
+          operation: "unsplash.random",
+          requestPayload: { query },
+          statusCode: res.status,
+          durationMs: Date.now() - started,
+          ok: false,
+          error: errText.slice(0, 500),
+        });
+      }
       return "";
     }
 
@@ -116,9 +222,32 @@ export async function buscarImagemAleatoria(query: string): Promise<string> {
       (photo as { urls?: { regular?: string } })?.urls?.regular ?? "";
 
     console.log("[unsplash/random] url retornada:", photoUrl);
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "unsplash",
+        operation: "unsplash.random",
+        requestPayload: { query },
+        responsePayload: { url: photoUrl || null },
+        statusCode: res.status,
+        durationMs: Date.now() - started,
+        ok: Boolean(photoUrl),
+      });
+    }
     return photoUrl;
   } catch (err) {
     console.error("[unsplash/random] exce\u00e7\u00e3o:", err);
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "unsplash",
+        operation: "unsplash.random",
+        requestPayload: { query },
+        durationMs: Date.now() - started,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
     return "";
   }
 }
@@ -130,6 +259,7 @@ export async function buscarImagemAleatoria(query: string): Promise<string> {
  */
 export async function buscarImagensUnsplash(
   queries: Partial<SectionImages>,
+  log?: ExternalApiLogMeta,
 ): Promise<SectionImages> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return { ...EMPTY_SECTION_IMAGES };
@@ -141,7 +271,7 @@ export async function buscarImagensUnsplash(
     keys.map(async (k) => {
       const q = (queries[k] ?? "").trim() || FALLBACK_QUERIES[k];
       try {
-        out[k] = await buscarUma(q, accessKey);
+        out[k] = await buscarUma(q, accessKey, log);
       } catch {
         out[k] = "";
       }

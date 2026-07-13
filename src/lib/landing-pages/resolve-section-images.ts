@@ -8,6 +8,7 @@ import "server-only";
 */
 
 import { imagensDoTema } from "./image-bank";
+import type { ExternalApiLogMeta } from "./lp-external-api-log";
 import {
   EMPTY_SECTION_IMAGES,
   SECTION_IMAGE_KEYS,
@@ -26,6 +27,7 @@ export type ResolveSectionImagesInput = {
   catalog: SystemGalleryImageItem[];
   imageQueries: Partial<SectionImages>;
   seedInput: string;
+  log?: ExternalApiLogMeta;
 };
 
 /**
@@ -34,7 +36,8 @@ export type ResolveSectionImagesInput = {
 export async function resolveSectionImages(
   input: ResolveSectionImagesInput,
 ): Promise<SectionImages> {
-  const { apiKey, tema, paletteHint, catalog, imageQueries, seedInput } = input;
+  const { apiKey, tema, paletteHint, catalog, imageQueries, seedInput, log } =
+    input;
 
   const picked: SectionImages =
     catalog.length > 0
@@ -44,6 +47,7 @@ export async function resolveSectionImages(
           paletteHint,
           catalog,
           seedInput,
+          log,
         })
       : { ...EMPTY_SECTION_IMAGES };
 
@@ -53,7 +57,7 @@ export async function resolveSectionImages(
     for (const key of gaps) {
       queries[key] = imageQueries[key] ?? "";
     }
-    const fromUnsplash = await buscarImagensUnsplash(queries);
+    const fromUnsplash = await buscarImagensUnsplash(queries, log);
     for (const key of gaps) {
       if (!picked[key]?.trim() && fromUnsplash[key]?.trim()) {
         picked[key] = fromUnsplash[key];

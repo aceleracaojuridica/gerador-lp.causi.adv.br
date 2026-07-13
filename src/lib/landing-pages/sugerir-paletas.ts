@@ -5,7 +5,11 @@ import "server-only";
   via OpenAI — usado na etapa de criação da LP (um clique = uma paleta).
 */
 import OpenAI from "openai";
-import { getServerEnv } from "@/lib/env";
+import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
+import {
+  type ExternalApiLogMeta,
+  logExternalApiCall,
+} from "./lp-external-api-log";
 import type { Theme } from "./schema";
 import { themeSchema } from "./validation/zod-primitives";
 
@@ -60,6 +64,14 @@ function parseTheme(raw: unknown): Theme | null {
   return out;
 }
 
+/** Aceita `{ theme: {...} }` ou o Theme flat na raiz. */
+function extractThemeFromPayload(parsed: unknown): Theme | null {
+  if (!parsed || typeof parsed !== "object") return null;
+  const obj = parsed as Record<string, unknown>;
+  if ("theme" in obj) return parseTheme(obj.theme);
+  return parseTheme(obj);
+}
+
 function pickVariationAxis(exclude?: string): string {
   const pool = exclude
     ? VARIATION_AXES.filter((a) => a !== exclude)
@@ -94,47 +106,124 @@ async function requestSimilarPalette(
   base: Theme,
   avoid: Theme | undefined,
   axis: string,
+  log?: ExternalApiLogMeta,
 ): Promise<Theme | null> {
-  const completion = await client.chat.completions.create({
-    model: getServerEnv().OPENAI_MODEL,
-    max_completion_tokens: 600,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM },
-      {
-        role: "user",
-        content: [
-          "Paleta base (hex #RRGGBB) — use como âncora da família cromática:",
-          JSON.stringify(base, null, 2),
-          "",
-          `DIREÇÃO OBRIGATÓRIA deste sorteio: ${axis}`,
-          "",
-          avoid
-            ? [
-                "NÃO repita nem aproxime desta paleta atual:",
-                JSON.stringify(avoid, null, 2),
-                "brand e accent devem diferir DE VERDADE (não 2–3 pontos de luminosidade).",
-              ].join("\n")
-            : "",
-          "",
-          "Gere EXATAMENTE 1 Theme completo.",
-          "Regras estruturais:",
-          "- brand e brandDark: fundos escuros ok para texto claro.",
-          "- accent: CTA/destaque; accentSoft: versão mais clara do accent.",
-          "- cream/creamDeep: fundos claros; ink/inkSoft: textos escuros.",
-          "- Mantenha coerência de advocacia sóbria.",
-          "",
-          'Responda com: { "theme": { "brand": "#......", "brandDark": "#......", "accent": "#......", "accentSoft": "#......", "cream": "#......", "creamDeep": "#......", "ink": "#......", "inkSoft": "#......" } }',
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      },
-    ],
-  });
+  const model = getOpenAiChatModel();
+  const messages = [
+    { role: "system" as const, content: SYSTEM },
+    {
+      role: "user" as const,
+      content: [
+        "Paleta base (hex #RRGGBB) — use como âncora da família cromática:",
+        JSON.stringify(base, null, 2),
+        "",
+        `DIREÇÃO OBRIGATÓRIA deste sorteio: ${axis}`,
+        "",
+        avoid
+          ? [
+              "NÃO repita nem aproxime desta paleta atual:",
+              JSON.stringify(avoid, null, 2),
+              "brand e accent devem diferir DE VERDADE (não 2–3 pontos de luminosidade).",
+            ].join("\n")
+          : "",
+        "",
+        "Gere EXATAMENTE 1 Theme completo.",
+        "Regras estruturais:",
+        "- brand e brandDark: fundos escuros ok para texto claro.",
+        "- accent: CTA/destaque; accentSoft: versão mais clara do accent.",
+        "- cream/creamDeep: fundos claros; ink/inkSoft: textos escuros.",
+        "- Mantenha coerência de advocacia sóbria.",
+        "",
+        'Responda com: { "theme": { "brand": "#......", "brandDark": "#......", "accent": "#......", "accentSoft": "#......", "cream": "#......", "creamDeep": "#......", "ink": "#......", "inkSoft": "#......" } }',
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    },
+  ];
+  const requestPayload = {
+    model,
+    ...openAiTokenLimit(model, 800),
+    response_format: { type: "json_object" as const },
+    messages,
+  };
+  const started = Date.now();
 
-  const raw = completion.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(raw) as { theme?: unknown };
-  return parseTheme(parsed.theme);
+  try {
+    const completion = await client.chat.completions.create(requestPayload);
+    const choice = completion.choices[0];
+    const raw = choice?.message?.content ?? "";
+
+    // Resposta vazia/não-JSON: null para o caller tentar outro eixo (não abortar).
+    if (!raw.trim()) {
+      if (log) {
+        void logExternalApiCall({
+          ...log,
+          provider: "openai",
+          operation: "chat.completions",
+          requestPayload,
+          responsePayload: {
+            finish_reason: choice?.finish_reason ?? null,
+            refusal: choice?.message?.refusal ?? null,
+          },
+          durationMs: Date.now() - started,
+          ok: false,
+          error: "empty_response",
+        });
+      }
+      return null;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      if (log) {
+        void logExternalApiCall({
+          ...log,
+          provider: "openai",
+          operation: "chat.completions",
+          requestPayload,
+          responsePayload: {
+            raw,
+            finish_reason: choice?.finish_reason ?? null,
+          },
+          durationMs: Date.now() - started,
+          ok: false,
+          error: "invalid_json",
+        });
+      }
+      return null;
+    }
+
+    const theme = extractThemeFromPayload(parsed);
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "openai",
+        operation: "chat.completions",
+        requestPayload,
+        responsePayload: { theme, raw },
+        durationMs: Date.now() - started,
+        ok: Boolean(theme),
+        error: theme ? null : "invalid_theme",
+      });
+    }
+    return theme;
+  } catch (err) {
+    if (log) {
+      void logExternalApiCall({
+        ...log,
+        provider: "openai",
+        operation: "chat.completions",
+        requestPayload,
+        durationMs: Date.now() - started,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    // Rede/API: também null — permite 2ª tentativa com outro eixo.
+    return null;
+  }
 }
 
 function acceptsTheme(
@@ -150,21 +239,34 @@ function acceptsTheme(
 
 /**
  * Chama a OpenAI e devolve 1 Theme semelhante à paleta base, distinto de `avoid`.
- * Sorteia um eixo de variação; se a diferença for só micro-ajuste, tenta 1 vez mais.
- * Lança em caso de falha de rede/modelo; devolve null se inválido/insuficiente.
+ * Sorteia um eixo de variação; se a diferença for só micro-ajuste ou a resposta
+ * vier vazia/inválida, tenta 1 vez mais. Devolve null se ambas falharem.
  */
 export async function callOpenAiForSimilarPalette(
   apiKey: string,
   base: Theme,
   avoid?: Theme,
+  log?: ExternalApiLogMeta,
 ): Promise<Theme | null> {
   const client = new OpenAI({ apiKey });
   const firstAxis = pickVariationAxis();
-  const first = await requestSimilarPalette(client, base, avoid, firstAxis);
+  const first = await requestSimilarPalette(
+    client,
+    base,
+    avoid,
+    firstAxis,
+    log,
+  );
   if (first && acceptsTheme(first, base, avoid)) return first;
 
   const secondAxis = pickVariationAxis(firstAxis);
-  const second = await requestSimilarPalette(client, base, avoid, secondAxis);
+  const second = await requestSimilarPalette(
+    client,
+    base,
+    avoid,
+    secondAxis,
+    log,
+  );
   if (second && acceptsTheme(second, base, avoid)) return second;
 
   // Melhor um resultado fraco do que falha total no 2º clique.

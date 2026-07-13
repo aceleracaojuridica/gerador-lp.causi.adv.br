@@ -5,8 +5,13 @@ import "server-only";
   /api/gerar-copy (preview sem salvar) e /api/gerar-lp (geração completa).
 */
 import OpenAI from "openai";
+import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
 import type { FocoCopy } from "./focos";
 import { ICON_KEYS } from "./icons";
+import {
+  type ExternalApiLogMeta,
+  withExternalApiLog,
+} from "./lp-external-api-log";
 
 export type CopyPayload = {
   name?: string;
@@ -111,50 +116,78 @@ export type GeneratedCopy = {
 export async function callOpenAiForCopy(
   apiKey: string,
   payload: CopyPayload,
+  log?: ExternalApiLogMeta,
 ): Promise<GeneratedCopy> {
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o",
-    max_tokens: 3000,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: COPY_SYSTEM },
-      { role: "user", content: buildCopyUserPrompt(payload) },
-    ],
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-
-  if (
-    !parsed.hero ||
-    !parsed.dor ||
-    !parsed.solucao ||
-    !parsed.areas ||
-    !parsed.faq ||
-    !parsed.ctaFinal
-  ) {
-    throw new Error("Copy incompleta retornada pela IA.");
-  }
-
-  const q = (parsed.imageQueries ?? {}) as Record<string, unknown>;
-  const imageQueries = {
-    hero: typeof q.hero === "string" ? q.hero : "",
-    dor: typeof q.dor === "string" ? q.dor : "",
-    sobre: typeof q.sobre === "string" ? q.sobre : "",
-    solucao: typeof q.solucao === "string" ? q.solucao : "",
+  const messages = [
+    { role: "system" as const, content: COPY_SYSTEM },
+    { role: "user" as const, content: buildCopyUserPrompt(payload) },
+  ];
+  const model = getOpenAiChatModel();
+  const requestPayload = {
+    model,
+    ...openAiTokenLimit(model, 3000),
+    response_format: { type: "json_object" as const },
+    messages,
   };
 
-  const s = (parsed.seo ?? {}) as Record<string, unknown>;
-  const seo = {
-    title: typeof s.title === "string" ? s.title.slice(0, 70) : "",
-    description:
-      typeof s.description === "string" ? s.description.slice(0, 165) : "",
+  const run = async (): Promise<GeneratedCopy> => {
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create(requestPayload);
+
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+    if (
+      !parsed.hero ||
+      !parsed.dor ||
+      !parsed.solucao ||
+      !parsed.areas ||
+      !parsed.faq ||
+      !parsed.ctaFinal
+    ) {
+      throw new Error("Copy incompleta retornada pela IA.");
+    }
+
+    const q = (parsed.imageQueries ?? {}) as Record<string, unknown>;
+    const imageQueries = {
+      hero: typeof q.hero === "string" ? q.hero : "",
+      dor: typeof q.dor === "string" ? q.dor : "",
+      sobre: typeof q.sobre === "string" ? q.sobre : "",
+      solucao: typeof q.solucao === "string" ? q.solucao : "",
+    };
+
+    const s = (parsed.seo ?? {}) as Record<string, unknown>;
+    const seo = {
+      title: typeof s.title === "string" ? s.title.slice(0, 70) : "",
+      description:
+        typeof s.description === "string" ? s.description.slice(0, 165) : "",
+    };
+
+    delete parsed.imageQueries;
+    delete parsed.seo;
+    const copy: FocoCopy = { ...(parsed as unknown as FocoCopy), seo };
+
+    return { copy, imageQueries };
   };
 
-  delete parsed.imageQueries;
-  delete parsed.seo;
-  const copy: FocoCopy = { ...(parsed as unknown as FocoCopy), seo };
+  if (!log) return run();
 
-  return { copy, imageQueries };
+  return withExternalApiLog(
+    {
+      ...log,
+      provider: "openai",
+      operation: "chat.completions",
+      requestPayload,
+    },
+    async () => {
+      const result = await run();
+      return {
+        result,
+        responsePayload: {
+          copy: result.copy,
+          imageQueries: result.imageQueries,
+        },
+      };
+    },
+  );
 }

@@ -27,7 +27,10 @@ const serverEnvSchema = z
     LP_SUPABASE_JWT_SECRET: z.string().min(1),
     LP_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     OPENAI_API_KEY: optionalSecret,
-    OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+    /** Tarefas simples/repetitivas: copy, melhorar texto, ranking, paletas. */
+    OPENAI_MODEL_CHAT: z.string().min(1).default("gpt-4.1-mini"),
+    /** Tarefas de raciocínio: escolha de layout da LP. */
+    OPENAI_MODEL_REASONING: z.string().min(1).default("gpt-5-mini"),
     UNSPLASH_ACCESS_KEY: optionalSecret,
   })
   .transform((values) => ({
@@ -50,7 +53,8 @@ const runtimeServerEnv = {
   LP_SUPABASE_JWT_SECRET: process.env.LP_SUPABASE_JWT_SECRET,
   LP_SUPABASE_SERVICE_ROLE_KEY: process.env.LP_SUPABASE_SERVICE_ROLE_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  OPENAI_MODEL: process.env.OPENAI_MODEL,
+  OPENAI_MODEL_CHAT: process.env.OPENAI_MODEL_CHAT,
+  OPENAI_MODEL_REASONING: process.env.OPENAI_MODEL_REASONING,
   UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY,
 };
 
@@ -122,4 +126,33 @@ export function getAppDomain(): string {
   return server.APP_URL.replace(/^https?:\/\//, "")
     .replace(/\/.*$/, "")
     .replace(/:\d+$/, "");
+}
+
+/** Modelo para tarefas simples/repetitivas (`OPENAI_MODEL_CHAT`). */
+export function getOpenAiChatModel(): string {
+  return getServerEnv().OPENAI_MODEL_CHAT;
+}
+
+/** Modelo para raciocínio / escolha de layout (`OPENAI_MODEL_REASONING`). */
+export function getOpenAiReasoningModel(): string {
+  return getServerEnv().OPENAI_MODEL_REASONING;
+}
+
+/** Modelos de reasoning gastam o budget em "thinking" e exigem `max_completion_tokens`. */
+export function isReasoningOpenAiModel(model: string): boolean {
+  return /^(o[1-9]|gpt-5)/i.test(model.trim());
+}
+
+/**
+ * Params de limite de tokens compatíveis com o modelo.
+ * Reasoning / gpt-5 usam `max_completion_tokens`; demais usam `max_tokens`.
+ */
+export function openAiTokenLimit(
+  model: string,
+  tokens: number,
+): { max_tokens: number } | { max_completion_tokens: number } {
+  if (isReasoningOpenAiModel(model)) {
+    return { max_completion_tokens: tokens };
+  }
+  return { max_tokens: tokens };
 }
