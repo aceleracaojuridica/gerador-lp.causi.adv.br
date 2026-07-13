@@ -85,8 +85,15 @@
       "@types/react-dom": "19.2.3"
     },
     "supportedArchitectures": {
-      "os": ["current", "linux"],
-      "cpu": ["current", "x64", "arm64"]
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "current",
+        "x64",
+        "arm64"
+      ]
     },
     "onlyBuiltDependencies": [
       "sharp",

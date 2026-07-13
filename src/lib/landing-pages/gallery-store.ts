@@ -5,12 +5,12 @@ import {
   createLpUserClient,
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
+import { optimizeImage } from "./gallery-image-processing";
 import {
   GERADOR_LP_BUCKET,
   getPublicMediaUrl,
   isGeradorStorageUrl,
 } from "./media-storage";
-import { optimizeImage } from "./gallery-image-processing";
 import { listSystemGalleryImages } from "./system-default-images";
 
 export type GalleryImageUsage = {
