@@ -2,6 +2,7 @@
 
 import { KeyboardArrowDown, Palette, Undo } from "@material-symbols-svg/react";
 import { useState } from "react";
+import { LogoImageHint } from "@/components/Builder/shared/image-hint";
 import { LazyImageSlot } from "@/components/Builder/shared/image-picker-dialog";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { BuilderField } from "../../shared/fields";
@@ -35,6 +36,7 @@ export function IdentidadePanel({ form }: { form: LpEditorForm }) {
           onChange={form.setLogoUrl}
           onClear={() => form.setLogoUrl("")}
         />
+        <LogoImageHint />
         {office.logoSrc && autoTheme ? (
           <p className="text-xs text-emerald-600">
             <Palette size={13} className="inline" /> Cores extraídas da logo

@@ -133,6 +133,9 @@ type HeroProps = {
   // Tom da seção logo abaixo do Hero — os mini-cards do tema centralizado
   // se sobrepõem a ela, então a sombra precisa adaptar (some em fundo escuro).
   belowTone?: Tone;
+  // 2º botão do Hero (variações com dois botões): âncora interna para uma seção
+  // da página (áreas de atuação; ou Sobre, se áreas estiver oculta).
+  anchorCta?: { label: string; href: string };
 };
 
 export function Hero(props: HeroProps) {
@@ -162,6 +165,7 @@ function HeroCentered({
   creamDeepRgb,
   tone,
   belowTone,
+  anchorCta,
 }: HeroProps) {
   const bg = office.logoBg;
   const logoDark = bg?.type === "dark";
@@ -253,8 +257,12 @@ function HeroCentered({
             <CTAButton variant={dark ? "primary" : "accent"}>
               {content.ctaPrimary}
             </CTAButton>
-            <CTAButton variant={dark ? "ghost" : "outline"} withArrow={false}>
-              {content.ctaSecondary}
+            <CTAButton
+              variant={dark ? "ghost" : "outline"}
+              withArrow={false}
+              anchor={anchorCta?.href}
+            >
+              {anchorCta?.label ?? content.ctaSecondary}
             </CTAButton>
           </div>
         </div>
@@ -442,11 +450,9 @@ function HeroStats({
   tone,
 }: HeroProps) {
   const dark = tone === "dark";
-  // Card com borda dourada é a foto do advogado; sem ela, imagem de cenário.
-  const img = office.lawyers[0]?.photo || office.sectionImages.hero;
-  const imgPos = office.lawyers[0]?.photo
-    ? focalPos(office.lawyers[0].focal)
-    : "center";
+  // Foto recortada do advogado, sobreposta à direita (sem moldura). Sem foto,
+  // o hero fica só com o texto sobre o fundo (cena/cor).
+  const lawyer = office.lawyers[0]?.photo;
   const hasMetrics = office.metrics.length > 0;
 
   // Foto de fundo da seção (cenário/escritório) com overlay — como no Hero
@@ -542,22 +548,22 @@ function HeroStats({
           ) : null}
         </div>
 
-        {/* Card de imagem com borda dourada (oculto no mobile) */}
-        <div className="hidden justify-self-end lg:block">
-          <div className="border-4 border-lp-accent p-2">
-            <div
-              className="h-[30rem] w-72 bg-lp-brand"
-              style={
-                img
-                  ? {
-                      backgroundImage: `url('${img}')`,
-                      backgroundSize: "cover",
-                      backgroundPosition: imgPos,
-                    }
-                  : undefined
-              }
+        {/* Foto recortada sobreposta, ancorada na base — sem moldura (oculta no mobile) */}
+        <div className="relative hidden items-end justify-center self-stretch lg:flex">
+          {lawyer ? (
+            // biome-ignore lint/performance/noImgElement: recorte precisa de object-contain + máscara de fade
+            <img
+              src={lawyer}
+              alt={office.lawyers[0]?.name || office.name}
+              className="relative z-10 h-full max-h-[34rem] w-auto self-end object-contain object-bottom"
+              style={{
+                maskImage:
+                  "linear-gradient(to bottom, #000 88%, transparent 100%)",
+                WebkitMaskImage:
+                  "linear-gradient(to bottom, #000 88%, transparent 100%)",
+              }}
             />
-          </div>
+          ) : null}
         </div>
       </div>
     </section>
@@ -569,13 +575,28 @@ function HeroStats({
    forte da esquerda p/ direita (texto legível à esquerda, cena visível à direita).
    Foto do advogado (idealmente PNG sem fundo) recortada à direita, ancorada na
    base, com máscara de fade + "fumaça" que a dissolve no fundo. Premium/autoridade. */
-function HeroRecorte({ content, office, brandDarkRgb }: HeroProps) {
+function HeroRecorte({
+  content,
+  office,
+  tone,
+  creamRgb,
+  brandDarkRgb,
+  anchorCta,
+}: HeroProps) {
   const lawyer = office.lawyers[0]?.photo;
   const bgImg = office.sectionImages.hero;
   const hasMetrics = office.metrics.length > 0;
+  const dark = tone === "dark";
+  // Cor base dos gradientes (overlay, transição e fumaça): escuro usa a marca,
+  // claro usa o creme para o texto ficar legível sobre a cena.
+  const baseRgb = dark ? brandDarkRgb : creamRgb;
 
   return (
-    <section className="relative flex min-h-[42rem] overflow-hidden bg-lp-brand-dark text-white lg:min-h-[46rem]">
+    <section
+      className={`relative flex min-h-[42rem] overflow-hidden lg:min-h-[46rem] ${
+        dark ? "bg-lp-brand-dark text-white" : "bg-lp-cream text-lp-brand"
+      }`}
+    >
       {/* Cena de fundo cobrindo a seção (sem blur) */}
       {bgImg ? (
         // biome-ignore lint/performance/noImgElement: fundo precisa cobrir a seção com object-position custom
@@ -586,12 +607,12 @@ function HeroRecorte({ content, office, brandDarkRgb }: HeroProps) {
           className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:scale-110"
         />
       ) : null}
-      {/* Overlay escuro: sólido à esquerda (texto), leve à direita (mostra a cena atrás da foto) */}
+      {/* Overlay: sólido à esquerda (texto), leve à direita (mostra a cena atrás da foto) */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(${brandDarkRgb},1) 0%, rgba(${brandDarkRgb},0.92) 45%, rgba(${brandDarkRgb},0.6) 100%)`,
+          backgroundImage: `linear-gradient(to right, rgba(${baseRgb},1) 0%, rgba(${baseRgb},0.92) 45%, rgba(${baseRgb},0.6) 100%)`,
         }}
       />
       {/* Transição suave para a próxima seção */}
@@ -599,40 +620,73 @@ function HeroRecorte({ content, office, brandDarkRgb }: HeroProps) {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-56"
         style={{
-          backgroundImage: `linear-gradient(to top, rgba(${brandDarkRgb},1), rgba(${brandDarkRgb},0.8) 40%, transparent)`,
+          backgroundImage: `linear-gradient(to top, rgba(${baseRgb},1), rgba(${baseRgb},0.8) 40%, transparent)`,
         }}
       />
 
       <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-stretch gap-10 px-6 md:px-10 lg:grid-cols-2">
         <div className="flex flex-col justify-center py-16 lg:py-20">
-          <LogoMark office={office} tone="light" className="mb-6 self-start" />
-          <p className="eyebrow mb-4 text-lp-accent-soft">
+          <LogoMark
+            office={office}
+            tone={dark ? "light" : "dark"}
+            className="mb-6 self-start"
+          />
+          <p
+            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+          >
             {content.eyebrow}
             {office.city ? ` · ${office.city}` : ""}
           </p>
-          <h1 className="font-display text-4xl font-semibold leading-[1.08] text-white md:text-5xl">
-            <HeadlineText h={content.headline} accentVar="accent-soft" />
+          <h1
+            className={`font-display text-4xl font-semibold leading-[1.08] md:text-5xl ${
+              dark ? "text-white" : "text-lp-brand"
+            }`}
+          >
+            <HeadlineText
+              h={content.headline}
+              accentVar={dark ? "accent-soft" : "accent"}
+            />
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
+          <p
+            className={`mt-5 max-w-xl text-lg leading-relaxed ${
+              dark ? "text-white/80" : "text-lp-ink-soft"
+            }`}
+          >
             {content.sub}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <CTAButton variant="white">{content.ctaPrimary}</CTAButton>
+            <CTAButton variant={dark ? "white" : "accent"}>
+              {content.ctaPrimary}
+            </CTAButton>
             {content.ctaSecondary ? (
-              <CTAButton variant="ghost" withArrow={false}>
-                {content.ctaSecondary}
+              <CTAButton
+                variant={dark ? "ghost" : "outline"}
+                withArrow={false}
+                anchor={anchorCta?.href}
+              >
+                {anchorCta?.label ?? content.ctaSecondary}
               </CTAButton>
             ) : null}
           </div>
 
           {hasMetrics ? (
-            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-7">
+            <div
+              className={`mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t pt-7 ${
+                dark ? "border-white/15" : "border-lp-ink-soft/15"
+              }`}
+            >
               {office.metrics.slice(0, 4).map((m) => (
                 <div key={m.label} className="flex items-center gap-3">
-                  <span className="text-lp-accent-soft">
+                  <span
+                    className={dark ? "text-lp-accent-soft" : "text-lp-accent"}
+                  >
                     <IconForKey iconKey={m.icon} size={28} />
                   </span>
-                  <p className="max-w-[11rem] text-sm leading-snug text-white/75">
+                  <p
+                    className={`max-w-[11rem] text-sm leading-snug ${
+                      dark ? "text-white/75" : "text-lp-ink-soft"
+                    }`}
+                  >
                     {m.label}
                   </p>
                 </div>
@@ -662,7 +716,7 @@ function HeroRecorte({ content, office, brandDarkRgb }: HeroProps) {
                 aria-hidden
                 className="pointer-events-none absolute inset-x-[-20%] bottom-0 h-3/5 blur-3xl"
                 style={{
-                  backgroundImage: `radial-gradient(120% 95% at 50% 100%, rgba(${brandDarkRgb},0.95), rgba(${brandDarkRgb},0.6) 55%, transparent 82%)`,
+                  backgroundImage: `radial-gradient(120% 95% at 50% 100%, rgba(${baseRgb},0.95), rgba(${baseRgb},0.6) 55%, transparent 82%)`,
                 }}
               />
             </div>

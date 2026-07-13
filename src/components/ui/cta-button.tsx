@@ -32,11 +32,15 @@ export function CTAButton({
   variant = "accent",
   withArrow = true,
   onClick,
+  anchor,
 }: {
   children: ReactNode;
   variant?: Variant;
   withArrow?: boolean;
   onClick?: () => void;
+  // Âncora interna (ex.: "#sec-areas"): rola suavemente até a seção, ignorando
+  // a ação de lead. Usada no 2º botão do Hero.
+  anchor?: string;
 }) {
   const { href, square, onCtaClick } = useCtaConfig();
   const cls = `group inline-flex items-center gap-2.5 ${
@@ -54,6 +58,24 @@ export function CTAButton({
       )}
     </>
   );
+  // Âncora interna tem prioridade sobre a ação de lead: rola até a seção.
+  if (anchor) {
+    return (
+      <a
+        href={anchor}
+        className={cls}
+        onClick={(e) => {
+          const el = document.getElementById(anchor.replace(/^#/, ""));
+          if (el) {
+            e.preventDefault();
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }}
+      >
+        {inner}
+      </a>
+    );
+  }
   // Popup: abre o formulário de lead. Link/WhatsApp: vira <a>. Senão: inerte.
   if (onCtaClick) {
     return (

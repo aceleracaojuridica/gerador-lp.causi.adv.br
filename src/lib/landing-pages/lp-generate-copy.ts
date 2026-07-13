@@ -68,7 +68,7 @@ Use APENAS estes ícones (campo "icon"): ${ICON_KEYS.join(", ")}.
 Responda com este JSON EXATO (sem comentários):
 {
   "hero": { "eyebrow": "string curta", "headline": { "pre": "início", "em": "destaque", "post": "fim (pode ser vazio)" }, "sub": "1-2 frases sobre a dor do público", "ctaPrimary": "botão", "ctaSecondary": "botão", "features": [ { "icon": "chave", "title": "curto", "text": "1 frase" }, {…}, {…} ] },
-  "dor": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "? " }, "intro": "2-3 frases de empatia", "cards": [ { "icon": "chave", "title": "dor concreta", "text": "1-2 frases" } x3 ] },
+  "dor": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "? " }, "intro": "2-3 frases de empatia", "cards": [ { "icon": "chave", "title": "dor concreta", "text": "1-2 frases" } x4 ] },
   "solucao": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "como atuamos", "text": "1 frase" } x4 ] },
   "areas": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "frente de atuação", "text": "1 frase" } x4 ], "cta": "botão" },
   "etapas": { "eyebrow": "string (ex: Etapas do atendimento)", "headline": { "pre": "...", "em": "...", "post": "" }, "steps": [ { "title": "passo curto", "text": "1 frase do que acontece" } x4 ] },

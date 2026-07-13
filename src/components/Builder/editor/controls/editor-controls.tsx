@@ -219,7 +219,7 @@ export function EditorSectionMenuRow({
       {icon ? (
         <span
           className={cn(
-            "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-md",
+            "pointer-events-none relative z-10 flex size-7 shrink-0 items-center justify-center rounded-md",
             off
               ? "bg-muted text-muted-foreground/50"
               : active
@@ -230,7 +230,7 @@ export function EditorSectionMenuRow({
           {icon}
         </span>
       ) : null}
-      <div className="relative z-10 min-w-0 flex-1">
+      <div className="pointer-events-none relative z-10 min-w-0 flex-1">
         <div className="flex items-center gap-1.5 leading-none">
           <span
             className={cn(
