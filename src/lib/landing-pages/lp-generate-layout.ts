@@ -67,6 +67,8 @@ export type LayoutChooseInput = {
   lawyerCount: number;
   hasVideo: boolean;
   hasMetrics: boolean;
+  /** Bloco leve: URL + resumo semântico das LPs da conta (sem schema/variants). */
+  accountExamples?: string;
 };
 
 export type LayoutChooseResult = {
@@ -217,6 +219,8 @@ function buildLayoutPrompt(input: LayoutChooseInput): string {
 
   const mood = describeThemeMood(input.theme);
 
+  const portfolio = (input.accountExamples ?? "").trim();
+
   const lines = [
     "Escolha a combinação de variantes e tons (claro/escuro) que melhor serve esta landing page jurídica.",
     "Use APENAS o campo `id` de cada opção do menu — NUNCA use `label` ou `intent` como valor.",
@@ -226,6 +230,9 @@ function buildLayoutPrompt(input: LayoutChooseInput): string {
     input.about ? `Sobre o escritório: ${input.about}` : "",
     `Paleta extraída da logo: ${describePalette(input.theme)}`,
     `Clima visual da paleta: ${mood}`,
+    portfolio
+      ? `${portfolio}\nUse o portfólio só para evitar cobertura redundante de temas e manter coerência institucional — NÃO invente variants fora do menu.`
+      : "",
     "",
     "HEURÍSTICAS (orientação, não obrigação):",
     `- Paleta sóbria/escura (${mood}): considere hero split ou sobre overlay; alterne tons dark em solucao/areas.`,
@@ -370,8 +377,7 @@ export async function chooseLayoutWithAi(
     const client = new OpenAI({ apiKey });
     const completion = await client.chat.completions.create({
       model: getServerEnv().OPENAI_MODEL,
-      max_tokens: 800,
-      temperature: 0.7,
+      max_completion_tokens: 800,
       response_format: {
         type: "json_schema",
         json_schema: {

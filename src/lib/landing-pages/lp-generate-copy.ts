@@ -14,6 +14,8 @@ export type CopyPayload = {
   city?: string;
   about?: string;
   diferenciais?: string[];
+  /** Bloco leve: URL + resumo semântico das LPs da conta (sem schema/copy). */
+  accountExamples?: string;
 };
 
 export const COPY_SYSTEM = [
@@ -42,12 +44,22 @@ export function buildCopyUserPrompt(p: CopyPayload): string {
     .filter(Boolean)
     .join("\n");
 
+  const portfolio = (p.accountExamples ?? "").trim();
+
   return `TEMA DA LANDING PAGE (foco central, fale disto o tempo todo):
 "${p.tema}"
 
 FATOS DO ESCRITÓRIO:
 ${fatos || "(nenhum fato adicional informado)"}
+${
+  portfolio
+    ? `
+${portfolio}
 
+Use o portfólio só como mapa de áreas já cobertas e tom institucional do SEO. NÃO copie títulos, descrições nem frases dessas páginas.
+`
+    : ""
+}
 Escreva a copy de uma landing page jurídica sobre esse TEMA, que será ANUNCIADA no Google/Meta. Toda manchete tem um trecho em destaque ("em").
 
 MANCHETE DO HERO (hero.headline) — é o que mais importa:

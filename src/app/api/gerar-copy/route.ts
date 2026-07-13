@@ -4,12 +4,13 @@
 */
 
 import type { FocoCopy } from "@/lib/landing-pages/focos";
-import { imagensDoTema } from "@/lib/landing-pages/image-bank";
+import { loadAccountLpExamplesForPrompt } from "@/lib/landing-pages/lp-account-generation-context";
 import {
   type CopyPayload,
   callOpenAiForCopy,
 } from "@/lib/landing-pages/lp-generate-copy";
 import { chooseLayoutWithAi } from "@/lib/landing-pages/lp-generate-layout";
+import { resolveSectionImages } from "@/lib/landing-pages/resolve-section-images";
 import {
   DEFAULT_THEME,
   type Layout,
@@ -19,7 +20,6 @@ import {
   describeThemeMood,
   listAccountImagesForRanking,
   listSystemGalleryImages,
-  pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
@@ -72,6 +72,14 @@ export async function POST(request: Request) {
   const theme = p.theme ?? DEFAULT_THEME;
   const lawyerCount = Math.max(0, p.lawyerCount ?? 0);
   const videoId = (p.videoId ?? "").trim();
+
+  let accountExamples = "";
+  try {
+    accountExamples = await loadAccountLpExamplesForPrompt(session, tema);
+  } catch (err) {
+    console.error("[gerar-copy] falha ao carregar portfólio da conta:", err);
+  }
+
   const layoutInput = {
     tema,
     about: (p.about ?? "").trim() || undefined,
@@ -79,17 +87,32 @@ export async function POST(request: Request) {
     lawyerCount,
     hasVideo: Boolean(videoId),
     hasMetrics: Boolean(p.hasMetrics),
+    accountExamples: accountExamples || undefined,
   };
 
   let copy: FocoCopy;
+  let imageQueries: {
+    hero: string;
+    dor: string;
+    sobre: string;
+    solucao: string;
+  };
   let layout: Layout;
   let layoutSource: "ai" | "fallback" = "ai";
   try {
     const [copyResult, chosenLayout] = await Promise.all([
-      callOpenAiForCopy(apiKey, p),
+      callOpenAiForCopy(apiKey, {
+        name: p.name,
+        tema: p.tema,
+        city: p.city,
+        about: p.about,
+        diferenciais: p.diferenciais,
+        accountExamples: accountExamples || undefined,
+      }),
       chooseLayoutWithAi(apiKey, layoutInput),
     ]);
     copy = copyResult.copy;
+    imageQueries = copyResult.imageQueries;
     layout = chosenLayout.layout;
     layoutSource = chosenLayout.source;
   } catch (err) {
@@ -100,32 +123,20 @@ export async function POST(request: Request) {
   const ctx = sessionToLpContext(session);
   const paletteHint = describeThemeMood(theme);
 
-  // Pool de candidatos por seção: catálogo global do sistema + galeria da
-  // PRÓPRIA conta (nunca de outra conta — escopo em listAccountImagesForRanking).
-  // Sem prioridade fixa de origem: a IA escolhe entre todos os elegíveis.
   const [systemCatalog, accountCatalog] = await Promise.all([
     listSystemGalleryImages(session),
     listAccountImagesForRanking(session),
   ]);
   const catalog = [...accountCatalog, ...systemCatalog];
 
-  const picked = await pickSystemImagesWithAiRanking({
+  const images = await resolveSectionImages({
     apiKey,
-    theme: tema,
+    tema,
     paletteHint,
     catalog,
+    imageQueries,
     seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
   });
-
-  // Só cai no banco curado (Unsplash) quando não há nenhum candidato próprio
-  // (conta + sistema) para a seção.
-  const bank = imagensDoTema(tema);
-  const images = {
-    hero: picked.hero || bank.hero,
-    dor: picked.dor || bank.dor,
-    sobre: picked.sobre || bank.sobre,
-    solucao: picked.solucao || bank.solucao,
-  };
 
   const response: Record<string, unknown> = { copy, images, layout };
   if (process.env.NODE_ENV === "development") {
