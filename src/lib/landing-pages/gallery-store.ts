@@ -1,6 +1,5 @@
 import "server-only";
 
-import sharp from "sharp";
 import type { Session } from "@/lib/session/types";
 import {
   createLpUserClient,
@@ -11,6 +10,7 @@ import {
   getPublicMediaUrl,
   isGeradorStorageUrl,
 } from "./media-storage";
+import { optimizeImage } from "./gallery-image-processing";
 import { listSystemGalleryImages } from "./system-default-images";
 
 export type GalleryImageUsage = {
@@ -137,26 +137,6 @@ export async function listSystemImagesForGallery(
   }));
 }
 
-async function optimizeImage(buffer: Buffer): Promise<{
-  buffer: Buffer;
-  width: number;
-  height: number;
-}> {
-  const pipeline = sharp(buffer).rotate().resize({
-    width: 2400,
-    height: 2400,
-    fit: "inside",
-    withoutEnlargement: true,
-  });
-  const output = await pipeline.webp({ quality: 85 }).toBuffer();
-  const meta = await sharp(output).metadata();
-  return {
-    buffer: output,
-    width: meta.width ?? 0,
-    height: meta.height ?? 0,
-  };
-}
-
 function decodeDataUrl(dataUrl: string): Buffer {
   const match = dataUrl.trim().match(/^data:image\/[^;]+;base64,([\s\S]+)$/);
   if (!match) throw new Error("Data URL de imagem inválida.");
@@ -258,45 +238,6 @@ export async function deleteGalleryImage(
   await db.storage
     .from(GERADOR_LP_BUCKET)
     .remove([image.storage_path as string]);
-}
-
-/** Remove todas as imagens órfãs (sem usos) da galeria da conta. */
-export async function deleteOrphanedImages(session: Session): Promise<void> {
-  const ctx = sessionToLpContext(session);
-  const db = createLpUserClient(session);
-
-  // Seleciona imagens sem usos
-  const { data: allImages, error: fetchError } = await db
-    .from("lp_account_images")
-    .select(`
-      id,
-      storage_path,
-      lp_image_usages (
-        id
-      )
-    `)
-    .eq("account_id", ctx.accountId);
-
-  if (fetchError) throwDbError(fetchError);
-  if (!allImages) return;
-
-  const orphaned = allImages.filter(
-    (img) => !img.lp_image_usages || img.lp_image_usages.length === 0,
-  );
-  if (orphaned.length === 0) return;
-
-  const ids = orphaned.map((img) => img.id as string);
-  const paths = orphaned.map((img) => img.storage_path as string);
-
-  // Deleta do banco
-  const { error: deleteRowError } = await db
-    .from("lp_account_images")
-    .delete()
-    .in("id", ids);
-  if (deleteRowError) throwDbError(deleteRowError);
-
-  // Remove do storage
-  await db.storage.from(GERADOR_LP_BUCKET).remove(paths);
 }
 
 export function isGalleryStorageUrl(url: string): boolean {

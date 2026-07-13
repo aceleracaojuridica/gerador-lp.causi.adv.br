@@ -84,6 +84,10 @@
       "@types/react": "19.2.14",
       "@types/react-dom": "19.2.3"
     },
+    "supportedArchitectures": {
+      "os": ["current", "linux"],
+      "cpu": ["current", "x64", "arm64"]
+    },
     "onlyBuiltDependencies": [
       "sharp",
       "supabase"
