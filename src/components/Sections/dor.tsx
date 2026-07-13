@@ -32,8 +32,12 @@ import {
 import { Reveal } from "@/components/ui/reveal";
 import { cardImageOverlay } from "@/lib/landing-pages/colors";
 import type { DorContent, DorVariant, Tone } from "@/lib/landing-pages/schema";
-import { DOR_VARIANT_WITH_IMAGE_CARDS } from "@/lib/landing-pages/variants";
+import {
+  DOR_VARIANT_IMAGE_LIST,
+  DOR_VARIANT_WITH_IMAGE_CARDS,
+} from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
+import { ImageListBlock } from "./image-list-block";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
   switch (iconKey) {
@@ -141,39 +145,45 @@ export function Dor({
       )}
 
       <div className="relative mx-auto max-w-7xl px-6 md:px-10">
-        {variant === DOR_VARIANT_WITH_IMAGE_CARDS ? (
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
-            <Reveal>
-              <Header content={content} dark={dark} />
-            </Reveal>
-            <Reveal delay={120}>
-              <div
-                className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
-                style={
-                  image
-                    ? {
-                        backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined
-                }
-              >
-                <div
-                  aria-hidden
-                  className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full border-2"
-                  style={{ borderColor: `rgba(${accentRgb},0.4)` }}
-                />
-              </div>
-            </Reveal>
-          </div>
+        {variant === DOR_VARIANT_IMAGE_LIST ? (
+          <DorImageList content={content} dark={dark} image={image} />
         ) : (
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <Header content={content} dark={dark} centered />
-          </Reveal>
-        )}
+          <>
+            {variant === DOR_VARIANT_WITH_IMAGE_CARDS ? (
+              <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                <Reveal>
+                  <Header content={content} dark={dark} />
+                </Reveal>
+                <Reveal delay={120}>
+                  <div
+                    className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
+                    style={
+                      image
+                        ? {
+                            backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "dor")}, url('${image}')`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }
+                        : undefined
+                    }
+                  >
+                    <div
+                      aria-hidden
+                      className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full border-2"
+                      style={{ borderColor: `rgba(${accentRgb},0.4)` }}
+                    />
+                  </div>
+                </Reveal>
+              </div>
+            ) : (
+              <Reveal className="mx-auto max-w-2xl text-center">
+                <Header content={content} dark={dark} centered />
+              </Reveal>
+            )}
 
-        <CardGrid content={content} dark={dark} />
+            <CardGrid content={content} dark={dark} />
+          </>
+        )}
       </div>
     </section>
   );
@@ -207,6 +217,32 @@ function Header({
         {content.intro}
       </p>
     </>
+  );
+}
+
+/* Lista enxuta reutilizável (header + bullets + imagem), compartilhada com a
+   seção Solução via ImageListBlock. */
+function DorImageList({
+  content,
+  dark,
+  image,
+}: {
+  content: DorContent;
+  dark: boolean;
+  image: string;
+}) {
+  return (
+    <ImageListBlock
+      eyebrow={content.eyebrow}
+      headline={content.headline}
+      intro={content.intro}
+      items={content.cards.map((d) => ({
+        title: d.title,
+        key: `${d.title}-${d.text}`,
+      }))}
+      image={image}
+      dark={dark}
+    />
   );
 }
 

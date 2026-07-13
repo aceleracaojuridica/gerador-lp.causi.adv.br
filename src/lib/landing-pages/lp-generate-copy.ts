@@ -5,8 +5,13 @@ import "server-only";
   /api/gerar-copy (preview sem salvar) e /api/gerar-lp (geração completa).
 */
 import OpenAI from "openai";
+import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
 import type { FocoCopy } from "./focos";
 import { ICON_KEYS } from "./icons";
+import {
+  type ExternalApiLogMeta,
+  withExternalApiLog,
+} from "./lp-external-api-log";
 
 export type CopyPayload = {
   name?: string;
@@ -14,6 +19,8 @@ export type CopyPayload = {
   city?: string;
   about?: string;
   diferenciais?: string[];
+  /** Bloco leve: URL + resumo semântico das LPs da conta (sem schema/copy). */
+  accountExamples?: string;
 };
 
 export const COPY_SYSTEM = [
@@ -42,12 +49,22 @@ export function buildCopyUserPrompt(p: CopyPayload): string {
     .filter(Boolean)
     .join("\n");
 
+  const portfolio = (p.accountExamples ?? "").trim();
+
   return `TEMA DA LANDING PAGE (foco central, fale disto o tempo todo):
 "${p.tema}"
 
 FATOS DO ESCRITÓRIO:
 ${fatos || "(nenhum fato adicional informado)"}
+${
+  portfolio
+    ? `
+${portfolio}
 
+Use o portfólio só como mapa de áreas já cobertas e tom institucional do SEO. NÃO copie títulos, descrições nem frases dessas páginas.
+`
+    : ""
+}
 Escreva a copy de uma landing page jurídica sobre esse TEMA, que será ANUNCIADA no Google/Meta. Toda manchete tem um trecho em destaque ("em").
 
 MANCHETE DO HERO (hero.headline) — é o que mais importa:
@@ -68,7 +85,7 @@ Use APENAS estes ícones (campo "icon"): ${ICON_KEYS.join(", ")}.
 Responda com este JSON EXATO (sem comentários):
 {
   "hero": { "eyebrow": "string curta", "headline": { "pre": "início", "em": "destaque", "post": "fim (pode ser vazio)" }, "sub": "1-2 frases sobre a dor do público", "ctaPrimary": "botão", "ctaSecondary": "botão", "features": [ { "icon": "chave", "title": "curto", "text": "1 frase" }, {…}, {…} ] },
-  "dor": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "? " }, "intro": "2-3 frases de empatia", "cards": [ { "icon": "chave", "title": "dor concreta", "text": "1-2 frases" } x3 ] },
+  "dor": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "? " }, "intro": "2-3 frases de empatia", "cards": [ { "icon": "chave", "title": "dor concreta", "text": "1-2 frases" } x4 ] },
   "solucao": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "como atuamos", "text": "1 frase" } x4 ] },
   "areas": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "frente de atuação", "text": "1 frase" } x4 ], "cta": "botão" },
   "etapas": { "eyebrow": "string (ex: Etapas do atendimento)", "headline": { "pre": "...", "em": "...", "post": "" }, "steps": [ { "title": "passo curto", "text": "1 frase do que acontece" } x4 ] },
@@ -99,50 +116,78 @@ export type GeneratedCopy = {
 export async function callOpenAiForCopy(
   apiKey: string,
   payload: CopyPayload,
+  log?: ExternalApiLogMeta,
 ): Promise<GeneratedCopy> {
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o",
-    max_tokens: 3000,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: COPY_SYSTEM },
-      { role: "user", content: buildCopyUserPrompt(payload) },
-    ],
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-
-  if (
-    !parsed.hero ||
-    !parsed.dor ||
-    !parsed.solucao ||
-    !parsed.areas ||
-    !parsed.faq ||
-    !parsed.ctaFinal
-  ) {
-    throw new Error("Copy incompleta retornada pela IA.");
-  }
-
-  const q = (parsed.imageQueries ?? {}) as Record<string, unknown>;
-  const imageQueries = {
-    hero: typeof q.hero === "string" ? q.hero : "",
-    dor: typeof q.dor === "string" ? q.dor : "",
-    sobre: typeof q.sobre === "string" ? q.sobre : "",
-    solucao: typeof q.solucao === "string" ? q.solucao : "",
+  const messages = [
+    { role: "system" as const, content: COPY_SYSTEM },
+    { role: "user" as const, content: buildCopyUserPrompt(payload) },
+  ];
+  const model = getOpenAiChatModel();
+  const requestPayload = {
+    model,
+    ...openAiTokenLimit(model, 3000),
+    response_format: { type: "json_object" as const },
+    messages,
   };
 
-  const s = (parsed.seo ?? {}) as Record<string, unknown>;
-  const seo = {
-    title: typeof s.title === "string" ? s.title.slice(0, 70) : "",
-    description:
-      typeof s.description === "string" ? s.description.slice(0, 165) : "",
+  const run = async (): Promise<GeneratedCopy> => {
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create(requestPayload);
+
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+    if (
+      !parsed.hero ||
+      !parsed.dor ||
+      !parsed.solucao ||
+      !parsed.areas ||
+      !parsed.faq ||
+      !parsed.ctaFinal
+    ) {
+      throw new Error("Copy incompleta retornada pela IA.");
+    }
+
+    const q = (parsed.imageQueries ?? {}) as Record<string, unknown>;
+    const imageQueries = {
+      hero: typeof q.hero === "string" ? q.hero : "",
+      dor: typeof q.dor === "string" ? q.dor : "",
+      sobre: typeof q.sobre === "string" ? q.sobre : "",
+      solucao: typeof q.solucao === "string" ? q.solucao : "",
+    };
+
+    const s = (parsed.seo ?? {}) as Record<string, unknown>;
+    const seo = {
+      title: typeof s.title === "string" ? s.title.slice(0, 70) : "",
+      description:
+        typeof s.description === "string" ? s.description.slice(0, 165) : "",
+    };
+
+    delete parsed.imageQueries;
+    delete parsed.seo;
+    const copy: FocoCopy = { ...(parsed as unknown as FocoCopy), seo };
+
+    return { copy, imageQueries };
   };
 
-  delete parsed.imageQueries;
-  delete parsed.seo;
-  const copy: FocoCopy = { ...(parsed as unknown as FocoCopy), seo };
+  if (!log) return run();
 
-  return { copy, imageQueries };
+  return withExternalApiLog(
+    {
+      ...log,
+      provider: "openai",
+      operation: "chat.completions",
+      requestPayload,
+    },
+    async () => {
+      const result = await run();
+      return {
+        result,
+        responsePayload: {
+          copy: result.copy,
+          imageQueries: result.imageQueries,
+        },
+      };
+    },
+  );
 }

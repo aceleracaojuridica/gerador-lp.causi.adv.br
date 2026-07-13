@@ -66,6 +66,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 |---|---|
 | Com imagem | `causi_lp_section_dor_with_image_cards` |
 | Só cards | `causi_lp_section_dor_cards_compact` |
+| Lista | `causi_lp_section_dor_image_list` |
 
 ### Solução
 
@@ -73,7 +74,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 |---|---|
 | Com imagem | `causi_lp_section_solucao_with_image_cards` |
 | Só cards | `causi_lp_section_solucao_cards_compact` |
-| Com destaque | `causi_lp_section_solucao_cards_highlight` |
+| Lista | `causi_lp_section_solucao_image_list` |
 
 ### Sobre
 
@@ -184,30 +185,34 @@ Arquivos centrais:
 
 - `src/app/api/gerar-copy/route.ts`
 - `src/app/api/gerar-lp/route.ts`
+- `src/lib/landing-pages/lp-account-generation-context.ts`
+- `src/lib/landing-pages/resolve-section-images.ts`
 
 Fluxo:
 
-1. o wizard coleta dados do escritório, contato, imagens e template opcional
-2. `POST /api/gerar-copy` produz a copy e sugestões de imagem
-3. `POST /api/gerar-lp` monta o `Office`, resolve slug, resolve subdomínio e gera o `LpSchema`
-4. o schema é salvo como draft
-5. o usuário é redirecionado para `/lp/[slug]`
+1. o wizard coleta dados do escritório, contato e imagens
+2. ao enviar a logo, as cores são extraídas (`extractPalette`); o usuário pode aplicar uma paleta pronta (`PalettePicker`) ou clicar na varinha (`SugerirPaletasButton` → `suggestSimilarPaletteAction`) para gerar e aplicar imediatamente 1 Theme semelhante à base — cada clique pede uma variação distinta da atual
+3. `POST /api/gerar-copy` produz copy, layout (variants) e imagens de cenário
+4. `POST /api/gerar-lp` monta o `Office`, resolve slug, resolve subdomínio e gera o `LpSchema` (reaproveita copy/images/layout pré-gerados quando enviados)
+5. o schema é salvo como draft
+6. o usuário é redirecionado para `/lp/[slug]`
 
-Detalhes do `POST /api/gerar-lp`:
+Contexto das LPs existentes da conta (draft + published):
 
-- usa `layout` recebido ou `DEFAULT_LAYOUT`
+- o prompt recebe **somente** URL pública + descrição semântica (`tema` + SEO title/description)
+- teto duro de exemplos/caracteres — sem `schema`, variants ou copy de seções
+- prioriza LPs com tema semelhante ao formulário
+- se a conta não tiver LPs, a geração segue só com os fatos do wizard
+
+Detalhes do `POST /api/gerar-copy` / regeneração em `gerar-lp`:
+
+- copy e layout usam o portfólio leve da conta como mapa institucional (sem copiar texto)
 - se houver `videoId`, força `hero = causi_lp_section_hero_video_embedded`
-- se `images` não vier no payload, resolve imagens com prioridade:
-  1. galeria da conta (`lp_account_images`)
-  2. catálogo global (`lp_system_images`) com ranking semântico por IA
-     - a IA recebe o tema da LP e os candidatos do catálogo por seção (`hero`, `dor`, `sobre`, `solucao`)
-     - a resposta é validada por ID e seção antes de ser aplicada
-     - se a IA falhar ou responder inválido, entra fallback determinístico por `section_key` + `semantic_tags` + seed
-  3. banco curado local (`image-bank`) como fallback de segurança
-- monta o schema com `buildSchema()`
-- normaliza SEO com `normalizeSeo()`
-
-No fluxo de criação, o app não executa chamadas da API Unsplash.
+- resolução de imagens (`resolveSectionImages`):
+  1. galeria da conta (`lp_account_images` com `section_tags`) + catálogo global (`lp_system_images`) com ranking semântico por IA
+  2. slots vazios: Unsplash ao vivo via `imageQueries` gerados pela copy (`buscarImagensUnsplash`)
+  3. banco curado local (`image-bank`) só como rede de segurança
+- monta o schema com `buildSchema()` e normaliza SEO com `normalizeSeo()`
 
 ## Editor
 

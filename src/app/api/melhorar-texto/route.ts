@@ -1,5 +1,9 @@
 import OpenAI from "openai";
+import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
+import { logExternalApiCall } from "@/lib/landing-pages/lp-external-api-log";
+import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
+import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
 // Endpoint que melhora um trecho de texto escrito pelo advogado (Sobre / diferencial)
 // via API da OpenAI (GPT). Corrige português e aprimora a redação, mantendo os FATOS,
@@ -29,8 +33,9 @@ const SYSTEM = [
 ].join("\n");
 
 export async function POST(request: Request) {
+  let session: Session;
   try {
-    await requireLpSession();
+    session = await requireLpSession();
   } catch (err) {
     const forbidden = err instanceof Error && err.message === "FORBIDDEN";
     return Response.json(
@@ -69,35 +74,76 @@ export async function POST(request: Request) {
       ? `Contexto (apenas para tom, não cite literalmente): escritório "${body.office?.name ?? ""}", área "${body.office?.product ?? ""}".`
       : "";
 
+  const lpCtx = sessionToLpContext(session);
+  const log = {
+    action: "UPDATE",
+    context: "improve_text",
+    accountId: lpCtx.accountId,
+    createdByUserId: lpCtx.userId,
+  };
+
+  const messages = [
+    { role: "system" as const, content: SYSTEM },
+    {
+      role: "user" as const,
+      content: [INSTRUCOES[kind], ctx, "", "Texto original:", text]
+        .filter(Boolean)
+        .join("\n"),
+    },
+  ];
+  const model = getOpenAiChatModel();
+  const requestPayload = {
+    model,
+    ...openAiTokenLimit(model, 1024),
+    messages,
+  };
+
   const client = new OpenAI({ apiKey });
+  const started = Date.now();
 
   try {
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 1024,
-      messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content: [INSTRUCOES[kind], ctx, "", "Texto original:", text]
-            .filter(Boolean)
-            .join("\n"),
-        },
-      ],
-    });
+    const completion = await client.chat.completions.create(requestPayload);
 
     const melhorado = (completion.choices[0]?.message?.content ?? "").trim();
 
     if (!melhorado) {
+      void logExternalApiCall({
+        ...log,
+        provider: "openai",
+        operation: "chat.completions",
+        requestPayload,
+        durationMs: Date.now() - started,
+        ok: false,
+        error: "empty_response",
+      });
       return Response.json(
         { error: "Resposta vazia do modelo." },
         { status: 502 },
       );
     }
 
+    void logExternalApiCall({
+      ...log,
+      provider: "openai",
+      operation: "chat.completions",
+      requestPayload,
+      responsePayload: { texto: melhorado },
+      durationMs: Date.now() - started,
+      ok: true,
+    });
+
     return Response.json({ texto: melhorado });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao chamar a IA.";
+    void logExternalApiCall({
+      ...log,
+      provider: "openai",
+      operation: "chat.completions",
+      requestPayload,
+      durationMs: Date.now() - started,
+      ok: false,
+      error: msg,
+    });
     return Response.json({ error: msg }, { status: 502 });
   }
 }

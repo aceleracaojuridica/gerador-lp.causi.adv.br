@@ -2,6 +2,7 @@
 
 import { Check, DragIndicator, Lock } from "@material-symbols-svg/react";
 import { useState } from "react";
+import { LawyerImageHint } from "@/components/Builder/shared/image-hint";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { effectiveOrder, labelOf } from "@/lib/landing-pages/section-order";
 import { LawyerPhotosInput } from "../widgets/lawyer-row";
@@ -100,6 +101,7 @@ export function ImagensPanel({ form }: { form: LpEditorForm }) {
         <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
           Fotos dos advogados
         </p>
+        <LawyerImageHint />
         <LawyerPhotosInput form={form} />
       </div>
 

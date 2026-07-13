@@ -1,12 +1,17 @@
 import "server-only";
 
 import OpenAI from "openai";
+import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
 import type { Session } from "@/lib/session";
 import {
   createLpUserClient,
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
 import { sortCandidatesDeterministically } from "./gallery-filters";
+import {
+  type ExternalApiLogMeta,
+  withExternalApiLog,
+} from "./lp-external-api-log";
 import { getPublicMediaUrl } from "./media-storage";
 import type { Theme } from "./schema";
 import {
@@ -233,6 +238,7 @@ type RankByAiInput = {
   theme: string;
   paletteHint?: string;
   catalog: SystemGalleryImageItem[];
+  log?: ExternalApiLogMeta;
 };
 
 /** Classifica a paleta extraída da logo em rótulos de clima visual para o ranker. */
@@ -332,26 +338,48 @@ async function rankSystemImagesByAi({
   theme,
   paletteHint,
   catalog,
+  log,
 }: RankByAiInput): Promise<RankedSystemSelection> {
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_tokens: 1200,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "Você é um ranker semântico de imagens de landing page jurídica. Responda apenas com JSON válido.",
-      },
-      {
-        role: "user",
-        content: buildRankerPrompt(theme, catalog, paletteHint),
-      },
-    ],
-  });
-  const raw = completion.choices[0]?.message?.content ?? "{}";
-  return ensureSectionRanks(JSON.parse(raw));
+  const messages = [
+    {
+      role: "system" as const,
+      content:
+        "Você é um ranker semântico de imagens de landing page jurídica. Responda apenas com JSON válido.",
+    },
+    {
+      role: "user" as const,
+      content: buildRankerPrompt(theme, catalog, paletteHint),
+    },
+  ];
+  const model = getOpenAiChatModel();
+  const requestPayload = {
+    model,
+    ...openAiTokenLimit(model, 1200),
+    response_format: { type: "json_object" as const },
+    messages,
+  };
+
+  const run = async (): Promise<RankedSystemSelection> => {
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create(requestPayload);
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    return ensureSectionRanks(JSON.parse(raw));
+  };
+
+  if (!log) return run();
+
+  return withExternalApiLog(
+    {
+      ...log,
+      provider: "openai",
+      operation: "chat.completions",
+      requestPayload,
+    },
+    async () => {
+      const result = await run();
+      return { result, responsePayload: result };
+    },
+  );
 }
 
 function selectFromRankedIds(
@@ -390,14 +418,16 @@ export async function pickSystemImagesWithAiRanking(input: {
   paletteHint?: string;
   catalog: SystemGalleryImageItem[];
   seedInput: string;
+  log?: ExternalApiLogMeta;
 }): Promise<SectionImages> {
-  const { apiKey, theme, paletteHint, catalog, seedInput } = input;
+  const { apiKey, theme, paletteHint, catalog, seedInput, log } = input;
   try {
     const ranked = await rankSystemImagesByAi({
       apiKey,
       theme,
       paletteHint,
       catalog,
+      log,
     });
     const aiSelected = selectFromRankedIds(ranked, catalog);
     const deterministic = pickDefaultSystemImages(catalog, seedInput, theme);

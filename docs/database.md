@@ -196,8 +196,41 @@ Configuração global por conta (vale para todas as LPs da conta).
 | `body_font` | `text` | Fonte de corpo |
 | `tracking_providers` | `jsonb` | IDs de GA4, GTM, Meta Pixel e Google Ads |
 | `tracking_scripts` | `jsonb` | Scripts customizados `{ head, body, footer }` |
-| `captcha_config` | `jsonb` | Provider/site key/widgetTheme do captcha |
 | `updated_at` | `timestamptz` | Última atualização |
+
+### `public.lp_external_api_logs`
+
+Auditoria de chamadas a APIs externas (OpenAI, Unsplash, etc.). Escrita via `lpAdmin()` (`service_role`). Sem policies para `authenticated`/`anon` — consulta no dashboard/SQL do Supabase. Registros com mais de 3 meses (ou `deleted_at` preenchido) são limpos automaticamente (~1% dos INSERTs).
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | `uuid` | PK |
+| `account_id` | `bigint` | Conta (quando conhecida) |
+| `created_by_user_id` | `uuid` | Usuário que disparou a chamada |
+| `landing_page_id` | `uuid` | LP relacionada (quando já existe) |
+| `provider` | `text` | `openai` \| `unsplash` \| … |
+| `operation` | `text` | `chat.completions` \| `unsplash.random` \| `unsplash.search` \| … |
+| `action` | `text` | Ação de negócio: `CREATE` \| `UPDATE` \| `READ` |
+| `context` | `text` | Onde na app: `create_landing_page` \| `edit_landing_page` \| `improve_text` \| `suggest_palette` \| … |
+| `request_payload` | `jsonb` | Payload enviado ao provedor (sanitizado) |
+| `response_payload` | `jsonb` | Payload recebido (sanitizado) |
+| `status_code` | `integer` | HTTP do provedor (quando houver) |
+| `duration_ms` | `integer` | Latência |
+| `ok` | `boolean` | Sucesso do round-trip |
+| `error` | `text` | Mensagem curta em falha |
+| `created_at` / `deleted_at` | `timestamptz` | Auditoria / soft-delete |
+
+Helper: `lib/landing-pages/lp-external-api-log.ts` → `logExternalApiCall`.
+
+Consulta típica:
+
+```sql
+SELECT created_at, provider, operation, action, context, ok, duration_ms, error
+FROM lp_external_api_logs
+WHERE account_id = 123
+  AND context = 'create_landing_page'
+ORDER BY created_at DESC;
+```
 
 ### `public.leads` (Lovable + dashboard do gerador)
 
@@ -274,5 +307,6 @@ O Projeto B é compartilhado com o Lovable. Duas tabelas pertencem ao fluxo do L
 | `public.leads` | Lovable + Gerador | Leads por `subdomain` |
 | `public.landing_pages` | Gerador | LPs com `schema` jsonb; `office_subdomain` denormalizado para rota pública |
 | `public.lp_accounts` | Gerador | Conta canônica (`name`, `office_subdomain`) sincronizada com Causi |
+| `public.lp_external_api_logs` | Gerador | Auditoria de chamadas a APIs externas (service_role) |
 
 Ver [integrations.md](integrations.md) para a estratégia de convivência e reuso.

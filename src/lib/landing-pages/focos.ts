@@ -134,6 +134,11 @@ export const FOCOS: Foco[] = [
             title: "Condições de risco sem adicional",
             text: "Insalubridade ou periculosidade no dia a dia e nenhum adicional sobre o salário.",
           },
+          {
+            icon: "user-check",
+            title: "Demissão que você considera injusta",
+            text: "Justa causa aplicada de forma indevida ou sem o direito à ampla defesa.",
+          },
         ],
       },
       solucao: {

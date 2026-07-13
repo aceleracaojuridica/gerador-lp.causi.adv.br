@@ -122,6 +122,13 @@ export function LandingPreview({
   const customSections = schema.customSections ?? [];
   const order = effectiveOrder(schema.layout, customSections);
 
+  // 2º botão do Hero: âncora interna. Vai para "Áreas de atuação" quando ativa;
+  // senão cai no "Sobre" (seção obrigatória, sempre presente).
+  const heroAnchorCta =
+    !hidden.areas && order.includes("areas")
+      ? { label: "Áreas de atuação", href: "#sec-areas" }
+      : { label: "Sobre o escritório", href: "#sec-sobre" };
+
   // Tom da primeira seção VISÍVEL abaixo do Hero — os mini-cards do Hero
   // centralizado se sobrepõem a ela, e a sombra adapta para não sumir no escuro.
   function toneOfItem(item: string): "light" | "dark" {
@@ -332,6 +339,7 @@ export function LandingPreview({
                 creamDeepRgb={creamDeepRgb}
                 tone={schema.layout.tones.hero ?? "light"}
                 belowTone={belowTone}
+                anchorCta={heroAnchorCta}
               />,
             )}
             {/* Seções do meio na ordem definida (Hero acima, FAQ/Rodapé abaixo). */}

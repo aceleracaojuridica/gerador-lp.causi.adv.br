@@ -1,4 +1,5 @@
 export { MelhorarTextoButton } from "./create/melhorar-texto-button";
+export { SugerirPaletasButton } from "./create/sugerir-paletas-button";
 export { Editor } from "./editor";
 export { LpCard } from "./gallery/lp-card";
 export { EstadoCidade } from "./shared/estado-cidade";

@@ -3,6 +3,7 @@ import { imagemAleatoria } from "@/lib/landing-pages/image-bank";
 import { buscarImagemAleatoria } from "@/lib/landing-pages/unsplash";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
+import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
 export const dynamic = "force-dynamic";
 
@@ -90,8 +91,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // session necessária apenas para autenticação — não buscamos galeria aqui.
-  void session;
+  const lpCtx = sessionToLpContext(session);
+  const log = {
+    action: "UPDATE",
+    context: "edit_landing_page",
+    accountId: lpCtx.accountId,
+    createdByUserId: lpCtx.userId,
+  };
 
   const body = (await req.json().catch(() => ({}))) as {
     tema?: string;
@@ -111,12 +117,12 @@ export async function POST(req: Request) {
   console.log("[imagem] current:", body.current);
 
   // Unsplash /photos/random — retorna uma foto diferente a cada chamada.
-  let url = await buscarImagemAleatoria(query);
+  let url = await buscarImagemAleatoria(query, log);
 
   // Se por acaso caiu na mesma imagem (improvável com random), tenta mais uma vez.
   if (url && url === body.current) {
     console.log("[imagem] mesma imagem, tentando novamente...");
-    url = await buscarImagemAleatoria(query);
+    url = await buscarImagemAleatoria(query, log);
   }
 
   // Fallback: banco de imagens local curado (garante algo mesmo sem API key).

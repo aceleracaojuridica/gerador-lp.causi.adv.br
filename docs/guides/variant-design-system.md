@@ -143,7 +143,7 @@ Tom obrigatório: reconhecer o problema do cliente com empatia **antes** de apre
 |---|---|---|
 | `with_image_cards` | Apoio visual + cards, tom propositivo. Estrutura espelhada da Dor com imagem. | Imagem acima, cards abaixo |
 | `cards_compact` | Só cards, leitura rápida. Mínimo 4 cards em número par. | Cards empilhados |
-| `cards_highlight` | Cards alternam neutro/destacado. O card destacado usa fundo `brand` ou `accent`; os demais ficam neutros. Nunca todos os cards coloridos simultaneamente. | Cards empilhados, destaques mantidos |
+| `image_list` | Header + solução em lista enxuta (bullets, 2 colunas, sem ícones) ao lado da imagem. Layout compartilhado com a Dor (`ImageListBlock`). | Lista acima, imagem abaixo |
 
 ### 4.4 Sobre
 

@@ -37,10 +37,11 @@ import type {
   Tone,
 } from "@/lib/landing-pages/schema";
 import {
-  SOLUCAO_VARIANT_CARDS_HIGHLIGHT,
+  SOLUCAO_VARIANT_IMAGE_LIST,
   SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
 } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
+import { ImageListBlock } from "./image-list-block";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
   switch (iconKey) {
@@ -129,6 +130,7 @@ export function Solucao({
 }: SolucaoProps) {
   const dark = tone === "dark";
   const comImagem = variant === SOLUCAO_VARIANT_WITH_IMAGE_CARDS;
+  const listaImagem = variant === SOLUCAO_VARIANT_IMAGE_LIST;
 
   return (
     <section
@@ -142,36 +144,49 @@ export function Solucao({
         }}
       />
       <div className="relative mx-auto max-w-7xl px-6 md:px-10">
-        {comImagem ? (
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
-            <Reveal>
-              <Header content={content} dark={dark} />
-            </Reveal>
-            <Reveal delay={120}>
-              <div
-                className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
-                style={
-                  image
-                    ? {
-                        backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "solucao")}, url('${image}')`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined
-                }
-              />
-            </Reveal>
-          </div>
+        {listaImagem ? (
+          <ImageListBlock
+            eyebrow={content.eyebrow}
+            headline={content.headline}
+            intro={content.sub}
+            items={content.cards.map((c) => ({
+              title: c.title,
+              key: `${c.title}-${c.text}`,
+            }))}
+            image={image}
+            dark={dark}
+          />
         ) : (
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <Header content={content} dark={dark} />
-          </Reveal>
-        )}
+          <>
+            {comImagem ? (
+              <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                <Reveal>
+                  <Header content={content} dark={dark} />
+                </Reveal>
+                <Reveal delay={120}>
+                  <div
+                    className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
+                    style={
+                      image
+                        ? {
+                            backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "solucao")}, url('${image}')`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }
+                        : undefined
+                    }
+                  />
+                </Reveal>
+              </div>
+            ) : (
+              <Reveal className="mx-auto max-w-2xl text-center">
+                <Header content={content} dark={dark} />
+              </Reveal>
+            )}
 
-        <Cards
-          content={content}
-          destaque={variant === SOLUCAO_VARIANT_CARDS_HIGHLIGHT}
-        />
+            <Cards content={content} />
+          </>
+        )}
       </div>
     </section>
   );
@@ -201,53 +216,23 @@ function Header({ content, dark }: { content: SolucaoContent; dark: boolean }) {
 }
 
 /*
-  cards uniformes (brancos com borda superior dourada) OU com destaque: no modo
-  destaque, cartões pares (0, 2) ficam realçados na cor da marca, criando ritmo.
-  Cards brancos funcionam tanto sobre fundo claro quanto escuro.
+  cards uniformes (brancos com borda superior dourada). Funcionam tanto sobre
+  fundo claro quanto escuro.
 */
-function Cards({
-  content,
-  destaque,
-}: {
-  content: SolucaoContent;
-  destaque: boolean;
-}) {
+function Cards({ content }: { content: SolucaoContent }) {
   return (
     <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
       {content.cards.map((c, i) => {
-        const hl = destaque && i % 2 === 0;
         return (
           <Reveal key={`${c.title}-${c.text}`} delay={i * 80}>
-            <div
-              className={`relative h-full overflow-hidden rounded-xl p-7 transition hover:-translate-y-0.5 ${
-                hl
-                  ? "bg-lp-brand text-white shadow-md shadow-lp-brand/20 ring-1 ring-lp-accent/20"
-                  : "bg-white border-t-2 border-lp-accent ring-1 ring-lp-ink-soft/10"
-              }`}
-            >
-              {hl ? (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-lp-accent/10"
-                />
-              ) : null}
-              <span
-                className={`relative mb-5 flex h-11 w-11 items-center justify-center rounded-full border ${
-                  hl
-                    ? "border-lp-accent-soft text-lp-accent-soft"
-                    : "border-lp-accent text-lp-accent"
-                }`}
-              >
+            <div className="relative h-full overflow-hidden rounded-xl border-t-2 border-lp-accent bg-white p-7 ring-1 ring-lp-ink-soft/10 transition hover:-translate-y-0.5">
+              <span className="relative mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-lp-accent text-lp-accent">
                 <IconForKey iconKey={c.icon} size={28} />
               </span>
-              <h3
-                className={`relative font-display text-lg font-semibold leading-snug ${hl ? "text-white" : "text-lp-brand"}`}
-              >
+              <h3 className="relative font-display text-lg font-semibold leading-snug text-lp-brand">
                 {c.title}
               </h3>
-              <p
-                className={`relative mt-2 text-[1.05rem] leading-relaxed ${hl ? "text-white/80" : "text-lp-ink-soft"}`}
-              >
+              <p className="relative mt-2 text-[1.05rem] leading-relaxed text-lp-ink-soft">
                 {c.text}
               </p>
             </div>
