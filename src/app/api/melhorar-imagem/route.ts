@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { requireLpSession } from "@/lib/session";
 
 // Endpoint que MELHORA a qualidade de uma foto de advogado SEM mudar a pessoa.
@@ -44,6 +43,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    const sharp = (await import("sharp")).default;
     const input = Buffer.from(match[2], "base64");
     const meta = await sharp(input).metadata();
     const w = meta.width ?? 0;

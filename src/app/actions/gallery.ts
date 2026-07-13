@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/app/actions/lps";
 import { ACCESS_DENIED_ERROR, mapLpDbError } from "@/lib/errors";
+import { deleteOrphanedImages } from "@/lib/landing-pages/gallery-cleanup";
 import {
   deleteGalleryImage,
-  deleteOrphanedImages,
   type GalleryImageItem,
   listGalleryImages,
   listSystemImagesForGallery,

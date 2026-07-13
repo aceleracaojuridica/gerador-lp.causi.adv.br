@@ -15,7 +15,7 @@ import {
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
 import { GENERIC_ETAPAS } from "./focos";
-import { deleteOrphanedImages } from "./gallery-store";
+import { deleteOrphanedImages } from "./gallery-cleanup";
 import { syncImageUsagesFromSchema } from "./image-usages";
 import { buildLpListPreview, type LpListPreview } from "./lp-preview";
 import { persistLpSchemaMedia } from "./media-storage";
