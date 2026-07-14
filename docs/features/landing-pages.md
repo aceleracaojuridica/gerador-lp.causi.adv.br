@@ -277,8 +277,10 @@ https://garcia-e-kleeman.causi.adv.br/previdenciario
 
 Regras:
 
+- `slug` é o path da LP (`/{slug}`); qualquer segmento único é válido (ex.: `/causi`)
 - `slug` é derivado do tema e precisa ser único por conta
 - `office_subdomain` é canônico em `lp_accounts.office_subdomain` e único globalmente
+- nomes em `RESERVED_SEGMENTS` (`public-routing.ts`) bloqueiam apenas o **subdomínio**, não o slug da LP
 - primeira resolução usa `account.name` do Causi slugificado; depois usa sempre o valor persistido
 - owner pode alterar em `/configuracoes`; a alteração propaga para todas as LPs da conta
 

@@ -41,7 +41,7 @@ sequenceDiagram
 
 | Camada | Responsabilidade |
 |--------|------------------|
-| **Gerador LP** | Formato do subdomínio (Zod), segmentos reservados do app (`causi`, `login`, …), unicidade em `lp_accounts` e `profiles` |
+| **Gerador LP** | Formato do subdomínio (Zod), nomes reservados para **subdomínio** (`causi`, `login`, … em `RESERVED_SEGMENTS`), unicidade em `lp_accounts` e `profiles` |
 | **Causi (esta function)** | Reserva por `accounts.name` (slugificado) e `accounts.slug` de outras contas; bloqueio estrito de `causi` |
 | **Postgres Projeto B** | `UNIQUE (office_subdomain)` em `lp_accounts` como garantia final |
 
