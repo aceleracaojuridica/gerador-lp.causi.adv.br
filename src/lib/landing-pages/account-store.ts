@@ -115,15 +115,25 @@ export async function provisionOfficeSubdomainIfNeeded(
   let base: string;
   try {
     base = await resolveOfficeSubdomainBase(session);
-  } catch {
-    return;
+  } catch (err) {
+    console.error(
+      "[lp_accounts] falha ao resolver base de office_subdomain:",
+      { accountId: ctx.accountId },
+      err,
+    );
+    throw err;
   }
 
   let subdomain: string;
   try {
     subdomain = await allocateOfficeSubdomainForAccount(session, base);
-  } catch {
-    return;
+  } catch (err) {
+    console.error(
+      "[lp_accounts] falha ao alocar office_subdomain:",
+      { accountId: ctx.accountId, base },
+      err,
+    );
+    throw err;
   }
 
   const { error } = await admin
