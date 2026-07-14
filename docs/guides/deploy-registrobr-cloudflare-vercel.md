@@ -64,9 +64,8 @@ No app, `lp_accounts.office_subdomain` é a fonte canônica do host público (pr
         │                    Cloudflare Rules
         │                    (apex / www → 308)
         │                           │
-        │              *.causi.adv.br → CNAME
-        │                           │
-        │               cname.vercel-dns-0.com
+        │         @ / www / * → CNAME
+        │         (valores do painel Vercel)
         │                           │
         └─────────────┬─────────────┘
                       │
@@ -125,51 +124,58 @@ Checklist:
 
 Toda configuração DNS fica na Cloudflare. Prefira **DNS only** (nuvem cinza) nos registros que apontam para a Vercel durante validação de domínio e emissão de certificado. Proxy (nuvem laranja) pode ser ligado depois, com SSL Cloudflare em Full (strict) quando houver certificado válido na origem.
 
-### 2.1 Dois CNAMEs da Vercel
+### 2.1 Destinos DNS da Vercel
 
-| Destino | Uso |
-| --- | --- |
-| `cname.vercel-dns.com` | Subdomínios **comuns** (`www`, `marketing`, etc.). Certificado via HTTP-01. |
-| `cname.vercel-dns-0.com` | **Somente** o registro wildcard (`*`), no cenário sem nameservers Vercel no apex. Certificado via DNS-01 + `_acme-challenge`. |
+A Vercel usa **Vercel DNS Mapping**: cada domínio no projeto pode exigir um hostname de destino **específico do projeto** (ex.: `85eaf1e341950d57.vercel-dns-017.com`), não apenas os alvos genéricos da documentação.
 
-O wildcard **não** deve apontar para `cname.vercel-dns.com`. O `www` **não** deve usar `cname.vercel-dns-0.com`.
+| Cenário | Destino típico | Observação |
+| --- | --- | --- |
+| Apex (`@`) | Hostname único do projeto (ex.: `….vercel-dns-017.com`) | CNAME no apex via [CNAME Flattening](https://developers.cloudflare.com/dns/cname-flattening/) da Cloudflare |
+| Subdomínios comuns (`www`, `marketing`) | Valor do painel (pode ser genérico `cname.vercel-dns.com` ou específico) | Certificado via HTTP-01 |
+| Wildcard (`*`) | Valor do painel (pode ser `cname.vercel-dns-0.com` ou específico) | Certificado via DNS-01 + `_acme-challenge` |
 
-Fonte: [Wildcard domains without Vercel Nameservers](https://vercel.com/kb/guide/wildcard-domain-without-vercel-nameservers).
+**Regra:** em Project → Settings → Domains, para cada host (`causi.adv.br`, `www.causi.adv.br`, `*.causi.adv.br`), abra os detalhes / **Learn more** e copie **exatamente** o tipo e o valor que a Vercel solicita. Se o status for **DNS Change Recommended**, o registro atual diverge do esperado.
+
+O DNS tradicional (RFC) não permite CNAME no apex; a Cloudflare implementa isso com **CNAME Flattening** — basta criar o CNAME `@` e a Cloudflare resolve o IP aos clientes.
+
+Fonte: [Wildcard domains without Vercel Nameservers](https://vercel.com/kb/guide/wildcard-domain-without-vercel-nameservers) · [Adding a Custom Domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain).
 
 ### 2.2 `causi.com.br` — app / marketing
 
 | Tipo | Nome | Conteúdo | Proxy |
 | --- | --- | --- | --- |
-| CNAME | `marketing` | `cname.vercel-dns.com` (ou valor do painel Vercel) | DNS only (validação); depois opcional |
-| CNAME | `www` | `cname.vercel-dns.com` (ou redirect para marketing) | conforme política |
+| CNAME | `marketing` | valor do painel Vercel | DNS only (validação); depois opcional |
+| CNAME | `www` | valor do painel (ou redirect para marketing) | conforme política |
 
-Se o apex (`@`) também apontar para a Vercel, use o valor A/ALIAS mostrado em Project → Settings → Domains. Neste projeto o entrypoint do gerador é `marketing.causi.com.br`.
+Neste projeto o entrypoint do gerador é `marketing.causi.com.br`.
 
 ### 2.3 `causi.adv.br` — multi-tenant (wildcard)
 
-Zona Cloudflare — configuração recomendada:
+Zona Cloudflare — alinhar aos valores do painel Vercel (exemplo ilustrativo):
 
 | Tipo | Nome | Conteúdo | Proxy |
 | --- | --- | --- | --- |
-| A | `@` | valor indicado pela Vercel no painel (ex.: `216.198.79.1`) | DNS only na validação; **Proxied** para Redirect Rules |
-| CNAME | `www` | `cname.vercel-dns.com` | DNS only na validação; **Proxied** para Redirect Rules |
-| CNAME | `*` | `cname.vercel-dns-0.com` | **DNS only** na validação |
+| CNAME | `@` | hostname do projeto (ex.: `85eaf1e341950d57.vercel-dns-017.com`) | DNS only na validação; **Proxied** para Redirect Rules |
+| CNAME | `www` | valor do painel (ex.: `cname.vercel-dns.com`) | DNS only na validação; **Proxied** para Redirect Rules |
+| CNAME | `*` | valor do painel (ex.: `cname.vercel-dns-0.com`) | **DNS only** na validação |
 | NS | `_acme-challenge` | `ns1.vercel-dns.com.` | — |
 | NS | `_acme-challenge` | `ns2.vercel-dns.com.` | — |
 
-Em notação DNS:
+Em notação DNS (substitua pelos valores do painel):
 
 ```dns
-@                  A       216.198.79.1             ; ou o A do painel Vercel
-www                CNAME   cname.vercel-dns.com
-*                  CNAME   cname.vercel-dns-0.com
+@                  CNAME   85eaf1e341950d57.vercel-dns-017.com.   ; valor do painel
+www                CNAME   cname.vercel-dns.com.                  ; ou valor do painel
+*                  CNAME   cname.vercel-dns-0.com.                ; ou valor do painel
 _acme-challenge    NS      ns1.vercel-dns.com.
 _acme-challenge    NS      ns2.vercel-dns.com.
 ```
 
-![Registros DNS de causi.adv.br na Cloudflare (A apex, CNAME www/wildcard, NS _acme-challenge)](../static/cloudflare-dns.png)
+Na Cloudflare: Type `CNAME`, Name `@`, Target = hostname do painel, Proxy **DNS Only** durante a validação.
 
-O IP do apex muda conforme o projeto — **prevalece o valor exibido** em Project → Settings → Domains, não um IP antigo memorizado.
+![Registros DNS de causi.adv.br na Cloudflare (CNAME apex/www/wildcard, NS _acme-challenge)](../static/cloudflare-dns.png)
+
+Não use registro **A** no apex apontando para IPs genéricos da Vercel (`76.76.21.21` ou similares) se o painel pedir CNAME. O hostname do apex é **único por projeto** — prevalece o valor em Project → Settings → Domains.
 
 Redirect Rules da Cloudflare (apex/`www` → marketing) só se aplicam a hosts [proxied](https://developers.cloudflare.com/dns/proxy-status/) (nuvem laranja). Após validar o domínio na Vercel, ative o proxy em `@` e `www` e configure as regras da [seção 3](#3-cloudflare--redirect-rules-apex--www).
 
@@ -185,10 +191,11 @@ Verificação rápida:
 
 ```bash
 nslookup marketing.causi.com.br
+nslookup causi.adv.br
 nslookup qualquer-slug.causi.adv.br
 ```
 
-Esperado: subdomínio comum → `cname.vercel-dns.com`; host wildcard → `cname.vercel-dns-0.com`.
+Esperado: cada host resolve para o destino configurado (CNAME flattening no apex); o wildcard atende subdomínios de escritório.
 
 ---
 
@@ -283,6 +290,8 @@ No projeto Vercel do gerador, adicione:
 
 ![Domínios do projeto na Vercel: *.causi.adv.br, www, marketing.causi.com.br e causi.adv.br](../static/vercel-domain.png)
 
+Para cada domínio com **DNS Change Recommended** ou **Invalid Configuration**, abra os detalhes e configure na Cloudflare o **mesmo tipo e valor** que a Vercel exibe (incluindo o CNAME do apex, se for o caso). Não reutilize IPs ou hostnames genéricos de guias antigos.
+
 O wildcard atende todos os subdomínios de escritório com o mesmo deployment Next.js. Apex e `www` ficam no projeto para emissão/validação SSL, mas o tráfego HTTP deles é interceptado pelas Redirect Rules da Cloudflare (seção 3) — **não** use o redirect de domínio da Vercel para apontá-los a `marketing.causi.com.br`.
 
 Com proxy Cloudflare ativo, a Vercel pode exibir o aviso **Proxy Detected** em `causi.adv.br` e `www.causi.adv.br` — esperado neste cenário.
@@ -303,7 +312,7 @@ Consequências indesejadas:
 - Zonas DNS precisam ser recriadas na Vercel
 - Perde-se CDN, WAF, cache e regras centralizadas na Cloudflare
 
-**Enable Vercel DNS** só faz sentido se a decisão for abandonar a Cloudflare como DNS. Para mantê-la, use exclusivamente o workaround `_acme-challenge` + CNAME `cname.vercel-dns-0.com`.
+**Enable Vercel DNS** só faz sentido se a decisão for abandonar a Cloudflare como DNS. Para mantê-la, configure na Cloudflare os CNAMEs (incluindo apex) e o NS `_acme-challenge` exatamente como o painel do projeto indicar — sem migrar nameservers do domínio.
 
 Variáveis de ambiente relevantes (produção):
 
@@ -322,8 +331,9 @@ Por padrão a Vercel prefere nameservers próprios para emitir/renovar `*.domini
 
 | Host | Destino | Certificado |
 | --- | --- | --- |
-| `www.causi.adv.br` | `cname.vercel-dns.com` | HTTP-01 (automático na Vercel) |
-| `*.causi.adv.br` | `cname.vercel-dns-0.com` | DNS-01 via `_acme-challenge` |
+| `causi.adv.br` (`@`) | CNAME → hostname do projeto (painel) | HTTP-01 |
+| `www.causi.adv.br` | CNAME → valor do painel | HTTP-01 (automático na Vercel) |
+| `*.causi.adv.br` | CNAME → valor do painel (ex.: `cname.vercel-dns-0.com`) | DNS-01 via `_acme-challenge` |
 | `_acme-challenge` | NS → `ns1` / `ns2.vercel-dns.com` | Controle ACME pela Vercel |
 
 Essa delegação NS pode impedir outros provedores de emitir certificados ACME no mesmo domínio — use só se o SSL das LPs for da Vercel.
@@ -341,11 +351,13 @@ A Cloudflare continua autoritativa do domínio. Só `_acme-challenge.causi.adv.b
 
 Se o wildcard fosse em um nível abaixo (ex.: `*.app.exemplo.com`), os NS seriam em `_acme-challenge.app`. Aqui o wildcard é `*.causi.adv.br`, então o nome é só `_acme-challenge`.
 
-### Passo 2 — CNAME do wildcard
+### Passo 2 — CNAME do wildcard (e dos demais hosts)
 
 | Tipo | Nome | Conteúdo | Proxy |
 | --- | --- | --- | --- |
-| CNAME | `*` | `cname.vercel-dns-0.com` | DNS only na validação |
+| CNAME | `*` | valor do painel (ex.: `cname.vercel-dns-0.com`) | DNS only na validação |
+| CNAME | `@` | hostname do projeto no painel | DNS only na validação |
+| CNAME | `www` | valor do painel | DNS only na validação |
 
 ### Fluxo ACME
 
@@ -395,15 +407,15 @@ Escalabilidade: milhares de subdomínios → um projeto Vercel, um wildcard DNS,
 
 ### Cloudflare — `causi.com.br`
 
-- [ ] CNAME `marketing` → `cname.vercel-dns.com` (ou valor do painel)
+- [ ] CNAME `marketing` → valor do painel Vercel
 - [ ] DNS only durante validação Vercel
 
 ### Cloudflare — `causi.adv.br`
 
 - [ ] **Não** clicar em Enable Vercel DNS
-- [ ] A `@` → IP do painel Vercel (ex.: `216.198.79.1`)
-- [ ] CNAME `www` → `cname.vercel-dns.com`
-- [ ] CNAME `*` → `cname.vercel-dns-0.com` (DNS only na validação)
+- [ ] CNAME `@` → hostname do projeto no painel (CNAME Flattening; **não** registro A genérico)
+- [ ] CNAME `www` → valor do painel
+- [ ] CNAME `*` → valor do painel (DNS only na validação)
 - [ ] NS `_acme-challenge` → `ns1.vercel-dns.com.` e `ns2.vercel-dns.com.`
 - [ ] Proxy (nuvem laranja) em `@` e `www` após validação
 - [ ] Redirect Rule: `causi.adv.br` → 308 `marketing.causi.com.br` (+ path)
@@ -431,8 +443,10 @@ Escalabilidade: milhares de subdomínios → um projeto Vercel, um wildcard DNS,
 
 | Sintoma | Verificação | Ação típica |
 | --- | --- | --- |
-| Domínio Invalid Configuration | CNAME `*` e NS `_acme-challenge` | `*` → `cname.vercel-dns-0.com` (não `cname.vercel-dns.com`); NS ACME; aguardar propagação |
-| Wildcard apontando para `cname.vercel-dns.com` | Registro `*` na Cloudflare | Trocar para `cname.vercel-dns-0.com` |
+| DNS Change Recommended | Valor do registro vs painel | Substituir pelo tipo/destino exatos do Domains (apex costuma ser CNAME, não A) |
+| Domínio Invalid Configuration | CNAMEs + NS `_acme-challenge` | Alinhar `@`, `www` e `*` ao painel; NS ACME; DNS only; aguardar propagação |
+| Apex com registro A | Cloudflare `@` | Remover A; criar CNAME `@` → hostname do projeto (CNAME Flattening) |
+| Wildcard com destino errado | Registro `*` vs painel | Usar o destino que a Vercel pede para `*.causi.adv.br` |
 | Enable Vercel DNS ativado | Nameservers no Registro.br | Manter NS Cloudflare; desfazer migração se os NS tiverem ido para a Vercel |
 | Erro Vercel ao redirecionar www/apex | Domains → Redirect | Remover redirect na Vercel; usar Redirect Rules na Cloudflare |
 | Apex/`www` não redirecionam | Proxy + Redirect Rules | Nuvem laranja em `@`/`www`; regras ativas com host match e 308 |
@@ -450,5 +464,6 @@ Escalabilidade: milhares de subdomínios → um projeto Vercel, um wildcard DNS,
 - [Vercel — Why Domain Nameservers for Wildcard](https://vercel.com/kb/guide/why-use-domain-nameservers-method-wildcard-domains)
 - [Vercel — Adding a Custom Domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
 - [Cloudflare — DNS records](https://developers.cloudflare.com/dns/manage-dns-records/)
+- [Cloudflare — CNAME Flattening](https://developers.cloudflare.com/dns/cname-flattening/)
 - [Cloudflare — Redirects](https://developers.cloudflare.com/rules/url-forwarding/)
 - [Cloudflare — Bulk Redirects (dashboard)](https://developers.cloudflare.com/rules/url-forwarding/bulk-redirects/create-dashboard/)
