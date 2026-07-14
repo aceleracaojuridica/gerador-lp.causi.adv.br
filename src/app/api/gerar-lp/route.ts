@@ -1,5 +1,5 @@
 import { buildSchema, type FocoCopy } from "@/lib/landing-pages/focos";
-import { imagensDoTema } from "@/lib/landing-pages/image-bank";
+import { loadAccountLpExamplesForPrompt } from "@/lib/landing-pages/lp-account-generation-context";
 import { callOpenAiForCopy } from "@/lib/landing-pages/lp-generate-copy";
 import { chooseLayoutWithAi } from "@/lib/landing-pages/lp-generate-layout";
 import {
@@ -7,11 +7,13 @@ import {
   resolveOfficeSubdomain,
   saveLp,
 } from "@/lib/landing-pages/lp-store";
+import { resolveSectionImages } from "@/lib/landing-pages/resolve-section-images";
 import {
   DEFAULT_THEME,
   type Layout,
   type Theme,
 } from "@/lib/landing-pages/schema";
+import type { SectionImages } from "@/lib/landing-pages/section-images";
 import { normalizeSeo } from "@/lib/landing-pages/seo";
 import {
   buildOfficeFromGerarLpPayload,
@@ -25,7 +27,6 @@ import {
   describeThemeMood,
   listAccountImagesForRanking,
   listSystemGalleryImages,
-  pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
 import {
   buildVideoSection,
@@ -42,7 +43,7 @@ import { sessionToLpContext } from "@/lib/supabase/lp-client";
 
   Aceita copy e images pré-gerados (vindos de /api/gerar-copy) para evitar
   chamadas duplas ao OpenAI quando o wizard já fez o preview.
-  Aceita layout explícito (variantes iniciais copiadas de um preset no wizard).
+  Aceita layout explícito (variantes iniciais da IA no wizard).
 */
 export const runtime = "nodejs";
 
@@ -118,20 +119,50 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Copy: usa pré-gerada (do /api/gerar-copy) ou chama a IA agora
+  const needsAiGeneration = !p.copy || !p.layout || !p.images;
+  const lpCtx = sessionToLpContext(user);
+  const log = {
+    action: "CREATE",
+    context: "create_landing_page",
+    accountId: lpCtx.accountId,
+    createdByUserId: lpCtx.userId,
+  };
+
+  let accountExamples = "";
+  if (needsAiGeneration) {
+    try {
+      accountExamples = await loadAccountLpExamplesForPrompt(user, tema);
+    } catch (err) {
+      console.error("[gerar-lp] falha ao carregar portfólio da conta:", err);
+    }
+  }
+
   let copy: FocoCopy;
+  let imageQueries: SectionImages = {
+    hero: "",
+    dor: "",
+    sobre: "",
+    solucao: "",
+  };
+
   if (p.copy) {
     copy = p.copy;
   } else {
     try {
-      const result = await callOpenAiForCopy(apiKey, {
-        name,
-        tema,
-        city: (p.city ?? "").trim() || undefined,
-        about: (p.about ?? "").trim() || undefined,
-        diferenciais: p.diferenciais?.filter(Boolean),
-      });
+      const result = await callOpenAiForCopy(
+        apiKey,
+        {
+          name,
+          tema,
+          city: (p.city ?? "").trim() || undefined,
+          about: (p.about ?? "").trim() || undefined,
+          diferenciais: p.diferenciais?.filter(Boolean),
+          accountExamples: accountExamples || undefined,
+        },
+        log,
+      );
       copy = result.copy;
+      imageQueries = result.imageQueries;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao gerar a copy.";
       return Response.json({ error: msg }, { status: 502 });
@@ -142,7 +173,6 @@ export async function POST(request: Request) {
   const videoId = (p.videoId ?? "").trim();
   const lawyerCount = (p.lawyers ?? []).filter((l) => l.photo?.trim()).length;
 
-  // Layout: usa pré-gerado ou chama a IA agora
   let baseLayout: Layout;
   if (p.layout) {
     baseLayout = p.layout;
@@ -158,6 +188,8 @@ export async function POST(request: Request) {
             m.label?.trim(),
           ),
       ),
+      accountExamples: accountExamples || undefined,
+      log,
     });
     baseLayout = chosenLayout.layout;
   }
@@ -166,42 +198,27 @@ export async function POST(request: Request) {
   // (ver `videoSection` mais adiante). O Topo fica livre para qualquer variante.
   const layout: Layout = { ...baseLayout };
 
-  // 2. Imagens: usa pré-geradas ou busca agora
-  let images: { hero: string; dor: string; sobre: string; solucao: string };
+  let images: SectionImages;
   if (p.images) {
     images = p.images;
   } else {
-    const ctx = sessionToLpContext(user);
-
-    // Pool de candidatos por seção: catálogo global do sistema + galeria da
-    // PRÓPRIA conta (nunca de outra conta). Sem prioridade fixa de origem —
-    // a IA escolhe entre todos os elegíveis para aquela seção.
     const [systemCatalog, accountCatalog] = await Promise.all([
       listSystemGalleryImages(user),
       listAccountImagesForRanking(user),
     ]);
     const catalog = [...accountCatalog, ...systemCatalog];
 
-    const picked = await pickSystemImagesWithAiRanking({
+    images = await resolveSectionImages({
       apiKey,
-      theme: tema,
+      tema,
       paletteHint: describeThemeMood(theme),
       catalog,
-      seedInput: `${ctx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+      imageQueries,
+      seedInput: `${lpCtx.accountId}:${new Date().toISOString().slice(0, 16)}`,
+      log,
     });
-
-    // Só cai no banco curado (Unsplash) quando não há nenhum candidato
-    // próprio (conta + sistema) para a seção.
-    const bank = imagensDoTema(tema);
-    images = {
-      hero: picked.hero || bank.hero,
-      dor: picked.dor || bank.dor,
-      sobre: picked.sobre || bank.sobre,
-      solucao: picked.solucao || bank.solucao,
-    };
   }
 
-  // 3. Monta office + schema
   const office = buildOfficeFromGerarLpPayload(
     {
       name,
@@ -260,7 +277,6 @@ export async function POST(request: Request) {
     tema,
   );
 
-  // 4. Salva e devolve o slug
   try {
     const officeSubdomain = await resolveOfficeSubdomain(user);
     await saveLp(user, {

@@ -22,6 +22,7 @@ import { EstadoCidade } from "@/components/Builder/create/estado-cidade";
 import { maskPhone } from "@/components/Builder/create/fields";
 import { MelhorarTextoButton } from "@/components/Builder/create/melhorar-texto-button";
 import { PalettePicker } from "@/components/Builder/create/palette-picker";
+import { SugerirPaletasButton } from "@/components/Builder/create/sugerir-paletas-button";
 import {
   LawyerImageHint,
   LogoImageHint,
@@ -199,6 +200,8 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
 
   const [step, setStep] = useState(0);
   const [showLawyers, setShowLawyers] = useState(false);
+  /** Theme original extraído da logo — base das sugestões de IA (não muda ao trocar paleta). */
+  const [extractedTheme, setExtractedTheme] = useState<Theme | null>(null);
   const hasSavedContacts = savedContacts.length > 0;
   const primarySavedContact =
     savedContacts.find((contact) => contact.is_primary) ?? savedContacts[0];
@@ -297,11 +300,11 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
         const pal = extractPalette(img);
         form.setValue("theme", pal);
         form.setValue("logoBg", detectLogoBackground(img));
-        form.setValue(
-          "autoTheme",
+        const fromLogo =
           pal.brand !== DEFAULT_THEME.brand ||
-            pal.accent !== DEFAULT_THEME.accent,
-        );
+          pal.accent !== DEFAULT_THEME.accent;
+        form.setValue("autoTheme", fromLogo);
+        setExtractedTheme(fromLogo ? pal : null);
       };
       img.src = dataUrl;
     };
@@ -1023,6 +1026,13 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                                   title={c}
                                 />
                               ))}
+                              {extractedTheme ? (
+                                <SugerirPaletasButton
+                                  baseTheme={extractedTheme}
+                                  value={theme}
+                                  onPick={applyPalette}
+                                />
+                              ) : null}
                             </div>
                             <PalettePicker
                               value={theme}

@@ -294,6 +294,29 @@ Revalida cache de `/` após sucesso.
 
 ---
 
+### `suggestSimilarPaletteAction(baseTheme: Theme, avoidTheme?: Theme)`
+
+**Arquivo:** `app/actions/palettes.ts`
+
+Gera 1 Theme semelhante à paleta base (cores extraídas da logo) via GPT-4o, distinto de `avoidTheme` quando informado. Cada clique na varinha do wizard (`SugerirPaletasButton`) aplica o resultado na hora.
+
+**Auth:** `requireLpSession`
+
+```typescript
+type SuggestSimilarPaletteResult =
+  | { ok: true; theme: Theme }
+  | { ok: false; error: string };
+```
+
+| Erro | Mensagem |
+|------|----------|
+| Sem sessão | "Não autenticado." / "Sem acesso ao gerador." |
+| Theme inválido | "Paleta base inválida." |
+| Sem `OPENAI_API_KEY` | "OPENAI_API_KEY não configurada…" |
+| Resposta inválida | "A IA não retornou uma paleta válida." |
+
+---
+
 ### `deleteLpAction(slug: string)`
 
 **Arquivo:** `app/actions/lps.ts`
