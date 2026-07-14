@@ -62,6 +62,29 @@ function errorMessage(err: unknown): string {
   return "Erro ao salvar a LP.";
 }
 
+/** Mapeia erros de persistência/provisionamento para status HTTP legível. */
+function saveErrorStatus(err: unknown): number {
+  const message = errorMessage(err);
+  if (message === "UNAUTHENTICATED") return 401;
+  if (message === "FORBIDDEN") return 403;
+  if (message === "subdomain-conflict") return 409;
+  if (message.startsWith("Falha ao validar subdomínio no Causi")) return 502;
+  return 500;
+}
+
+function saveErrorBody(err: unknown): string {
+  const message = errorMessage(err);
+  if (message === "UNAUTHENTICATED") return "Não autenticado.";
+  if (message === "FORBIDDEN") return "Sem permissão para esta conta.";
+  if (message === "subdomain-conflict") {
+    return "Não foi possível reservar um subdomínio único para esta conta.";
+  }
+  if (message.startsWith("Falha ao validar subdomínio no Causi")) {
+    return "Falha ao validar subdomínio no Causi. Tente novamente.";
+  }
+  return message;
+}
+
 export async function POST(request: Request) {
   let user: Session;
   try {
@@ -290,6 +313,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, slug });
   } catch (err) {
     console.error("[gerar-lp] save failed:", err);
-    return Response.json({ error: errorMessage(err) }, { status: 500 });
+    return Response.json(
+      { error: saveErrorBody(err) },
+      { status: saveErrorStatus(err) },
+    );
   }
 }

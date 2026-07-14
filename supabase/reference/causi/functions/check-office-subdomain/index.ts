@@ -92,16 +92,22 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: canAccess, error: accessError } = await admin.rpc(
-    "is_user_in_account_or_shared",
-    { target_account_id: accountId, p_user_id: user.id },
-  );
+  const [
+    { data: isSuperAdmin, error: superAdminError },
+    { data: canAccess, error: accessError },
+  ] = await Promise.all([
+    admin.rpc("is_super_admin", { user_id: user.id }),
+    admin.rpc("is_user_in_account_or_shared", {
+      target_account_id: accountId,
+      p_user_id: user.id,
+    }),
+  ]);
 
-  if (accessError) {
+  if (superAdminError || accessError) {
     return jsonResponse({ error: "Database error" }, 500);
   }
 
-  if (!canAccess) {
+  if (!isSuperAdmin && !canAccess) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
