@@ -18,7 +18,6 @@ import {
   NotificationsActive,
   Paid,
   Payments,
-  PlayArrowFill,
   Savings,
   Schedule,
   Search,
@@ -36,7 +35,6 @@ import { LogoMark } from "@/components/ui/logo-mark";
 import {
   heroImageOverlay,
   heroStatsImageOverlay,
-  thumbImageOverlay,
 } from "@/lib/landing-pages/colors";
 import type {
   HeroContent,
@@ -45,12 +43,10 @@ import type {
   Office,
   Tone,
 } from "@/lib/landing-pages/schema";
-import { focalPos } from "@/lib/landing-pages/schema";
 import {
   HERO_VARIANT_CUTOUT_PORTRAIT as HERO_CUTOUT_PORTRAIT_ID,
   HERO_VARIANT_SPLIT_MEDIA as HERO_SPLIT_MEDIA_ID,
   HERO_VARIANT_STATS_AUTHORITY as HERO_STATS_AUTHORITY_ID,
-  HERO_VARIANT_VIDEO_EMBEDDED as HERO_VIDEO_EMBEDDED_ID,
 } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
@@ -124,7 +120,6 @@ type HeroProps = {
   content: HeroContent;
   office: Office;
   variant: HeroVariant;
-  videoId?: string;
   accentRgb: string;
   brandRgb: string;
   brandDarkRgb: string;
@@ -157,8 +152,6 @@ export function Hero(props: HeroProps) {
   switch (props.variant) {
     case HERO_SPLIT_MEDIA_ID:
       return <HeroSplit {...props} />;
-    case HERO_VIDEO_EMBEDDED_ID:
-      return <HeroVideo {...props} />;
     case HERO_STATS_AUTHORITY_ID:
       return <HeroStats {...props} />;
     case HERO_CUTOUT_PORTRAIT_ID:
@@ -168,10 +161,10 @@ export function Hero(props: HeroProps) {
   }
 }
 
-/* ===== Tema 3 — Centralizado + faixa de destaques =====
+/* ===== Tema 3 — Centralizado =====
    Fundo casa com o fundo da logo. Se houver imagem da seção (enviada pelo
    usuário), ela entra como fundo com overlay; sem imagem, fica só a cor.
-   Na base da seção, uma faixa com 2 a 4 destaques em caixa alta. */
+   A faixa de destaques é exclusiva do Topo "Com métricas" (HeroStats). */
 function HeroCentered({
   content,
   office,
@@ -211,9 +204,6 @@ function HeroCentered({
   const subCls = dark ? "text-white/85" : "text-lp-ink-soft";
   const eyebrowCls = dark ? "text-lp-accent-soft" : "text-lp-accent";
   const ringTone = dark ? "border-white/[0.08]" : "border-lp-brand/[0.06]";
-
-  const features = bandFeatures(office, content);
-  const hasBand = features.length >= HERO_BAND_MIN_ITEMS;
 
   return (
     <section
@@ -272,9 +262,6 @@ function HeroCentered({
           </CTAButton>
         </div>
       </div>
-
-      {/* Faixa de destaques colada na base da seção */}
-      {hasBand ? <FeatureBand features={features} /> : null}
     </section>
   );
 }
@@ -338,112 +325,6 @@ function HeroSplit({ content, office, tone }: HeroProps) {
             : undefined
         }
       />
-    </section>
-  );
-}
-
-/* ===== Tema 2 — Vídeo + Foto (claro ou escuro) ===== */
-function HeroVideo({
-  content,
-  office,
-  videoId,
-  tone,
-  brandDarkRgb,
-}: HeroProps) {
-  const dark = tone === "dark";
-  // Coluna direita é a foto do advogado; sem ela, cai na imagem de cenário.
-  const img = office.lawyers[0]?.photo || office.sectionImages.hero;
-  // Enquadramento do advogado (quando a imagem é a foto dele).
-  const imgPos = office.lawyers[0]?.photo
-    ? focalPos(office.lawyers[0].focal)
-    : "center";
-  const thumb = videoId
-    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-    : "";
-  return (
-    <section
-      className={`flex min-h-svh flex-col ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
-    >
-      <div className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 items-center gap-10 px-6 py-12 md:px-10 lg:grid-cols-[56%_44%] lg:gap-12 lg:py-16">
-        <div>
-          <LogoMark
-            office={office}
-            tone={dark ? "light" : "dark"}
-            className="mb-7 self-start"
-          />
-          <p
-            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
-          >
-            {content.eyebrow}
-            {office.city ? ` · ${office.city}` : ""}
-          </p>
-          <h1
-            className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${
-              dark ? "text-white" : "text-lp-brand"
-            }`}
-          >
-            <HeadlineText
-              h={content.headline}
-              accentVar={dark ? "accent-soft" : "accent"}
-            />
-          </h1>
-          <p
-            className={`mt-5 max-w-xl text-lg leading-relaxed ${
-              dark ? "text-white/85" : "text-lp-ink-soft"
-            }`}
-          >
-            {content.sub}
-          </p>
-
-          {/* facade de vídeo (thumbnail do YouTube, ou bloco da marca) */}
-          <a
-            href={
-              videoId ? `https://www.youtube.com/watch?v=${videoId}` : undefined
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Assistir ao vídeo de apresentação"
-            // max-h em vh: em telas baixas o player encolhe (a thumb é bg-cover,
-            // então só recorta) em vez de empurrar a seção para fora da tela.
-            className="group relative mt-6 block aspect-video max-h-[28vh] w-full max-w-xl overflow-hidden rounded-2xl bg-lp-brand-dark shadow-lg"
-            style={
-              thumb
-                ? {
-                    backgroundImage: `${thumbImageOverlay(brandDarkRgb)}, url('${thumb}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : undefined
-            }
-          >
-            <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-lp-accent text-lp-brand-dark shadow-xl transition group-hover:scale-110">
-              <PlayArrowFill size={26} className="ml-1" />
-            </span>
-          </a>
-
-          <div className="mt-7">
-            <CTAButton variant={dark ? "primary" : "accent"}>
-              {content.ctaPrimary}
-            </CTAButton>
-          </div>
-        </div>
-
-        {/* Imagem da seção (oculta no mobile) */}
-        <div className="hidden lg:block">
-          <div
-            className="h-[34rem] max-h-[70vh] w-full rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand"
-            style={
-              img
-                ? {
-                    backgroundImage: `url('${img}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: imgPos,
-                  }
-                : undefined
-            }
-          />
-        </div>
-      </div>
     </section>
   );
 }

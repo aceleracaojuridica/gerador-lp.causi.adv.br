@@ -182,7 +182,7 @@ export function LandingPreview({
       if (!sec) return null;
       return (
         <div key={item} id={`sec-custom-${sec.id}`} className={anchor}>
-          <CustomSection section={sec} />
+          <CustomSection section={sec} demo={demo} />
         </div>
       );
     }
@@ -320,7 +320,6 @@ export function LandingPreview({
                 content={schema.hero}
                 office={schema.office}
                 variant={schema.layout.hero}
-                videoId={schema.videoId}
                 accentRgb={accentRgb}
                 brandRgb={brandRgb}
                 brandDarkRgb={brandDarkRgb}

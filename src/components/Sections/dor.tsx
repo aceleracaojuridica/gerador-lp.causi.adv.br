@@ -36,6 +36,7 @@ import {
   DOR_VARIANT_IMAGE_ICON_LIST,
   DOR_VARIANT_IMAGE_LIST,
 } from "@/lib/landing-pages/variants";
+import { cardGridCols } from "./card-grid";
 import { HeadlineText } from "./headline-text";
 import { ImageIconListBlock } from "./image-icon-list-block";
 import { ImageListBlock } from "./image-list-block";
@@ -249,7 +250,11 @@ function DorImageList({
 
 function CardGrid({ content, dark }: { content: DorContent; dark: boolean }) {
   return (
-    <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+    <div
+      className={`mt-14 grid grid-cols-1 gap-5 md:gap-6 ${cardGridCols(
+        content.cards.length,
+      )}`}
+    >
       {content.cards.map((d, i) => {
         return (
           <Reveal key={`${d.title}-${d.text}`} delay={i * 90}>

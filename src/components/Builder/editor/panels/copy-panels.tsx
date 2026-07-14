@@ -3,6 +3,10 @@
 import { Add, Close } from "@material-symbols-svg/react";
 import { AutoTextarea } from "@/components/auto-textarea";
 import { BuilderField } from "@/components/Builder/shared/fields";
+import {
+  SECTION_CARDS_MAX,
+  SECTION_CARDS_MIN,
+} from "@/components/Sections/card-grid";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import {
@@ -286,8 +290,8 @@ export function DorCards({ form }: { form: LpEditorForm }) {
         })
       }
       addLabel="Adicionar dor"
-      minItems={2}
-      maxItems={6}
+      minItems={SECTION_CARDS_MIN}
+      maxItems={SECTION_CARDS_MAX}
     />
   );
 }
@@ -342,6 +346,19 @@ export function SolucaoCards({ form }: { form: LpEditorForm }) {
           else c.solucao.cards[i].text = v;
         })
       }
+      onAdd={() =>
+        form.editCopy((c) => {
+          c.solucao.cards.push({ icon: "shield-check", title: "", text: "" });
+        })
+      }
+      onRemove={(i) =>
+        form.editCopy((c) => {
+          c.solucao.cards.splice(i, 1);
+        })
+      }
+      addLabel="Adicionar solução"
+      minItems={SECTION_CARDS_MIN}
+      maxItems={SECTION_CARDS_MAX}
     />
   );
 }

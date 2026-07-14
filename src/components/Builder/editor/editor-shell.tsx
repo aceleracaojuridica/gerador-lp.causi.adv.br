@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Add,
   Badge,
   Campaign,
   Close,
@@ -20,7 +19,6 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
   Lightbulb,
-  Movie,
   OpenInNew,
   ProgressActivity,
   Save,
@@ -83,14 +81,11 @@ import {
   getAutoEquipeVariant,
   getAvailableEquipeVariants,
   getToggleEquipeVariant,
-  HERO_VARIANT_CENTERED_FOCUS,
   HERO_VARIANT_STATS_AUTHORITY,
-  HERO_VARIANT_VIDEO_EMBEDDED,
   isEquipeVariantAllowed,
   SOBRE_VARIANT_PHOTO_LIST,
   SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
 } from "@/lib/landing-pages/variants";
-import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { showLpMessageError, showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { BuilderField, inputCls } from "../shared/fields";
@@ -363,22 +358,12 @@ export function Editor({
   const lawyerCount = office.lawyers?.length ?? 0;
 
   const needsMetrics = layout.hero === HERO_VARIANT_STATS_AUTHORITY;
-  // O Topo está usando o layout de vídeo?
-  const heroHasVideo = layout.hero === HERO_VARIANT_VIDEO_EMBEDDED;
 
-  /** Cria uma seção personalizada de vídeo já preenchida com o YouTube do Topo. */
-  function addVideoSection() {
-    const id = form.addCustomSection("youtube");
-    if (form.videoId) form.setCustomField(id, "youtubeId", form.videoId);
-  }
-  // Variantes do Topo que renderizam a faixa de destaques na base da seção.
-  const needsBand =
-    layout.hero === HERO_VARIANT_CENTERED_FOCUS ||
-    layout.hero === HERO_VARIANT_STATS_AUTHORITY;
+  // A faixa de destaques na base da seção é exclusiva do Topo "Com métricas".
+  const needsBand = layout.hero === HERO_VARIANT_STATS_AUTHORITY;
 
-  // As 5 variantes do Topo estão SEMPRE disponíveis — a de vídeo é a 3ª e não
-  // é mais escondida quando falta o link. Sem vídeo ela mostra o player vazio
-  // (placeholder), e o campo do link está no próprio painel do Topo.
+  // O vídeo não mora mais no Topo: ele vive na sua própria seção, logo abaixo
+  // (Adicionar seção → Vídeo). Todas as variantes do Topo ficam disponíveis.
   const heroOptions = HERO_OPTIONS;
 
   const availableEquipeOptions = useMemo(
@@ -626,9 +611,6 @@ export function Editor({
             ...currentLayout,
             hero: id as Layout["hero"],
           }));
-          if (id !== HERO_VARIANT_VIDEO_EMBEDDED && form.videoId) {
-            form.setVideoId("");
-          }
         },
       },
       dor: {
@@ -1350,83 +1332,6 @@ export function Editor({
             <FieldGroup title="Textos">
               <HeroTexts form={form} />
             </FieldGroup>
-            {/* Sempre visível: a variante "Vídeo + Foto" só entra no seletor
-                depois que existe um vídeo, então esconder este campo até ela
-                estar escolhida tornaria a variante inalcançável. */}
-            <FieldGroupAccordion
-              title="Vídeo"
-              hint="Cole um link do YouTube para liberar o layout com vídeo"
-            >
-              <BuilderField
-                label="Link do vídeo do YouTube"
-                hint="Cole o link do YouTube — a gente identifica o vídeo."
-              >
-                <div className="flex items-center gap-2">
-                  <Movie size={16} className="shrink-0 text-slate-400" />
-                  <Input
-                    aria-label="Link do vídeo do YouTube"
-                    value={form.videoId}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (!raw.trim()) {
-                        form.setVideoId("");
-                        return;
-                      }
-                      form.setVideoId(extractYouTubeId(raw));
-                    }}
-                    placeholder="Cole o link (ex: youtube.com/watch?v=...)"
-                  />
-                  {form.videoId ? (
-                    <button
-                      type="button"
-                      aria-label="Remover vídeo"
-                      onClick={() => form.setVideoId("")}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      <Close size={16} />
-                    </button>
-                  ) : null}
-                </div>
-              </BuilderField>
-
-              {/* Colar o link não decide sozinho onde o vídeo aparece — o
-                  usuário escolhe entre usar o layout de vídeo no Topo ou criar
-                  uma seção dedicada. */}
-              {form.videoId ? (
-                <BuilderField
-                  label="Onde mostrar o vídeo?"
-                  hint="Só colar o link não exibe o vídeo — escolha o destino."
-                >
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant={heroHasVideo ? "default" : "outline"}
-                      size="sm"
-                      onClick={() =>
-                        form.setLayout((l) => ({
-                          ...l,
-                          hero: HERO_VARIANT_VIDEO_EMBEDDED,
-                        }))
-                      }
-                    >
-                      <Movie size={16} />
-                      {heroHasVideo
-                        ? "No topo da página (em uso)"
-                        : "No topo da página"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addVideoSection}
-                    >
-                      <Add size={16} />
-                      Em uma seção só para o vídeo
-                    </Button>
-                  </div>
-                </BuilderField>
-              ) : null}
-            </FieldGroupAccordion>
             {needsMetrics ? (
               <FieldGroupAccordion
                 title="Métricas"

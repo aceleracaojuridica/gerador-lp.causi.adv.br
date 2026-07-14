@@ -40,6 +40,7 @@ import {
   SOLUCAO_VARIANT_IMAGE_ICON_LIST,
   SOLUCAO_VARIANT_IMAGE_LIST,
 } from "@/lib/landing-pages/variants";
+import { cardGridCols } from "./card-grid";
 import { HeadlineText } from "./headline-text";
 import { ImageIconListBlock } from "./image-icon-list-block";
 import { ImageListBlock } from "./image-list-block";
@@ -230,7 +231,11 @@ function Header({ content, dark }: { content: SolucaoContent; dark: boolean }) {
 */
 function Cards({ content }: { content: SolucaoContent }) {
   return (
-    <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+    <div
+      className={`mt-14 grid grid-cols-1 gap-5 lg:gap-6 ${cardGridCols(
+        content.cards.length,
+      )}`}
+    >
       {content.cards.map((c, i) => {
         return (
           <Reveal key={`${c.title}-${c.text}`} delay={i * 80}>

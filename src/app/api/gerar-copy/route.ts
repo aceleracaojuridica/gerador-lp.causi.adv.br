@@ -71,13 +71,11 @@ export async function POST(request: Request) {
 
   const theme = p.theme ?? DEFAULT_THEME;
   const lawyerCount = Math.max(0, p.lawyerCount ?? 0);
-  const videoId = (p.videoId ?? "").trim();
   const layoutInput = {
     tema,
     about: (p.about ?? "").trim() || undefined,
     theme,
     lawyerCount,
-    hasVideo: Boolean(videoId),
     hasMetrics: Boolean(p.hasMetrics),
   };
 

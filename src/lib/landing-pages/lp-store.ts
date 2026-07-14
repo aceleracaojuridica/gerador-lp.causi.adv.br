@@ -23,6 +23,8 @@ import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
 import {
+  HERO_VARIANT_VIDEO_FALLBACK,
+  isLegacyHeroVideoVariant,
   normalizeAreasVariant,
   normalizeDorVariant,
   normalizeEquipeVariant,
@@ -32,6 +34,7 @@ import {
   normalizeSolucaoVariant,
   SOBRE_VARIANT_OVERLAY_PORTRAIT,
 } from "./variants";
+import { buildVideoSection, orderWithVideoFirst } from "./video-section";
 
 const safeSlug = (s: string) =>
   (s || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
@@ -487,6 +490,28 @@ export async function deleteLp(session: Session, slug: string): Promise<void> {
   if (error) throwDbError(error);
 }
 
+/**
+ * LP salva com o Topo de vídeo (variante aposentada): move o `videoId` para uma
+ * seção de vídeo e a fixa como a primeira do meio — Topo → Vídeo → Dores.
+ *
+ * `migrate` roda a cada leitura e só persiste quando o usuário salva, então o id
+ * da seção precisa ser derivado do slug: um uuid novo a cada leitura criaria uma
+ * seção diferente toda vez.
+ */
+function migrateHeroVideoToSection(
+  lp: StoredLp,
+  layout: { order?: string[] },
+): void {
+  const videoId = (lp.schema.videoId ?? "").trim();
+  const sections = lp.schema.customSections ?? [];
+  // Já tem seção de vídeo (o usuário criou uma na mão): nada a migrar.
+  if (!videoId || sections.some((s) => s.kind === "youtube")) return;
+
+  const id = `video-${lp.slug}`;
+  lp.schema.customSections = [buildVideoSection(id, videoId), ...sections];
+  layout.order = orderWithVideoFirst(layout.order, id);
+}
+
 function migrate(lp: StoredLp): StoredLp {
   const office = lp.schema?.office as
     | (StoredLp["schema"]["office"] & { lawyerPhotos?: string[] })
@@ -519,10 +544,18 @@ function migrate(lp: StoredLp): StoredLp {
         etapas?: string;
         tones?: Partial<StoredLp["schema"]["layout"]["tones"]>;
         hidden?: StoredLp["schema"]["layout"]["hidden"];
+        order?: string[];
       }
     | undefined;
   if (layout) {
-    layout.hero = normalizeHeroVariant(layout.hero) ?? DEFAULT_LAYOUT.hero;
+    // O Topo com vídeo foi aposentado: o vídeo passou a viver numa seção só
+    // dele, logo abaixo do Topo. LPs antigas caem numa variante sem vídeo e
+    // ganham essa seção (ver `migrateHeroVideoToSection` abaixo).
+    const heroWasVideo = isLegacyHeroVideoVariant(layout.hero);
+    layout.hero =
+      normalizeHeroVariant(layout.hero) ??
+      (heroWasVideo ? HERO_VARIANT_VIDEO_FALLBACK : DEFAULT_LAYOUT.hero);
+    if (heroWasVideo) migrateHeroVideoToSection(lp, layout);
     let dorToneFromOld: "light" | "dark" | undefined;
     if (layout.dor === "clara") {
       layout.dor = "comImagem";

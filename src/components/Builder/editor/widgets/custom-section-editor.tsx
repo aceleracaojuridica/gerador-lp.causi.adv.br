@@ -114,6 +114,10 @@ export function CustomSectionEditor({
 }) {
   const titulo = section.title.trim() || "Nova seção";
   const tipo = section.kind;
+  // Espelha o render: em "Preenchido" a seção é só a mídia, sem título/texto/botão.
+  const isFullWidth =
+    section.variant === "fullWidth" &&
+    (tipo === "youtube" || tipo === "calendar" || tipo === "maps");
   return (
     <Accordion
       title={titulo}
@@ -180,27 +184,43 @@ export function CustomSectionEditor({
           />
         </BuilderField>
       ) : section.kind === "youtube" ? (
-        <BuilderField
-          label="Link do vídeo do YouTube"
-          hint="Cole o link completo do vídeo ou o ID de 11 caracteres."
-        >
-          <Input
-            value={section.youtubeId ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (!val.trim()) {
-                form.setCustomField(section.id, "youtubeId", "");
-                return;
+        <>
+          <BuilderField
+            label="Link do vídeo do YouTube"
+            hint="Cole o link completo do vídeo ou o ID de 11 caracteres."
+          >
+            <Input
+              value={section.youtubeId ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val.trim()) {
+                  form.setCustomField(section.id, "youtubeId", "");
+                  return;
+                }
+                form.setCustomField(
+                  section.id,
+                  "youtubeId",
+                  extractYouTubeId(val) || val,
+                );
+              }}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+          </BuilderField>
+          <BuilderField
+            label="Texto (opcional)"
+            hint="Aparece entre o título e o vídeo. Pule linha para separar em parágrafos."
+          >
+            <AutoTextarea
+              aria-label="Texto da seção de vídeo"
+              className="min-h-[90px] resize-y"
+              value={section.text}
+              onChange={(e) =>
+                form.setCustomField(section.id, "text", e.target.value)
               }
-              form.setCustomField(
-                section.id,
-                "youtubeId",
-                extractYouTubeId(val) || val,
-              );
-            }}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
-        </BuilderField>
+              placeholder="Escreva um apoio para o vídeo..."
+            />
+          </BuilderField>
+        </>
       ) : section.kind === "calendar" ? (
         <BuilderField
           label="Link de incorporação do Google Calendar"
@@ -305,6 +325,23 @@ export function CustomSectionEditor({
             ]}
           />
         </div>
+      )}
+
+      {/* Botão da seção: vale para qualquer formato. No layout "Preenchido" a
+          seção é só a mídia, então o botão não aparece — e o campo some junto. */}
+      {isFullWidth ? null : (
+        <BuilderField
+          label="Botão (opcional)"
+          hint="Deixe vazio para não mostrar o botão. Ele usa a mesma ação dos demais botões da página."
+        >
+          <Input
+            value={section.cta ?? ""}
+            onChange={(e) =>
+              form.setCustomField(section.id, "cta", e.target.value)
+            }
+            placeholder="Ex: Falar com um advogado"
+          />
+        </BuilderField>
       )}
 
       <ToneToggle

@@ -219,6 +219,7 @@ const customSectionSchema = z.object({
   calendarUrl: z.string().optional(),
   mapsUrl: z.string().optional(),
   variant: z.enum(["boxed", "fullWidth"]).optional(),
+  cta: z.string().optional(),
 });
 
 /** Schema permissivo do editor — validação estrita só ao salvar/publicar. */

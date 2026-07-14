@@ -36,17 +36,32 @@ export const HERO_VARIANT_CENTERED_FOCUS =
   "causi_lp_section_hero_centered_focus" as const;
 export const HERO_VARIANT_SPLIT_MEDIA =
   "causi_lp_section_hero_split_media" as const;
-export const HERO_VARIANT_VIDEO_EMBEDDED =
-  "causi_lp_section_hero_video_embedded" as const;
 export const HERO_VARIANT_STATS_AUTHORITY =
   "causi_lp_section_hero_stats_authority" as const;
 export const HERO_VARIANT_CUTOUT_PORTRAIT =
   "causi_lp_section_hero_cutout_portrait" as const;
 
+/**
+ * Variante aposentada: o vídeo saiu do Topo e passou a viver numa seção própria
+ * logo abaixo dele. Os ids só sobrevivem para a migração reconhecer LPs antigas
+ * (ver `migrate` em lp-store.ts) — não são mais opções no editor.
+ */
+export const LEGACY_HERO_VIDEO_IDS = [
+  "causi_lp_section_hero_video_embedded",
+  "video",
+] as const;
+
+export function isLegacyHeroVideoVariant(value: string | undefined): boolean {
+  if (!value) return false;
+  return (LEGACY_HERO_VIDEO_IDS as readonly string[]).includes(value);
+}
+
+/** Topo que as LPs com vídeo no hero herdam ao migrar. */
+export const HERO_VARIANT_VIDEO_FALLBACK = HERO_VARIANT_SPLIT_MEDIA;
+
 export const HERO_VARIANTS = [
   HERO_VARIANT_CENTERED_FOCUS,
   HERO_VARIANT_SPLIT_MEDIA,
-  HERO_VARIANT_VIDEO_EMBEDDED,
   HERO_VARIANT_STATS_AUTHORITY,
   HERO_VARIANT_CUTOUT_PORTRAIT,
 ] as const;
@@ -65,12 +80,6 @@ export const HERO_VARIANT_OPTIONS: readonly VariantOption<HeroVariant>[] = [
     label: "Split 50/50",
     intent: "Equilibra texto e mídia com leitura rápida.",
     legacyIds: ["split"],
-  },
-  {
-    id: HERO_VARIANT_VIDEO_EMBEDDED,
-    label: "Vídeo + Foto",
-    intent: "Usa vídeo como prova e aproximação com o visitante.",
-    legacyIds: ["video"],
   },
   {
     id: HERO_VARIANT_STATS_AUTHORITY,

@@ -27,7 +27,10 @@ import {
   listSystemGalleryImages,
   pickSystemImagesWithAiRanking,
 } from "@/lib/landing-pages/system-default-images";
-import { HERO_VARIANT_VIDEO_EMBEDDED } from "@/lib/landing-pages/variants";
+import {
+  buildVideoSection,
+  orderWithVideoFirst,
+} from "@/lib/landing-pages/video-section";
 import type { Session } from "@/lib/session";
 import { requireLpSession } from "@/lib/session";
 import { sessionToLpContext } from "@/lib/supabase/lp-client";
@@ -149,7 +152,6 @@ export async function POST(request: Request) {
       about: (p.about ?? "").trim() || undefined,
       theme,
       lawyerCount,
-      hasVideo: Boolean(videoId),
       hasMetrics: Boolean(
         Array.isArray((p as { metrics?: { label?: string }[] }).metrics) &&
           (p as { metrics: { label?: string }[] }).metrics.some((m) =>
@@ -160,10 +162,9 @@ export async function POST(request: Request) {
     baseLayout = chosenLayout.layout;
   }
 
-  const layout: Layout = {
-    ...baseLayout,
-    hero: videoId ? HERO_VARIANT_VIDEO_EMBEDDED : baseLayout.hero,
-  };
+  // O vídeo não ocupa mais o Topo: ele ganha a própria seção, logo abaixo dele
+  // (ver `videoSection` mais adiante). O Topo fica livre para qualquer variante.
+  const layout: Layout = { ...baseLayout };
 
   // 2. Imagens: usa pré-geradas ou busca agora
   let images: { hero: string; dor: string; sobre: string; solucao: string };
@@ -235,6 +236,20 @@ export async function POST(request: Request) {
     videoId || undefined,
     copy,
   );
+
+  // Vídeo informado no wizard: nasce como a primeira seção do meio, logo abaixo
+  // do Topo (Topo → Vídeo → Dores). Título, texto e botão são editáveis depois.
+  if (videoId) {
+    const videoSectionId = crypto.randomUUID();
+    schema.customSections = [
+      buildVideoSection(videoSectionId, videoId),
+      ...(schema.customSections ?? []),
+    ];
+    schema.layout.order = orderWithVideoFirst(
+      schema.layout.order,
+      videoSectionId,
+    );
+  }
   schema.seo = normalizeSeo(
     {
       ...copy.seo,

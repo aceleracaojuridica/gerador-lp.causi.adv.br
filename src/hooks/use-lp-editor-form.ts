@@ -38,6 +38,7 @@ import type {
   TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { effectiveOrder } from "@/lib/landing-pages/section-order";
 import { detectNetwork } from "@/lib/landing-pages/socials";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
 
@@ -61,7 +62,7 @@ const DEFAULT_BUTTONS = {
 
 function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
   if (!seed) return lpEditorDefaultValues();
-  const values = lpEditorDefaultValues({
+  return lpEditorDefaultValues({
     office: seed.office,
     theme: seed.theme,
     layout: seed.layout,
@@ -71,9 +72,6 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
     customSections: seed.customSections,
     autoTheme: true,
   });
-  // Sem rebaixar a variante de vídeo ao abrir a LP: se o usuário escolheu o
-  // Topo com vídeo, ele continua escolhido — mesmo que o link ainda não exista.
-  return values;
 }
 
 /**
@@ -433,6 +431,7 @@ export function useLpEditorForm(seed?: LpSeed) {
               cards: [],
               youtubeId: "",
               variant: "boxed",
+              cta: "",
             }
           : kind === "calendar"
             ? {
@@ -472,13 +471,24 @@ export function useLpEditorForm(seed?: LpSeed) {
                   ],
                 };
 
-    form.setValue(
-      "customSections",
-      [...form.getValues("customSections"), base],
-      { shouldDirty: true },
-    );
+    const nextSections = [...form.getValues("customSections"), base];
+    form.setValue("customSections", nextSections, { shouldDirty: true });
+
+    // O vídeo mora logo abaixo do Topo (Topo → Vídeo → Dores), então ele entra
+    // na frente da ordem em vez de ser empilhado no fim como as demais seções.
+    if (kind === "youtube") {
+      const l = form.getValues("layout");
+      const key = `custom:${id}`;
+      const rest = effectiveOrder(l, nextSections).filter((i) => i !== key);
+      form.setValue(
+        "layout",
+        { ...l, order: [key, ...rest] },
+        { shouldDirty: true },
+      );
+    }
+
     // Devolve o id para quem precisa preencher a seção logo após criá-la
-    // (ex.: a seção de vídeo já nasce com o YouTube do Topo).
+    // (ex.: a seção de vídeo já nasce com o YouTube colado no painel).
     return id;
   }
   function setCustomField(
@@ -490,7 +500,8 @@ export function useLpEditorForm(seed?: LpSeed) {
       | "youtubeId"
       | "calendarUrl"
       | "mapsUrl"
-      | "variant",
+      | "variant"
+      | "cta",
     v: string,
   ) {
     form.setValue(

@@ -114,12 +114,13 @@ export type CustomSection = {
   tone: Tone;
   eyebrow: string;
   title: string;
-  text: string; // usado no formato "texto" (parágrafos separados por linha)
+  text: string; // parágrafos separados por linha ("texto" e "youtube")
   cards: CustomCard[]; // usado no formato "cards"
   youtubeId?: string; // usado no formato "youtube"
   calendarUrl?: string; // usado no formato "calendar" (src do iframe do Google Calendar)
   mapsUrl?: string; // usado no formato "maps" (src do iframe do Google Maps)
   variant?: "boxed" | "fullWidth"; // variação visual para youtube, calendar e maps
+  cta?: string; // rótulo do botão primário; vazio não renderiza o botão
 };
 
 /** Endereço adicional no rodapé (além do principal). */
