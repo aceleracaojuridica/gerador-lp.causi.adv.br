@@ -114,7 +114,7 @@ A conta informada em `account_id` é sempre ignorada na verificação — o escr
 
 Antes de consultar `accounts`, a function autoriza se **qualquer** condição for verdadeira:
 
-1. `is_super_admin(user_id)` — bypass para role `super_admin` (troca de contexto no SystemBar sem exigência de `users_accounts`);
+1. `is_super_admin(p_user_id)` — bypass para role `super_admin` (troca de contexto no SystemBar sem exigência de `users_accounts`);
 2. `is_user_in_account_or_shared(target_account_id, p_user_id)` — conta principal (`users.account_id`) ou compartilhada (`users_accounts`).
 
 Sem uma das duas, responde `403 Forbidden`.
@@ -174,7 +174,7 @@ Caminho de otimização futura no Causi:
 
 | Função | Uso nesta Edge Function |
 |--------|-------------------------|
-| `is_super_admin(user_id)` | Bypass de autorização para super admin |
+| `is_super_admin(p_user_id)` | Bypass de autorização para super admin |
 | `is_user_in_account_or_shared(target_account_id, p_user_id)` | Valida acesso do usuário à conta antes da consulta global |
 
 Documentação das RPCs: [functions.md](./functions.md#helpers-de-autorização-rls).

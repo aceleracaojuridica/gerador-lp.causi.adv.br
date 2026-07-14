@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
     { data: isSuperAdmin, error: superAdminError },
     { data: canAccess, error: accessError },
   ] = await Promise.all([
-    admin.rpc("is_super_admin", { user_id: user.id }),
+    admin.rpc("is_super_admin", { p_user_id: user.id }),
     admin.rpc("is_user_in_account_or_shared", {
       target_account_id: accountId,
       p_user_id: user.id,
