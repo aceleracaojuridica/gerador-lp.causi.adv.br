@@ -38,11 +38,10 @@ import type {
   TrackingProviderConfig,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { effectiveOrder } from "@/lib/landing-pages/section-order";
+import { detectNetwork } from "@/lib/landing-pages/socials";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
-import {
-  HERO_VARIANT_CENTERED_FOCUS,
-  HERO_VARIANT_VIDEO_EMBEDDED,
-} from "@/lib/landing-pages/variants";
+
 /** Estado inicial para abrir uma LP já gerada (vinda de lps/<slug>.json). */
 export type LpSeed = {
   office: Office;
@@ -63,7 +62,7 @@ const DEFAULT_BUTTONS = {
 
 function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
   if (!seed) return lpEditorDefaultValues();
-  const values = lpEditorDefaultValues({
+  return lpEditorDefaultValues({
     office: seed.office,
     theme: seed.theme,
     layout: seed.layout,
@@ -73,16 +72,6 @@ function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
     customSections: seed.customSections,
     autoTheme: true,
   });
-  if (
-    !values.videoId.trim() &&
-    values.layout.hero === HERO_VARIANT_VIDEO_EMBEDDED
-  ) {
-    values.layout = {
-      ...values.layout,
-      hero: HERO_VARIANT_CENTERED_FOCUS,
-    };
-  }
-  return values;
 }
 
 /**
@@ -246,14 +235,14 @@ export function useLpEditorForm(seed?: LpSeed) {
   function setSocialField(i: number, key: "network" | "url", value: string) {
     form.setValue(
       "office.socials",
-      form.getValues("office.socials").map((s, idx) =>
-        idx === i
-          ? {
-              ...s,
-              [key]: key === "network" ? (value as SocialNetwork) : value,
-            }
-          : s,
-      ),
+      form.getValues("office.socials").map((s, idx) => {
+        if (idx !== i) return s;
+        // Ao editar a URL, a rede é re-inferida dela (senão o `network` ficaria
+        // congelado no padrão e o ícone sairia errado na LP).
+        if (key === "url")
+          return { ...s, url: value, network: detectNetwork(value) };
+        return { ...s, network: value as SocialNetwork };
+      }),
       { shouldDirty: true },
     );
   }
@@ -442,6 +431,7 @@ export function useLpEditorForm(seed?: LpSeed) {
               cards: [],
               youtubeId: "",
               variant: "boxed",
+              cta: "",
             }
           : kind === "calendar"
             ? {
@@ -481,11 +471,25 @@ export function useLpEditorForm(seed?: LpSeed) {
                   ],
                 };
 
-    form.setValue(
-      "customSections",
-      [...form.getValues("customSections"), base],
-      { shouldDirty: true },
-    );
+    const nextSections = [...form.getValues("customSections"), base];
+    form.setValue("customSections", nextSections, { shouldDirty: true });
+
+    // O vídeo mora logo abaixo do Topo (Topo → Vídeo → Dores), então ele entra
+    // na frente da ordem em vez de ser empilhado no fim como as demais seções.
+    if (kind === "youtube") {
+      const l = form.getValues("layout");
+      const key = `custom:${id}`;
+      const rest = effectiveOrder(l, nextSections).filter((i) => i !== key);
+      form.setValue(
+        "layout",
+        { ...l, order: [key, ...rest] },
+        { shouldDirty: true },
+      );
+    }
+
+    // Devolve o id para quem precisa preencher a seção logo após criá-la
+    // (ex.: a seção de vídeo já nasce com o YouTube colado no painel).
+    return id;
   }
   function setCustomField(
     id: string,
@@ -496,7 +500,8 @@ export function useLpEditorForm(seed?: LpSeed) {
       | "youtubeId"
       | "calendarUrl"
       | "mapsUrl"
-      | "variant",
+      | "variant"
+      | "cta",
     v: string,
   ) {
     form.setValue(
@@ -704,20 +709,13 @@ export function useLpEditorForm(seed?: LpSeed) {
     form.setValue("layout", next, { shouldDirty: true });
   }
 
+  /**
+   * Só grava o vídeo. NÃO troca a variante do Topo: a de vídeo é a 3ª e é uma
+   * escolha do usuário como qualquer outra — trocá-la sozinho ao remover o link
+   * mudava o layout dele pelas costas.
+   */
   function setVideoId(value: string) {
-    const trimmed = value.trim();
-    form.setValue("videoId", trimmed, { shouldDirty: true });
-
-    if (!trimmed) {
-      const currentLayout = form.getValues("layout");
-      if (currentLayout.hero === HERO_VARIANT_VIDEO_EMBEDDED) {
-        form.setValue(
-          "layout",
-          { ...currentLayout, hero: HERO_VARIANT_CENTERED_FOCUS },
-          { shouldDirty: true },
-        );
-      }
-    }
+    form.setValue("videoId", value.trim(), { shouldDirty: true });
   }
 
   const focoMeta = matchFoco(tema);

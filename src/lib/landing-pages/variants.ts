@@ -36,17 +36,32 @@ export const HERO_VARIANT_CENTERED_FOCUS =
   "causi_lp_section_hero_centered_focus" as const;
 export const HERO_VARIANT_SPLIT_MEDIA =
   "causi_lp_section_hero_split_media" as const;
-export const HERO_VARIANT_VIDEO_EMBEDDED =
-  "causi_lp_section_hero_video_embedded" as const;
 export const HERO_VARIANT_STATS_AUTHORITY =
   "causi_lp_section_hero_stats_authority" as const;
 export const HERO_VARIANT_CUTOUT_PORTRAIT =
   "causi_lp_section_hero_cutout_portrait" as const;
 
+/**
+ * Variante aposentada: o vídeo saiu do Topo e passou a viver numa seção própria
+ * logo abaixo dele. Os ids só sobrevivem para a migração reconhecer LPs antigas
+ * (ver `migrate` em lp-store.ts) — não são mais opções no editor.
+ */
+export const LEGACY_HERO_VIDEO_IDS = [
+  "causi_lp_section_hero_video_embedded",
+  "video",
+] as const;
+
+export function isLegacyHeroVideoVariant(value: string | undefined): boolean {
+  if (!value) return false;
+  return (LEGACY_HERO_VIDEO_IDS as readonly string[]).includes(value);
+}
+
+/** Topo que as LPs com vídeo no hero herdam ao migrar. */
+export const HERO_VARIANT_VIDEO_FALLBACK = HERO_VARIANT_SPLIT_MEDIA;
+
 export const HERO_VARIANTS = [
   HERO_VARIANT_CENTERED_FOCUS,
   HERO_VARIANT_SPLIT_MEDIA,
-  HERO_VARIANT_VIDEO_EMBEDDED,
   HERO_VARIANT_STATS_AUTHORITY,
   HERO_VARIANT_CUTOUT_PORTRAIT,
 ] as const;
@@ -65,12 +80,6 @@ export const HERO_VARIANT_OPTIONS: readonly VariantOption<HeroVariant>[] = [
     label: "Split 50/50",
     intent: "Equilibra texto e mídia com leitura rápida.",
     legacyIds: ["split"],
-  },
-  {
-    id: HERO_VARIANT_VIDEO_EMBEDDED,
-    label: "Vídeo + Foto",
-    intent: "Usa vídeo como prova e aproximação com o visitante.",
-    legacyIds: ["video"],
   },
   {
     id: HERO_VARIANT_STATS_AUTHORITY,
@@ -98,14 +107,14 @@ export function normalizeHeroVariant(
 
 export const DOR_VARIANT_WITH_IMAGE_CARDS =
   "causi_lp_section_dor_with_image_cards" as const;
-export const DOR_VARIANT_CARDS_COMPACT =
-  "causi_lp_section_dor_cards_compact" as const;
+export const DOR_VARIANT_IMAGE_ICON_LIST =
+  "causi_lp_section_dor_image_icon_list" as const;
 export const DOR_VARIANT_IMAGE_LIST =
   "causi_lp_section_dor_image_list" as const;
 
 export const DOR_VARIANTS = [
   DOR_VARIANT_WITH_IMAGE_CARDS,
-  DOR_VARIANT_CARDS_COMPACT,
+  DOR_VARIANT_IMAGE_ICON_LIST,
   DOR_VARIANT_IMAGE_LIST,
 ] as const;
 
@@ -119,10 +128,11 @@ export const DOR_VARIANT_OPTIONS: readonly VariantOption<DorVariant>[] = [
     legacyIds: ["comImagem"],
   },
   {
-    id: DOR_VARIANT_CARDS_COMPACT,
-    label: "Só cards",
-    intent: "Resume as dores em um bloco mais compacto.",
-    legacyIds: ["soCards"],
+    id: DOR_VARIANT_IMAGE_ICON_LIST,
+    label: "Imagem + itens",
+    intent:
+      "Imagem à esquerda; título, texto e as dores como itens com ícone (2 colunas).",
+    legacyIds: ["soCards", "causi_lp_section_dor_cards_compact"],
   },
   {
     id: DOR_VARIANT_IMAGE_LIST,
@@ -143,14 +153,14 @@ export function normalizeDorVariant(
 
 export const SOLUCAO_VARIANT_WITH_IMAGE_CARDS =
   "causi_lp_section_solucao_with_image_cards" as const;
-export const SOLUCAO_VARIANT_CARDS_COMPACT =
-  "causi_lp_section_solucao_cards_compact" as const;
+export const SOLUCAO_VARIANT_IMAGE_ICON_LIST =
+  "causi_lp_section_solucao_image_icon_list" as const;
 export const SOLUCAO_VARIANT_IMAGE_LIST =
   "causi_lp_section_solucao_image_list" as const;
 
 export const SOLUCAO_VARIANTS = [
   SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
-  SOLUCAO_VARIANT_CARDS_COMPACT,
+  SOLUCAO_VARIANT_IMAGE_ICON_LIST,
   SOLUCAO_VARIANT_IMAGE_LIST,
 ] as const;
 
@@ -165,10 +175,11 @@ export const SOLUCAO_VARIANT_OPTIONS: readonly VariantOption<SolucaoVariant>[] =
       legacyIds: ["comImagem"],
     },
     {
-      id: SOLUCAO_VARIANT_CARDS_COMPACT,
-      label: "Só cards",
-      intent: "Simplifica a leitura com cards compactos.",
-      legacyIds: ["soCards"],
+      id: SOLUCAO_VARIANT_IMAGE_ICON_LIST,
+      label: "Imagem + itens",
+      intent:
+        "Imagem à esquerda; título, texto e a solução como itens com ícone (2 colunas).",
+      legacyIds: ["soCards", "causi_lp_section_solucao_cards_compact"],
     },
     {
       id: SOLUCAO_VARIANT_IMAGE_LIST,
@@ -321,12 +332,12 @@ export function isEquipeVariantAllowed(
 
 export const AREAS_VARIANT_GRID_ICON_CARDS =
   "causi_lp_section_areas_grid_icon_cards" as const;
-export const AREAS_VARIANT_LIST_BANDS =
-  "causi_lp_section_areas_list_bands" as const;
+export const AREAS_VARIANT_QUADRANT_GRID =
+  "causi_lp_section_areas_quadrant_grid" as const;
 
 export const AREAS_VARIANTS = [
   AREAS_VARIANT_GRID_ICON_CARDS,
-  AREAS_VARIANT_LIST_BANDS,
+  AREAS_VARIANT_QUADRANT_GRID,
 ] as const;
 
 export type AreasVariant = (typeof AREAS_VARIANTS)[number];
@@ -339,10 +350,11 @@ export const AREAS_VARIANT_OPTIONS: readonly VariantOption<AreasVariant>[] = [
     legacyIds: ["grid"],
   },
   {
-    id: AREAS_VARIANT_LIST_BANDS,
-    label: "Lista",
-    intent: "Organiza as áreas em faixas de leitura vertical.",
-    legacyIds: ["lista"],
+    id: AREAS_VARIANT_QUADRANT_GRID,
+    label: "Quadrantes",
+    intent:
+      "Grade dividida por linhas: ícone, título, descrição, sub-itens e link por área.",
+    legacyIds: ["lista", "causi_lp_section_areas_list_bands"],
   },
 ] as const;
 

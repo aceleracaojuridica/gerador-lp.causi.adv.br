@@ -36,7 +36,7 @@ import type {
   AreasVariant,
   Tone,
 } from "@/lib/landing-pages/schema";
-import { AREAS_VARIANT_LIST_BANDS } from "@/lib/landing-pages/variants";
+import { AREAS_VARIANT_QUADRANT_GRID } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -114,6 +114,26 @@ type AreasProps = {
 
 export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
   const dark = tone === "dark";
+  const props = { content, dark, accentRgb };
+  return variant === AREAS_VARIANT_QUADRANT_GRID ? (
+    <Quadrantes {...props} />
+  ) : (
+    <Grade {...props} />
+  );
+}
+
+type VariantProps = { content: AreasContent; dark: boolean; accentRgb: string };
+
+/** Casca comum: fundo, brilho decorativo e container. */
+function Shell({
+  dark,
+  accentRgb,
+  children,
+}: {
+  dark: boolean;
+  accentRgb: string;
+  children: React.ReactNode;
+}) {
   return (
     <section
       id="areas"
@@ -126,68 +146,140 @@ export function Areas({ content, variant, accentRgb, tone }: AreasProps) {
           background: `radial-gradient(circle, rgba(${accentRgb},${dark ? 0.14 : 0.08}), transparent 65%)`,
         }}
       />
+      <div className="relative mx-auto max-w-7xl px-6 md:px-10">{children}</div>
+    </section>
+  );
+}
 
-      <div className="relative mx-auto max-w-7xl px-6 md:px-10">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p
-            className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
-          >
-            {content.eyebrow}
-          </p>
-          <h2
-            className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
-          >
-            <HeadlineText
-              h={content.headline}
-              accentVar={dark ? "accent-soft" : "accent"}
-            />
-          </h2>
-          <p
-            className={`mt-5 text-lg leading-relaxed ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
-          >
-            {content.sub}
-          </p>
-        </Reveal>
-
-        <div
-          className={
-            variant === AREAS_VARIANT_LIST_BANDS
-              ? "mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-4"
-              : "mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6"
-          }
+/* ===== Variante 1 — Grade de cards com ícone ===== */
+function Grade({ content, dark, accentRgb }: VariantProps) {
+  return (
+    <Shell dark={dark} accentRgb={accentRgb}>
+      <Reveal className="mx-auto max-w-2xl text-center">
+        <p
+          className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
         >
-          {content.cards.map((a, i) => {
-            const isBand = variant === AREAS_VARIANT_LIST_BANDS;
-            return (
-              <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
-                <div
-                  className={`flex h-full items-start gap-5 rounded-xl bg-white p-7 transition hover:-translate-y-0.5 ring-1 ring-lp-ink-soft/10 ${
-                    isBand ? "border-l-2 border-lp-accent" : ""
+          {content.eyebrow}
+        </p>
+        <h2
+          className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
+        >
+          <HeadlineText
+            h={content.headline}
+            accentVar={dark ? "accent-soft" : "accent"}
+          />
+        </h2>
+        <p
+          className={`mt-5 text-lg leading-relaxed ${dark ? "text-white/80" : "text-lp-ink-soft"}`}
+        >
+          {content.sub}
+        </p>
+      </Reveal>
+
+      <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
+        {content.cards.map((a, i) => (
+          <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
+            <div className="flex h-full items-start gap-5 rounded-xl bg-white p-7 ring-1 ring-lp-ink-soft/10 transition hover:-translate-y-0.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-lp-accent text-lp-accent">
+                <IconForKey iconKey={a.icon} size={28} />
+              </span>
+              <div>
+                <h3 className="font-display text-lg font-semibold leading-snug text-lp-brand">
+                  {a.title}
+                </h3>
+                <p className="mt-2 text-[1.05rem] leading-relaxed text-lp-ink-soft">
+                  {a.text}
+                </p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+
+      <Reveal className="mt-12 text-center" delay={120}>
+        <CTAButton variant="primary">{content.cta}</CTAButton>
+      </Reveal>
+    </Shell>
+  );
+}
+
+/* ===== Variante 2 — Quadrantes =====
+   Header alinhado à esquerda e as áreas numa grade dividida por linhas (sem
+   fundo de card): ícone + título, descrição, sub-itens em bullets e um link
+   de CTA por quadrante. */
+function Quadrantes({ content, dark, accentRgb }: VariantProps) {
+  const line = dark ? "border-white/12" : "border-lp-ink-soft/20";
+  const bullet = dark ? "bg-lp-accent-soft" : "bg-lp-accent";
+
+  return (
+    <Shell dark={dark} accentRgb={accentRgb}>
+      <Reveal className="max-w-3xl">
+        <p
+          className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+        >
+          {content.eyebrow}
+        </p>
+        <h2
+          className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}
+        >
+          <HeadlineText
+            h={content.headline}
+            accentVar={dark ? "accent-soft" : "accent"}
+          />
+        </h2>
+      </Reveal>
+
+      {/* rounded-2xl deriva de --radius, então a moldura da grade acompanha o
+          toggle Aparência → cantos. overflow-hidden faz as divisórias internas
+          respeitarem o recorte dos cantos. */}
+      <div
+        className={`mt-14 grid grid-cols-1 overflow-hidden rounded-2xl border-t border-l md:grid-cols-2 ${line}`}
+      >
+        {content.cards.map((a, i) => (
+          <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
+            <div className={`h-full border-r border-b p-7 md:p-10 ${line}`}>
+              <div className="flex items-center gap-3">
+                <span
+                  className={dark ? "text-lp-accent-soft" : "text-lp-accent"}
+                >
+                  <IconForKey iconKey={a.icon} size={24} />
+                </span>
+                <h3
+                  className={`font-display text-xl font-semibold leading-snug md:text-2xl ${
+                    dark ? "text-white" : "text-lp-brand"
                   }`}
                 >
-                  <span
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-lp-accent text-lp-accent`}
-                  >
-                    <IconForKey iconKey={a.icon} size={28} />
-                  </span>
-                  <div>
-                    <h3 className="font-display text-lg font-semibold leading-snug text-lp-brand">
-                      {a.title}
-                    </h3>
-                    <p className="mt-2 text-[1.05rem] leading-relaxed text-lp-ink-soft">
-                      {a.text}
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
+                  {a.title}
+                </h3>
+              </div>
 
-        <Reveal className="mt-12 text-center" delay={120}>
-          <CTAButton variant="primary">{content.cta}</CTAButton>
-        </Reveal>
+              <p
+                className={`mt-4 leading-relaxed ${dark ? "text-white/75" : "text-lp-ink-soft"}`}
+              >
+                {a.text}
+              </p>
+
+              {a.items?.length ? (
+                <ul className="mt-6 space-y-2.5">
+                  {a.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <span
+                        aria-hidden
+                        className={`mt-[0.5rem] h-1 w-1 shrink-0 rounded-full ${bullet}`}
+                      />
+                      <span
+                        className={`text-sm leading-snug ${dark ? "text-white/80" : "text-lp-ink"}`}
+                      >
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </Reveal>
+        ))}
       </div>
-    </section>
+    </Shell>
   );
 }

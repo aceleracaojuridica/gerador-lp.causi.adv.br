@@ -65,7 +65,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 | Label | ID |
 |---|---|
 | Com imagem | `causi_lp_section_dor_with_image_cards` |
-| Só cards | `causi_lp_section_dor_cards_compact` |
+| Imagem + itens | `causi_lp_section_dor_image_icon_list` |
 | Lista | `causi_lp_section_dor_image_list` |
 
 ### Solução
@@ -73,7 +73,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 | Label | ID |
 |---|---|
 | Com imagem | `causi_lp_section_solucao_with_image_cards` |
-| Só cards | `causi_lp_section_solucao_cards_compact` |
+| Imagem + itens | `causi_lp_section_solucao_image_icon_list` |
 | Lista | `causi_lp_section_solucao_image_list` |
 
 ### Sobre
@@ -97,7 +97,7 @@ As variants persistidas usam ids semânticos com prefixo `causi_`.
 | Label | ID |
 |---|---|
 | Grade | `causi_lp_section_areas_grid_icon_cards` |
-| Lista | `causi_lp_section_areas_list_bands` |
+| Quadrantes | `causi_lp_section_areas_quadrant_grid` |
 
 ### Etapas
 

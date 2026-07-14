@@ -1,22 +1,25 @@
 "use client";
 
 import { Add, Close } from "@material-symbols-svg/react";
+import {
+  HERO_BAND_MAX_ITEMS,
+  HERO_BAND_MIN_ITEMS,
+} from "@/components/Sections/hero";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { IconPicker } from "../widgets/icon-picker";
-
-const MAX_HERO_FEATURES = 3;
 
 export function HeroFeaturesInput({ form }: { form: LpEditorForm }) {
   const features = form.office.heroFeatures ?? [];
   return (
     <div>
       <p className="mb-1.5 text-sm font-medium text-slate-700">
-        Cards de destaque
+        Faixa de destaques
       </p>
       <p className="mb-2 text-xs text-slate-400">
-        Ícone + texto curto, exibidos abaixo do topo. Sem nenhum, a faixa não
-        aparece. Até {MAX_HERO_FEATURES} cards.
+        Textos curtos exibidos na faixa colada na base do topo. De{" "}
+        {HERO_BAND_MIN_ITEMS} a {HERO_BAND_MAX_ITEMS} itens; com menos de{" "}
+        {HERO_BAND_MIN_ITEMS} a faixa não aparece.
       </p>
       <div className="flex flex-col gap-2">
         {features.map((f, i) => (
@@ -24,38 +27,35 @@ export function HeroFeaturesInput({ form }: { form: LpEditorForm }) {
             key={`${f.icon}::${f.text}`}
             className="flex items-center gap-1.5"
           >
-            <IconPicker
-              value={f.icon}
-              onChange={(key) => form.setHeroFeature(i, "icon", key)}
-            />
             <Input
-              aria-label={`Card ${i + 1} — texto`}
+              aria-label={`Destaque ${i + 1}`}
               value={f.text}
               onChange={(e) => form.setHeroFeature(i, "text", e.target.value)}
-              placeholder="Ex: Atendimento próximo"
+              placeholder="Ex: Atendimento nacional"
             />
             <button
               type="button"
-              aria-label="Remover card"
+              aria-label="Remover destaque"
+              disabled={features.length <= HERO_BAND_MIN_ITEMS}
               onClick={() => form.removeHeroFeature(i)}
-              className="shrink-0 rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700"
+              className="shrink-0 rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Close size={14} />
             </button>
           </div>
         ))}
       </div>
-      {features.length < MAX_HERO_FEATURES ? (
+      {features.length < HERO_BAND_MAX_ITEMS ? (
         <button
           type="button"
           onClick={form.addHeroFeature}
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 transition hover:bg-ui-hover hover:text-slate-800"
         >
-          <Add size={13} /> Adicionar card
+          <Add size={13} /> Adicionar destaque
         </button>
       ) : (
         <p className="mt-2 text-xs text-slate-400">
-          Máximo de {MAX_HERO_FEATURES} cards atingido.
+          Máximo de {HERO_BAND_MAX_ITEMS} itens atingido.
         </p>
       )}
     </div>

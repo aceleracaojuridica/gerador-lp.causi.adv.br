@@ -23,7 +23,6 @@ import {
   HERO_VARIANT_CUTOUT_PORTRAIT,
   HERO_VARIANT_OPTIONS,
   HERO_VARIANT_STATS_AUTHORITY,
-  HERO_VARIANT_VIDEO_EMBEDDED,
   HERO_VARIANTS,
   isEquipeVariantAllowed,
   normalizeAreasVariant,
@@ -69,7 +68,6 @@ export type LayoutChooseInput = {
   about?: string;
   theme: Theme;
   lawyerCount: number;
-  hasVideo: boolean;
   hasMetrics: boolean;
   /** Bloco leve: URL + resumo semântico das LPs da conta (sem schema/variants). */
   accountExamples?: string;
@@ -249,9 +247,6 @@ function buildLayoutPrompt(input: LayoutChooseInput): string {
     input.lawyerCount === 1
       ? `- Um advogado: prefira hero cutout (${HERO_VARIANT_CUTOUT_PORTRAIT}) e equipe solo.`
       : "",
-    input.hasVideo
-      ? "- Há vídeo do YouTube: o hero com vídeo embutido será aplicado automaticamente depois — escolha outra variant de hero como preferência secundária."
-      : "",
     input.lawyerCount === 0
       ? "- Sem advogados na equipe — use equipe: null."
       : input.lawyerCount === 1
@@ -288,11 +283,6 @@ function buildLayoutPrompt(input: LayoutChooseInput): string {
   );
 
   return lines.filter(Boolean).join("\n");
-}
-
-function applyVideoHeroOverride(layout: Layout, hasVideo: boolean): Layout {
-  if (!hasVideo) return layout;
-  return { ...layout, hero: HERO_VARIANT_VIDEO_EMBEDDED };
 }
 
 function parsedToLayout(
@@ -335,12 +325,8 @@ export function chooseLayoutDeterministic(input: LayoutChooseInput): Layout {
   const seed = `${input.tema}:${input.theme.brand}:${input.lawyerCount}`;
   const rand = seededRandom(seed);
 
-  const heroPool = input.hasVideo
-    ? HERO_VARIANTS.filter((v) => v !== HERO_VARIANT_VIDEO_EMBEDDED)
-    : HERO_VARIANTS;
-
   const layout: Layout = {
-    hero: pickSeeded(heroPool, rand),
+    hero: pickSeeded(HERO_VARIANTS, rand),
     dor: pickSeeded(DOR_VARIANTS, rand),
     solucao: pickSeeded(SOLUCAO_VARIANTS, rand),
     sobre: pickSeeded(SOBRE_VARIANTS, rand),
@@ -361,7 +347,7 @@ export function chooseLayoutDeterministic(input: LayoutChooseInput): Layout {
     hidden: { ...DEFAULT_LAYOUT.hidden },
   };
 
-  return applyVideoHeroOverride(layout, input.hasVideo);
+  return layout;
 }
 
 function logLayoutFallback(err: unknown, raw?: string): void {
@@ -412,10 +398,7 @@ export async function chooseLayoutWithAi(
     const json = JSON.parse(raw) as unknown;
     const parsed = parseAiLayoutJson(json, input.lawyerCount);
     const layout = parsedToLayout(parsed, input.lawyerCount);
-    const result: LayoutChooseResult = {
-      layout: applyVideoHeroOverride(layout, input.hasVideo),
-      source: "ai",
-    };
+    const result: LayoutChooseResult = { layout, source: "ai" };
     if (input.log) {
       void logExternalApiCall({
         ...input.log,

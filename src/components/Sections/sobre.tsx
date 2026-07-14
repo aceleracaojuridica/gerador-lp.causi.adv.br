@@ -139,12 +139,12 @@ function Overlay({
         </Reveal>
 
         <Reveal delay={120} className="hidden lg:block">
-          <div className="rounded-tl-[3rem] rounded-br-[3rem] border-4 border-lp-accent p-2">
-            <div
-              className="h-[26rem] w-full rounded-tl-[2.6rem] rounded-br-[2.6rem] bg-lp-brand-dark"
-              style={imgStyle(img, pos)}
-            />
-          </div>
+          {/* rounded-2xl deriva de --radius: acompanha o toggle
+              Aparência → cantos (arredondado / quadrado). */}
+          <div
+            className="h-[26rem] w-full rounded-2xl bg-lp-brand-dark"
+            style={imgStyle(img, pos)}
+          />
         </Reveal>
       </div>
     </section>
@@ -167,7 +167,7 @@ function DuasColunas({
 
   return (
     <section className={dark ? "bg-lp-brand" : "bg-lp-cream"}>
-      <div className="grid grid-cols-1 lg:grid-cols-[40%_60%]">
+      <div className="grid grid-cols-1 lg:grid-cols-2">
         <div
           aria-hidden
           className="hidden min-h-[24rem] bg-lp-brand-dark lg:block"
@@ -231,7 +231,7 @@ function FotoLista({
           {img ? (
             <Reveal>
               <div
-                className="min-h-[20rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand-dark lg:h-full"
+                className="min-h-[20rem] w-full rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand-dark lg:h-full"
                 style={imgStyle(img, pos)}
               />
             </Reveal>

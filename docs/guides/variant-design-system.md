@@ -135,14 +135,14 @@ Tom obrigatório: reconhecer o problema do cliente com empatia **antes** de apre
 | Variante | Diferença estrutural | Mobile |
 |---|---|---|
 | `with_image_cards` | Superior: 2 colunas (texto de empatia + imagem). Inferior: 3 cards de dor com ícone, título e 1–2 frases. | Imagem acima, cards empilhados |
-| `cards_compact` | Sem bloco de imagem — só cards. Para quando não há imagem contextual de qualidade. | Cards empilhados |
+| `image_icon_list` | Imagem à esquerda; título, texto, separador e as dores como itens com ícone (2 colunas). Sem botão. | Imagem acima, itens abaixo |
 
 ### 4.3 Solução
 
 | Variante | Diferença estrutural | Mobile |
 |---|---|---|
 | `with_image_cards` | Apoio visual + cards, tom propositivo. Estrutura espelhada da Dor com imagem. | Imagem acima, cards abaixo |
-| `cards_compact` | Só cards, leitura rápida. Mínimo 4 cards em número par. | Cards empilhados |
+| `image_icon_list` | Imagem à esquerda; título, texto, separador e a solução como itens com ícone (2 colunas). Sem botão. | Imagem acima, itens abaixo |
 | `image_list` | Header + solução em lista enxuta (bullets, 2 colunas, sem ícones) ao lado da imagem. Layout compartilhado com a Dor (`ImageListBlock`). | Lista acima, imagem abaixo |
 
 ### 4.4 Sobre
@@ -168,7 +168,7 @@ As três variantes são funcionalmente determinadas por `getAutoEquipeVariant()`
 | Variante | Diferença estrutural |
 |---|---|
 | `grid_icon_cards` | Cards em grade com ícone — leitura rápida, escaneável. |
-| `list_bands` | Faixas de leitura vertical, mais editorial — adequado para 2–4 áreas com texto mais denso. |
+| `quadrant_grid` | Grade dividida por linhas: ícone + título, descrição, sub-itens em bullets (2 a 6) e link de CTA por quadrante. |
 
 ### 4.7 Etapas
 

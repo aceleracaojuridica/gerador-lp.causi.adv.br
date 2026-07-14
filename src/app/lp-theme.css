@@ -32,6 +32,11 @@
     color: var(--lp-ink);
     --font-display: var(--font-fraunces);
     --font-body: var(--font-inter);
+    /* Recorte diagonal decorativo das imagens (topo-esq / base-dir).
+       Vira ~5px quando o usuário escolhe "cards quadrados" (Aparência),
+       via override inline em landing-preview.tsx. */
+    --lp-corner: 3rem;
+    --lp-corner-sm: 2rem;
   }
 
   html.dark .lp-root {

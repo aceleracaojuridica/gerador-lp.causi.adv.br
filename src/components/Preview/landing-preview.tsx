@@ -90,9 +90,24 @@ export function LandingPreview({
   };
   if (headingVar) fontStyle["--font-display"] = headingVar;
   if (bodyVar) fontStyle["--font-body"] = bodyVar;
-  // Cantos dos cards (rounded-2xl) — "square" (padrão) deixa em 5px; só "rounded"
-  // mantém ~1rem.
-  if (schema.office.cardRadius !== "rounded") fontStyle["--radius-2xl"] = "5px";
+  // Cantos dos cards — "square" (padrão) achata em 5px; "rounded" mantém a escala.
+  // Precisa cobrir TODAS as escalas usadas por card/painel, não só a 2xl:
+  //   xl  → cards de Dor, Solução, Áreas e itens do FAQ
+  //   2xl → mini-cards do Hero, Sobre, Equipe, seções custom e embeds
+  //   3xl → painel da Etapas
+  if (schema.office.cardRadius !== "rounded") {
+    // ATENÇÃO: o globals.css declara a escala de raio dentro de `@theme inline`,
+    // então o Tailwind EMBUTE o valor na classe: `.rounded-2xl` vira
+    // `border-radius: calc(var(--radius) * 1.8)`. Ela não referencia
+    // `--radius-2xl` — sobrescrever essa var não tem efeito nenhum.
+    // Quem manda é a base `--radius`; achatá-la deixa toda a escala quadrada
+    // (rounded-lg/xl/2xl/3xl) de uma vez. `rounded-full` não é afetado.
+    fontStyle["--radius"] = "3px";
+    // Recorte diagonal das imagens (Hero, Dor, Solução, Sobre, Equipe): var
+    // própria, fora do @theme, por isso resolve em runtime normalmente.
+    fontStyle["--lp-corner"] = "5px";
+    fontStyle["--lp-corner-sm"] = "5px";
+  }
 
   // Seções não obrigatórias desligadas pela chave (ausente = visível).
   const hidden = schema.layout.hidden ?? {};
@@ -128,32 +143,6 @@ export function LandingPreview({
     !hidden.areas && order.includes("areas")
       ? { label: "Áreas de atuação", href: "#sec-areas" }
       : { label: "Sobre o escritório", href: "#sec-sobre" };
-
-  // Tom da primeira seção VISÍVEL abaixo do Hero — os mini-cards do Hero
-  // centralizado se sobrepõem a ela, e a sombra adapta para não sumir no escuro.
-  function toneOfItem(item: string): "light" | "dark" {
-    if (item.startsWith("custom:")) {
-      const sec = customSections.find((s) => s.id === item.slice(7));
-      return sec?.tone ?? "light";
-    }
-    return (
-      schema.layout.tones[item as keyof typeof schema.layout.tones] ?? "light"
-    );
-  }
-  const firstVisible = order.find((it) =>
-    it === "areas"
-      ? !hidden.areas
-      : it === "etapas"
-        ? !hidden.etapas
-        : it === "ctaFinal"
-          ? !hidden.ctaFinal
-          : true,
-  );
-  const belowTone: "light" | "dark" = firstVisible
-    ? toneOfItem(firstVisible)
-    : !hidden.faq
-      ? (schema.layout.tones.faq ?? "light")
-      : "light";
 
   function renderSectionFrame(
     sectionId: PreviewEditableSectionId | null,
@@ -193,7 +182,7 @@ export function LandingPreview({
       if (!sec) return null;
       return (
         <div key={item} id={`sec-custom-${sec.id}`} className={anchor}>
-          <CustomSection section={sec} />
+          <CustomSection section={sec} demo={demo} />
         </div>
       );
     }
@@ -331,14 +320,12 @@ export function LandingPreview({
                 content={schema.hero}
                 office={schema.office}
                 variant={schema.layout.hero}
-                videoId={schema.videoId}
                 accentRgb={accentRgb}
                 brandRgb={brandRgb}
                 brandDarkRgb={brandDarkRgb}
                 creamRgb={creamRgb}
                 creamDeepRgb={creamDeepRgb}
                 tone={schema.layout.tones.hero ?? "light"}
-                belowTone={belowTone}
                 anchorCta={heroAnchorCta}
               />,
             )}

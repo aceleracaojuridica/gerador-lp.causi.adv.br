@@ -18,7 +18,6 @@ import {
   NotificationsActive,
   Paid,
   Payments,
-  PlayArrowFill,
   Savings,
   Schedule,
   Search,
@@ -30,12 +29,12 @@ import {
   Warning,
   Work,
 } from "@material-symbols-svg/react";
+import { Fragment } from "react";
 import { CTAButton } from "@/components/ui/cta-button";
 import { LogoMark } from "@/components/ui/logo-mark";
 import {
   heroImageOverlay,
   heroStatsImageOverlay,
-  thumbImageOverlay,
 } from "@/lib/landing-pages/colors";
 import type {
   HeroContent,
@@ -44,12 +43,10 @@ import type {
   Office,
   Tone,
 } from "@/lib/landing-pages/schema";
-import { focalPos } from "@/lib/landing-pages/schema";
 import {
   HERO_VARIANT_CUTOUT_PORTRAIT as HERO_CUTOUT_PORTRAIT_ID,
   HERO_VARIANT_SPLIT_MEDIA as HERO_SPLIT_MEDIA_ID,
   HERO_VARIANT_STATS_AUTHORITY as HERO_STATS_AUTHORITY_ID,
-  HERO_VARIANT_VIDEO_EMBEDDED as HERO_VIDEO_EMBEDDED_ID,
 } from "@/lib/landing-pages/variants";
 import { HeadlineText } from "./headline-text";
 
@@ -123,27 +120,38 @@ type HeroProps = {
   content: HeroContent;
   office: Office;
   variant: HeroVariant;
-  videoId?: string;
   accentRgb: string;
   brandRgb: string;
   brandDarkRgb: string;
   creamRgb: string;
   creamDeepRgb: string;
   tone: Tone;
-  // Tom da seção logo abaixo do Hero — os mini-cards do tema centralizado
-  // se sobrepõem a ela, então a sombra precisa adaptar (some em fundo escuro).
-  belowTone?: Tone;
   // 2º botão do Hero (variações com dois botões): âncora interna para uma seção
   // da página (áreas de atuação; ou Sobre, se áreas estiver oculta).
   anchorCta?: { label: string; href: string };
 };
 
+/** Faixa de destaques do Hero: 2 a 4 itens. */
+export const HERO_BAND_MIN_ITEMS = 2;
+export const HERO_BAND_MAX_ITEMS = 4;
+
+/**
+ * Itens da faixa de destaques: usa os editados pelo usuário (heroFeatures) se
+ * houver; senão, os destaques da copy gerada. Corta no máximo permitido — com
+ * menos que o mínimo a faixa não faz sentido e some.
+ */
+function bandFeatures(office: Office, content: HeroContent): HeroFeature[] {
+  return (
+    office.heroFeatures
+      ? office.heroFeatures.filter((f) => f.text.trim())
+      : content.features.map((f) => ({ icon: f.icon, text: f.title }))
+  ).slice(0, HERO_BAND_MAX_ITEMS);
+}
+
 export function Hero(props: HeroProps) {
   switch (props.variant) {
     case HERO_SPLIT_MEDIA_ID:
       return <HeroSplit {...props} />;
-    case HERO_VIDEO_EMBEDDED_ID:
-      return <HeroVideo {...props} />;
     case HERO_STATS_AUTHORITY_ID:
       return <HeroStats {...props} />;
     case HERO_CUTOUT_PORTRAIT_ID:
@@ -153,9 +161,10 @@ export function Hero(props: HeroProps) {
   }
 }
 
-/* ===== Tema 3 — Centralizado + mini-cards =====
+/* ===== Tema 3 — Centralizado =====
    Fundo casa com o fundo da logo. Se houver imagem da seção (enviada pelo
-   usuário), ela entra como fundo com overlay; sem imagem, fica só a cor. */
+   usuário), ela entra como fundo com overlay; sem imagem, fica só a cor.
+   A faixa de destaques é exclusiva do Topo "Com métricas" (HeroStats). */
 function HeroCentered({
   content,
   office,
@@ -164,7 +173,6 @@ function HeroCentered({
   creamRgb,
   creamDeepRgb,
   tone,
-  belowTone,
   anchorCta,
 }: HeroProps) {
   const bg = office.logoBg;
@@ -197,81 +205,64 @@ function HeroCentered({
   const eyebrowCls = dark ? "text-lp-accent-soft" : "text-lp-accent";
   const ringTone = dark ? "border-white/[0.08]" : "border-lp-brand/[0.06]";
 
-  // Mini-cards: usa os editados pelo usuário (heroFeatures) se houver; senão, os
-  // destaques da copy gerada. Sem nenhum, a faixa some e o Hero fecha mais cedo.
-  const features: HeroFeature[] = office.heroFeatures
-    ? office.heroFeatures.filter((f) => f.text.trim())
-    : content.features.map((f) => ({ icon: f.icon, text: f.title }));
-  const hasCards = features.length > 0;
-
   return (
-    <>
-      <section
-        className={`relative overflow-hidden ${useCream ? "bg-lp-cream" : ""} ${
-          useBrandDark ? "bg-lp-brand-dark" : ""
-        }`}
-        style={sectionStyle}
-      >
-        <div
-          aria-hidden
-          className={`pointer-events-none absolute left-1/2 top-1/2 h-[120vmin] w-[120vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border ${ringTone}`}
-        />
-        <div
-          aria-hidden
-          className={`pointer-events-none absolute left-1/2 top-1/2 h-[80vmin] w-[80vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border ${ringTone}`}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full"
-          style={{
-            background: `radial-gradient(circle, rgba(${accentRgb},0.12), transparent 65%)`,
-          }}
-        />
+    <section
+      className={`relative flex min-h-svh flex-col overflow-hidden ${
+        useCream ? "bg-lp-cream" : ""
+      } ${useBrandDark ? "bg-lp-brand-dark" : ""}`}
+      style={sectionStyle}
+    >
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute left-1/2 top-1/2 h-[120vmin] w-[120vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border ${ringTone}`}
+      />
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute left-1/2 top-1/2 h-[80vmin] w-[80vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border ${ringTone}`}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full"
+        style={{
+          background: `radial-gradient(circle, rgba(${accentRgb},0.12), transparent 65%)`,
+        }}
+      />
 
-        <div
-          className={`relative mx-auto flex max-w-4xl flex-col items-center px-6 pt-16 text-center md:pt-20 ${
-            hasCards ? "pb-36 md:pb-44" : "pb-16 md:pb-20"
-          }`}
+      <div className="relative mx-auto flex max-w-4xl flex-1 flex-col items-center justify-center px-6 py-16 text-center md:py-20">
+        <LogoMark
+          office={office}
+          tone={dark ? "light" : "dark"}
+          className="mb-10"
+        />
+        <p className={`eyebrow mb-5 ${eyebrowCls}`}>
+          {content.eyebrow}
+          {office.city ? ` · ${office.city}` : ""}
+        </p>
+        <h1
+          className={`font-display text-4xl font-semibold leading-[1.1] md:text-6xl ${headlineCls}`}
         >
-          <LogoMark
-            office={office}
-            tone={dark ? "light" : "dark"}
-            className="mb-10"
+          <HeadlineText
+            h={content.headline}
+            accentVar={dark ? "accent-soft" : "accent"}
           />
-          <p className={`eyebrow mb-5 ${eyebrowCls}`}>
-            {content.eyebrow}
-            {office.city ? ` · ${office.city}` : ""}
-          </p>
-          <h1
-            className={`font-display text-4xl font-semibold leading-[1.1] md:text-6xl ${headlineCls}`}
+        </h1>
+        <p className={`mt-6 max-w-2xl text-lg leading-relaxed ${subCls}`}>
+          {content.sub}
+        </p>
+        <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
+          <CTAButton variant={dark ? "primary" : "accent"}>
+            {content.ctaPrimary}
+          </CTAButton>
+          <CTAButton
+            variant={dark ? "ghost" : "outline"}
+            withArrow={false}
+            anchor={anchorCta?.href}
           >
-            <HeadlineText
-              h={content.headline}
-              accentVar={dark ? "accent-soft" : "accent"}
-            />
-          </h1>
-          <p className={`mt-6 max-w-2xl text-lg leading-relaxed ${subCls}`}>
-            {content.sub}
-          </p>
-          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
-            <CTAButton variant={dark ? "primary" : "accent"}>
-              {content.ctaPrimary}
-            </CTAButton>
-            <CTAButton
-              variant={dark ? "ghost" : "outline"}
-              withArrow={false}
-              anchor={anchorCta?.href}
-            >
-              {anchorCta?.label ?? content.ctaSecondary}
-            </CTAButton>
-          </div>
+            {anchorCta?.label ?? content.ctaSecondary}
+          </CTAButton>
         </div>
-      </section>
-
-      {hasCards ? (
-        <FeatureCards features={features} belowTone={belowTone} />
-      ) : null}
-    </>
+      </div>
+    </section>
   );
 }
 
@@ -280,7 +271,7 @@ function HeroSplit({ content, office, tone }: HeroProps) {
   const dark = tone === "dark";
   const img = office.sectionImages.hero;
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-2">
+    <section className="grid min-h-svh grid-cols-1 lg:grid-cols-2">
       <div
         className={`relative flex flex-col justify-center px-6 py-16 md:px-12 md:py-24 ${
           dark ? "bg-lp-brand" : "bg-lp-cream"
@@ -338,108 +329,6 @@ function HeroSplit({ content, office, tone }: HeroProps) {
   );
 }
 
-/* ===== Tema 2 — Vídeo + Foto (claro ou escuro) ===== */
-function HeroVideo({
-  content,
-  office,
-  videoId,
-  tone,
-  brandDarkRgb,
-}: HeroProps) {
-  const dark = tone === "dark";
-  // Coluna direita é a foto do advogado; sem ela, cai na imagem de cenário.
-  const img = office.lawyers[0]?.photo || office.sectionImages.hero;
-  // Enquadramento do advogado (quando a imagem é a foto dele).
-  const imgPos = office.lawyers[0]?.photo
-    ? focalPos(office.lawyers[0].focal)
-    : "center";
-  const thumb = videoId
-    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-    : "";
-  return (
-    <section className={dark ? "bg-lp-brand-dark" : "bg-lp-cream"}>
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-16 md:px-10 lg:grid-cols-[56%_44%] lg:gap-12 lg:py-20">
-        <div>
-          <LogoMark
-            office={office}
-            tone={dark ? "light" : "dark"}
-            className="mb-7 self-start"
-          />
-          <p
-            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
-          >
-            {content.eyebrow}
-            {office.city ? ` · ${office.city}` : ""}
-          </p>
-          <h1
-            className={`font-display text-4xl font-semibold leading-[1.1] md:text-5xl ${
-              dark ? "text-white" : "text-lp-brand"
-            }`}
-          >
-            <HeadlineText
-              h={content.headline}
-              accentVar={dark ? "accent-soft" : "accent"}
-            />
-          </h1>
-          <p
-            className={`mt-5 max-w-xl text-lg leading-relaxed ${
-              dark ? "text-white/85" : "text-lp-ink-soft"
-            }`}
-          >
-            {content.sub}
-          </p>
-
-          {/* facade de vídeo (thumbnail do YouTube, ou bloco da marca) */}
-          <a
-            href={
-              videoId ? `https://www.youtube.com/watch?v=${videoId}` : undefined
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Assistir ao vídeo de apresentação"
-            className="group relative mt-7 block aspect-video w-full max-w-xl overflow-hidden rounded-2xl bg-lp-brand-dark shadow-lg"
-            style={
-              thumb
-                ? {
-                    backgroundImage: `${thumbImageOverlay(brandDarkRgb)}, url('${thumb}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : undefined
-            }
-          >
-            <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-lp-accent text-lp-brand-dark shadow-xl transition group-hover:scale-110">
-              <PlayArrowFill size={26} className="ml-1" />
-            </span>
-          </a>
-
-          <div className="mt-7">
-            <CTAButton variant={dark ? "primary" : "accent"}>
-              {content.ctaPrimary}
-            </CTAButton>
-          </div>
-        </div>
-
-        {/* Imagem da seção (oculta no mobile) */}
-        <div className="hidden lg:block">
-          <div
-            className="h-[34rem] w-full rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand"
-            style={
-              img
-                ? {
-                    backgroundImage: `url('${img}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: imgPos,
-                  }
-                : undefined
-            }
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ===== Tema 4 — Hero com Stats (claro ou escuro) ===== */
 function HeroStats({
   content,
@@ -454,6 +343,8 @@ function HeroStats({
   // o hero fica só com o texto sobre o fundo (cena/cor).
   const lawyer = office.lawyers[0]?.photo;
   const hasMetrics = office.metrics.length > 0;
+  const features = bandFeatures(office, content);
+  const hasBand = features.length >= HERO_BAND_MIN_ITEMS;
 
   // Foto de fundo da seção (cenário/escritório) com overlay — como no Hero
   // centralizado. Sem imagem, mantém só a cor (e o gradiente da marca no escuro).
@@ -479,10 +370,12 @@ function HeroStats({
 
   return (
     <section
-      className={`relative overflow-hidden ${dark ? "bg-lp-brand-dark" : "bg-lp-cream"}`}
+      className={`relative flex min-h-svh flex-col overflow-hidden ${
+        dark ? "bg-lp-brand-dark" : "bg-lp-cream"
+      }`}
       style={sectionStyle}
     >
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-16 md:px-10 lg:grid-cols-[58%_42%] lg:py-24">
+      <div className="relative mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 items-center gap-10 px-6 py-12 md:px-10 lg:grid-cols-[58%_42%] lg:py-16">
         <div>
           <LogoMark
             office={office}
@@ -555,7 +448,7 @@ function HeroStats({
             <img
               src={lawyer}
               alt={office.lawyers[0]?.name || office.name}
-              className="relative z-10 h-full max-h-[34rem] w-auto self-end object-contain object-bottom"
+              className="relative z-10 h-full max-h-[min(34rem,70vh)] w-auto self-end object-contain object-bottom"
               style={{
                 maskImage:
                   "linear-gradient(to bottom, #000 88%, transparent 100%)",
@@ -566,6 +459,9 @@ function HeroStats({
           ) : null}
         </div>
       </div>
+
+      {/* Faixa de destaques colada na base da seção */}
+      {hasBand ? <FeatureBand features={features} /> : null}
     </section>
   );
 }
@@ -593,7 +489,7 @@ function HeroRecorte({
 
   return (
     <section
-      className={`relative flex min-h-[42rem] overflow-hidden lg:min-h-[46rem] ${
+      className={`relative flex min-h-svh overflow-hidden ${
         dark ? "bg-lp-brand-dark text-white" : "bg-lp-cream text-lp-brand"
       }`}
     >
@@ -727,52 +623,27 @@ function HeroRecorte({
   );
 }
 
-/* mini-cards de feature sobrepostos (usados no tema centralizado) */
-function FeatureCards({
-  features,
-  belowTone,
-}: {
-  features: HeroFeature[];
-  belowTone?: Tone;
-}) {
-  // Os cards descem por cima da seção seguinte. Em fundo claro, a sombra
-  // azul-marinho suave (shadow-lp-brand/10) lê bem; em fundo escuro ela some, então
-  // usa-se uma sombra preta mais forte + um leve halo branco para destacar.
-  const cardShadow =
-    belowTone === "dark"
-      ? "shadow-2xl shadow-black/40 ring-1 ring-white/10"
-      : "shadow-xl shadow-lp-brand/10 ring-1 ring-lp-ink-soft/5";
-  // A grade acompanha a quantidade de cards (1 a 3) para ficar sempre centrada.
-  const widthCls =
-    features.length >= 3
-      ? "max-w-6xl"
-      : features.length === 2
-        ? "md:max-w-3xl"
-        : "md:max-w-md";
-  const colsCls =
-    features.length >= 3
-      ? "md:grid-cols-3"
-      : features.length === 2
-        ? "md:grid-cols-2"
-        : "md:grid-cols-1";
+/* Faixa de destaques na base do Hero centralizado: texto em caixa alta separado
+   por um losango, sobre a cor da marca. Sem cards e sem ícones. */
+function FeatureBand({ features }: { features: HeroFeature[] }) {
   return (
-    <div className={`relative z-20 mx-auto -mt-24 px-6 md:-mt-28 ${widthCls}`}>
-      <div className={`grid grid-cols-1 gap-4 md:gap-6 ${colsCls}`}>
-        {features.map((f) => {
-          return (
-            <div
-              key={`${f.icon}-${f.text}`}
-              className={`flex items-center gap-4 rounded-2xl bg-white p-6 ${cardShadow}`}
-            >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lp-brand text-lp-accent-soft">
-                <IconForKey iconKey={f.icon} size={26} />
+    <div className="relative w-full bg-lp-brand">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 px-6 py-3.5 md:gap-x-9 md:px-10">
+        {features.map((f, i) => (
+          <Fragment key={`${f.icon}-${f.text}`}>
+            {i > 0 ? (
+              <span
+                aria-hidden
+                className="text-[0.6rem] text-lp-accent-soft md:text-xs"
+              >
+                &#10022;
               </span>
-              <p className="font-display text-base font-semibold leading-snug text-lp-brand">
-                {f.text}
-              </p>
-            </div>
-          );
-        })}
+            ) : null}
+            <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/90 md:text-xs">
+              {f.text}
+            </span>
+          </Fragment>
+        ))}
       </div>
     </div>
   );

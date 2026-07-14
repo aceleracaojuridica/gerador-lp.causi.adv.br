@@ -32,13 +32,8 @@ export function FAQ({ content, tone }: { content: FaqContent; tone: Tone }) {
         </Reveal>
 
         <div className="mt-12 space-y-3">
-          {content.items.map((item, i) => (
-            <FaqAccordion
-              key={item.q}
-              item={item}
-              defaultOpen={i === 0}
-              dark={dark}
-            />
+          {content.items.map((item) => (
+            <FaqAccordion key={item.q} item={item} dark={dark} />
           ))}
         </div>
       </div>
@@ -48,14 +43,13 @@ export function FAQ({ content, tone }: { content: FaqContent; tone: Tone }) {
 
 function FaqAccordion({
   item,
-  defaultOpen,
   dark,
 }: {
   item: { q: string; a: string };
-  defaultOpen: boolean;
   dark: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  // Todos os itens começam fechados.
+  const [open, setOpen] = useState(false);
 
   // Estilo condicional para item aberto (brand bg no modo claro)
   const itemBg = open

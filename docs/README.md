@@ -32,6 +32,7 @@ description: Índice mestre da documentação técnica — o que ler para cada t
 | **Consultar rotas da aplicação** | [api/routes.md](./api/routes.md) |
 | **Design system e UX** | [design/DESIGN.md](./design/DESIGN.md) |
 | **Criar componentes** | [ai-context/conventions.md](./ai-context/conventions.md) |
+| **Deploy DNS / SSL (Registro.br + Cloudflare + Vercel)** | [guides/deploy-registrobr-cloudflare-vercel.md](./guides/deploy-registrobr-cloudflare-vercel.md) |
 
 ---
 
@@ -126,6 +127,7 @@ description: Índice mestre da documentação técnica — o que ler para cada t
 | Documento | Descrição |
 |-----------|-----------|
 | [guides/git-workflow.md](./guides/git-workflow.md) | Git Workflow — commits, hooks Husky, Biome, typecheck |
+| [guides/deploy-registrobr-cloudflare-vercel.md](./guides/deploy-registrobr-cloudflare-vercel.md) | Deploy — Registro.br, Cloudflare DNS/Redirect Rules, Vercel, wildcard SSL (`_acme-challenge`) |
 | [guides/supabase-migrations-and-environments.md](./guides/supabase-migrations-and-environments.md) | Merge de branches com migrations, conflitos, `.env`/`.env.test`, `db push` dev → prod |
 | [guides/nextjs.md](./guides/nextjs.md) | Guia completo Next.js App Router |
 | [guides/loading-and-lazy-components.md](./guides/loading-and-lazy-components.md) | Loading, Suspense, lazy components e fallbacks — quando usar cada estratégia |

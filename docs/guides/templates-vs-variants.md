@@ -24,7 +24,7 @@ O que dirige preview e publicação é o snapshot salvo em `schema.layout`, por 
   "layout": {
     "hero": "causi_lp_section_hero_split_media",
     "dor": "causi_lp_section_dor_with_image_cards",
-    "solucao": "causi_lp_section_solucao_cards_compact",
+    "solucao": "causi_lp_section_solucao_image_icon_list",
     "sobre": "causi_lp_section_sobre_photo_list",
     "areas": "causi_lp_section_areas_grid_icon_cards",
     "etapas": "causi_lp_section_etapas_numbered_steps",

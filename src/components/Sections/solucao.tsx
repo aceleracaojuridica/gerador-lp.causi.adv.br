@@ -37,10 +37,12 @@ import type {
   Tone,
 } from "@/lib/landing-pages/schema";
 import {
+  SOLUCAO_VARIANT_IMAGE_ICON_LIST,
   SOLUCAO_VARIANT_IMAGE_LIST,
-  SOLUCAO_VARIANT_WITH_IMAGE_CARDS,
 } from "@/lib/landing-pages/variants";
+import { cardGridCols } from "./card-grid";
 import { HeadlineText } from "./headline-text";
+import { ImageIconListBlock } from "./image-icon-list-block";
 import { ImageListBlock } from "./image-list-block";
 
 function IconForKey({ iconKey, size }: { iconKey: string; size: number }) {
@@ -129,8 +131,8 @@ export function Solucao({
   image,
 }: SolucaoProps) {
   const dark = tone === "dark";
-  const comImagem = variant === SOLUCAO_VARIANT_WITH_IMAGE_CARDS;
   const listaImagem = variant === SOLUCAO_VARIANT_IMAGE_LIST;
+  const imagemItens = variant === SOLUCAO_VARIANT_IMAGE_ICON_LIST;
 
   return (
     <section
@@ -156,33 +158,41 @@ export function Solucao({
             image={image}
             dark={dark}
           />
+        ) : imagemItens ? (
+          <ImageIconListBlock
+            eyebrow={content.eyebrow}
+            headline={content.headline}
+            intro={content.sub}
+            items={content.cards.map((c) => ({
+              icon: c.icon,
+              title: c.title,
+              text: c.text,
+              key: `${c.title}-${c.text}`,
+            }))}
+            image={image}
+            dark={dark}
+          />
         ) : (
           <>
-            {comImagem ? (
-              <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
-                <Reveal>
-                  <Header content={content} dark={dark} />
-                </Reveal>
-                <Reveal delay={120}>
-                  <div
-                    className="relative h-72 overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-lp-brand md:h-80"
-                    style={
-                      image
-                        ? {
-                            backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "solucao")}, url('${image}')`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : undefined
-                    }
-                  />
-                </Reveal>
-              </div>
-            ) : (
-              <Reveal className="mx-auto max-w-2xl text-center">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+              <Reveal>
                 <Header content={content} dark={dark} />
               </Reveal>
-            )}
+              <Reveal delay={120}>
+                <div
+                  className="relative h-72 overflow-hidden rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand md:h-80"
+                  style={
+                    image
+                      ? {
+                          backgroundImage: `${cardImageOverlay(brandRgb, brandDarkRgb, "solucao")}, url('${image}')`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : undefined
+                  }
+                />
+              </Reveal>
+            </div>
 
             <Cards content={content} />
           </>
@@ -221,7 +231,11 @@ function Header({ content, dark }: { content: SolucaoContent; dark: boolean }) {
 */
 function Cards({ content }: { content: SolucaoContent }) {
   return (
-    <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+    <div
+      className={`mt-14 grid grid-cols-1 gap-5 lg:gap-6 ${cardGridCols(
+        content.cards.length,
+      )}`}
+    >
       {content.cards.map((c, i) => {
         return (
           <Reveal key={`${c.title}-${c.text}`} delay={i * 80}>

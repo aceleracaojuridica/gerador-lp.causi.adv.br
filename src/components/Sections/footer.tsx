@@ -1,7 +1,7 @@
 import { SocialIcon } from "@/components/icons/social-icon";
 import type { Office } from "@/lib/landing-pages/schema";
 import { waLink } from "@/lib/landing-pages/schema";
-import { SOCIALS_META } from "@/lib/landing-pages/socials";
+import { detectNetwork, SOCIALS_META } from "@/lib/landing-pages/socials";
 
 export function Footer({
   office,
@@ -165,21 +165,28 @@ export function Footer({
             <div className="min-w-0 md:flex-1 md:text-right">
               <p className="eyebrow mb-4 text-lp-accent-soft">Acompanhe</p>
               <div className="flex gap-3 md:justify-end">
-                {socials.map((s) => (
-                  <a
-                    key={s.network}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={
-                      SOCIALS_META.find((m) => m.id === s.network)?.label ??
-                      s.network
-                    }
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-lp-accent-soft transition hover:border-white/30 hover:bg-white/15 hover:text-white"
-                  >
-                    <SocialIcon network={s.network} size={18} />
-                  </a>
-                ))}
+                {socials.map((s, i) => {
+                  // A rede é inferida da URL, não do `network` salvo — LPs antigas
+                  // podem ter esse campo desatualizado (ficava travado no padrão).
+                  const network = detectNetwork(s.url);
+                  return (
+                    // `network` não serve de key: 2 links da mesma rede (ou 2 URLs
+                    // não reconhecidas, que caem em "instagram") colidiriam.
+                    <a
+                      key={`${i}-${s.url}`}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={
+                        SOCIALS_META.find((m) => m.id === network)?.label ??
+                        network
+                      }
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-lp-accent-soft transition hover:border-white/30 hover:bg-white/15 hover:text-white"
+                    >
+                      <SocialIcon network={network} size={18} />
+                    </a>
+                  );
+                })}
               </div>
             </div>
           ) : null}

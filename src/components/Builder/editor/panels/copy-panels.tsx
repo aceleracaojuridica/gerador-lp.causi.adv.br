@@ -3,6 +3,10 @@
 import { Add, Close } from "@material-symbols-svg/react";
 import { AutoTextarea } from "@/components/auto-textarea";
 import { BuilderField } from "@/components/Builder/shared/fields";
+import {
+  SECTION_CARDS_MAX,
+  SECTION_CARDS_MIN,
+} from "@/components/Sections/card-grid";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import {
@@ -286,8 +290,8 @@ export function DorCards({ form }: { form: LpEditorForm }) {
         })
       }
       addLabel="Adicionar dor"
-      minItems={2}
-      maxItems={6}
+      minItems={SECTION_CARDS_MIN}
+      maxItems={SECTION_CARDS_MAX}
     />
   );
 }
@@ -342,6 +346,19 @@ export function SolucaoCards({ form }: { form: LpEditorForm }) {
           else c.solucao.cards[i].text = v;
         })
       }
+      onAdd={() =>
+        form.editCopy((c) => {
+          c.solucao.cards.push({ icon: "shield-check", title: "", text: "" });
+        })
+      }
+      onRemove={(i) =>
+        form.editCopy((c) => {
+          c.solucao.cards.splice(i, 1);
+        })
+      }
+      addLabel="Adicionar solução"
+      minItems={SECTION_CARDS_MIN}
+      maxItems={SECTION_CARDS_MAX}
     />
   );
 }
@@ -393,21 +410,125 @@ export function AreasTexts({ form }: { form: LpEditorForm }) {
   );
 }
 
+/** Sub-itens exibidos em bullets na variante "Quadrantes" das Áreas. */
+const AREA_ITEMS_MIN = 2;
+const AREA_ITEMS_MAX = 6;
+
+function AreaSubItems({
+  form,
+  cardIndex,
+  items,
+}: {
+  form: LpEditorForm;
+  cardIndex: number;
+  items: string[];
+}) {
+  const itemKeys = useStableListKeys(items, (item) => item, "area-sub-item");
+
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold text-slate-600">
+        Sub-itens ({AREA_ITEMS_MIN} a {AREA_ITEMS_MAX})
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {items.map((item, j) => (
+          <div key={itemKeys[j]} className="flex items-center gap-1.5">
+            <Input
+              aria-label={`Sub-item ${j + 1}`}
+              value={item}
+              onChange={(e) =>
+                form.editCopy((c) => {
+                  const card = c.areas.cards[cardIndex];
+                  const list = [...(card.items ?? [])];
+                  list[j] = e.target.value;
+                  card.items = list;
+                })
+              }
+              placeholder="Ex: Contratos agrários e parcerias rurais"
+            />
+            <button
+              type="button"
+              aria-label="Remover sub-item"
+              disabled={items.length <= AREA_ITEMS_MIN}
+              onClick={() =>
+                form.editCopy((c) => {
+                  c.areas.cards[cardIndex].items?.splice(j, 1);
+                })
+              }
+              className="shrink-0 rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Close size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      {items.length < AREA_ITEMS_MAX ? (
+        <button
+          type="button"
+          onClick={() =>
+            form.editCopy((c) => {
+              const card = c.areas.cards[cardIndex];
+              card.items = [...(card.items ?? []), ""];
+            })
+          }
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-ui-hover hover:text-slate-800"
+        >
+          <Add size={13} /> Adicionar sub-item
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function AreasCards({ form }: { form: LpEditorForm }) {
   const a = form.copy.areas;
+  const cardKeys = useStableListKeys(
+    a.cards,
+    (c) => `${c.title} ${c.text}`,
+    "area-card",
+  );
+
   return (
-    <PairList
-      title=""
-      items={a.cards.map((c) => ({ a: c.title, b: c.text }))}
-      phA="Nome da área"
-      phB="Descrição"
-      onChange={(i, w, v) =>
-        form.editCopy((c) => {
-          if (w === "a") c.areas.cards[i].title = v;
-          else c.areas.cards[i].text = v;
-        })
-      }
-    />
+    <div className="flex flex-col gap-2">
+      {a.cards.map((card, i) => (
+        <div
+          key={cardKeys[i]}
+          className="flex flex-col gap-2 rounded-lg border border-slate-200 p-2.5"
+        >
+          <div>
+            <p className="mb-1 text-xs font-semibold text-slate-600">
+              Nome da área {i + 1}
+            </p>
+            <Input
+              value={card.title}
+              onChange={(e) =>
+                form.editCopy((c) => {
+                  c.areas.cards[i].title = e.target.value;
+                })
+              }
+              placeholder="Nome da área"
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-semibold text-slate-600">
+              Descrição
+            </p>
+            <AutoTextarea
+              aria-label={`Descrição da área ${i + 1}`}
+              className="resize-y"
+              value={card.text}
+              onChange={(e) =>
+                form.editCopy((c) => {
+                  c.areas.cards[i].text = e.target.value;
+                })
+              }
+              placeholder="Descrição"
+            />
+          </div>
+          <AreaSubItems form={form} cardIndex={i} items={card.items ?? []} />
+        </div>
+      ))}
+    </div>
   );
 }
 

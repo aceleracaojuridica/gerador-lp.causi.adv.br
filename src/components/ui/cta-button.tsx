@@ -65,11 +65,15 @@ export function CTAButton({
         href={anchor}
         className={cls}
         onClick={(e) => {
-          const el = document.getElementById(anchor.replace(/^#/, ""));
-          if (el) {
-            e.preventDefault();
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
+          // Sempre bloqueia a navegação: no editor a LP vive dentro de um
+          // iframe, e deixar o href nativo rodar carregaria o editor lá dentro.
+          e.preventDefault();
+          // A seção está no MESMO documento do link (o do iframe, na prévia) —
+          // usar o `document` global apontaria para o documento do editor.
+          const el = e.currentTarget.ownerDocument.getElementById(
+            anchor.replace(/^#/, ""),
+          );
+          el?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
       >
         {inner}

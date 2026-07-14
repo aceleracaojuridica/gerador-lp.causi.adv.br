@@ -14,7 +14,7 @@ import {
   ETAPAS_VARIANT_NUMBERED_STEPS,
   HERO_VARIANT_CENTERED_FOCUS,
   SOBRE_VARIANT_PHOTO_LIST,
-  SOLUCAO_VARIANT_CARDS_COMPACT,
+  SOLUCAO_VARIANT_IMAGE_ICON_LIST,
 } from "./variants";
 
 /*
@@ -114,12 +114,13 @@ export type CustomSection = {
   tone: Tone;
   eyebrow: string;
   title: string;
-  text: string; // usado no formato "texto" (parágrafos separados por linha)
+  text: string; // parágrafos separados por linha ("texto" e "youtube")
   cards: CustomCard[]; // usado no formato "cards"
   youtubeId?: string; // usado no formato "youtube"
   calendarUrl?: string; // usado no formato "calendar" (src do iframe do Google Calendar)
   mapsUrl?: string; // usado no formato "maps" (src do iframe do Google Maps)
   variant?: "boxed" | "fullWidth"; // variação visual para youtube, calendar e maps
+  cta?: string; // rótulo do botão primário; vazio não renderiza o botão
 };
 
 /** Endereço adicional no rodapé (além do principal). */
@@ -216,11 +217,14 @@ export type SolucaoContent = {
   cards: IconCard[]; // 4 etapas
 };
 
+/** Card de área: além do ícone/título/texto, traz sub-itens (2 a 6). */
+export type AreaCard = IconCard & { items?: string[] };
+
 export type AreasContent = {
   eyebrow: string;
   headline: Headline;
   sub: string;
-  cards: IconCard[]; // 4 áreas
+  cards: AreaCard[]; // 4 áreas
   cta: string;
 };
 
@@ -308,7 +312,7 @@ export type Layout = {
 export const DEFAULT_LAYOUT: Layout = {
   hero: HERO_VARIANT_CENTERED_FOCUS,
   dor: DOR_VARIANT_WITH_IMAGE_CARDS,
-  solucao: SOLUCAO_VARIANT_CARDS_COMPACT,
+  solucao: SOLUCAO_VARIANT_IMAGE_ICON_LIST,
   sobre: SOBRE_VARIANT_PHOTO_LIST,
   areas: AREAS_VARIANT_GRID_ICON_CARDS,
   etapas: ETAPAS_VARIANT_NUMBERED_STEPS,
