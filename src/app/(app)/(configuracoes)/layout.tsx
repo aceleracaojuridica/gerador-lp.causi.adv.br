@@ -8,7 +8,7 @@ export default async function ConfiguracoesLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await requireLpAccessOrRedirect();
+  const session = await requireLpAccessOrRedirect();
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden w-full h-full max-w-full">
@@ -27,8 +27,13 @@ export default async function ConfiguracoesLayout({
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
-      <div className="flex-1 relative pb-20 md:pb-0">{children}</div>
+      {/* Remonta forms client quando o super_admin troca de conta (router.refresh). */}
+      <div
+        key={session.account.id}
+        className="flex-1 relative pb-20 md:pb-0"
+      >
+        {children}
+      </div>
 
       {/* Menu Mobile Flutuante */}
       <SettingsNavMobile />
