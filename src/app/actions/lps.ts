@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { ACCESS_DENIED_ERROR, LP_ERRORS, mapLpDbError } from "@/lib/errors";
+import { revalidateLpPublicCache } from "@/lib/landing-pages/lp-public-cache";
 import {
   deleteLp,
   deleteOrphanedAssets,
   getLpMeta,
   publishLp,
+  resolveOfficeSubdomain,
   saveLp,
   unpublishLp,
 } from "@/lib/landing-pages/lp-store";
@@ -35,6 +37,16 @@ async function assertCanEditLp(slug: string): Promise<void> {
   }
 }
 
+/** Invalida cache da rota pública quando a LP está (ou ficará) publicada. */
+function revalidatePublishedPublic(
+  officeSubdomain: string | undefined,
+  slug: string,
+): void {
+  const office = officeSubdomain?.trim();
+  if (!office) return;
+  revalidateLpPublicCache(office, slug);
+}
+
 /** Salva (cria/sobrescreve) uma LP da conta no banco do Projeto B. */
 export async function saveLpAction(lp: StoredLp): Promise<ActionResult> {
   let session: Awaited<ReturnType<typeof requireLpSession>>;
@@ -55,6 +67,17 @@ export async function saveLpAction(lp: StoredLp): Promise<ActionResult> {
     }
 
     await saveLp(session, lp);
+
+    const office =
+      lp.officeSubdomain?.trim() ||
+      meta?.officeSubdomain?.trim() ||
+      (await resolveOfficeSubdomain(session));
+    const isPublished =
+      lp.status === "published" || meta?.status === "published";
+    if (isPublished) {
+      revalidatePublishedPublic(office, lp.slug);
+    }
+
     revalidatePath("/");
     revalidatePath(`/lp/${lp.slug}`);
     return { ok: true };
@@ -76,7 +99,11 @@ export async function publishLpAction(slug: string): Promise<ActionResult> {
   if (!slug) return { ok: false, error: "Slug não informado." };
 
   try {
+    const meta = await getLpMeta(session, slug);
     await publishLp(session, slug);
+    const office =
+      meta?.officeSubdomain?.trim() || (await resolveOfficeSubdomain(session));
+    revalidatePublishedPublic(office, slug);
     revalidatePath("/");
     revalidatePath(`/lp/${slug}`);
     return { ok: true };
@@ -98,7 +125,11 @@ export async function unpublishLpAction(slug: string): Promise<ActionResult> {
   if (!slug) return { ok: false, error: "Slug não informado." };
 
   try {
+    const meta = await getLpMeta(session, slug);
     await unpublishLp(session, slug);
+    const office =
+      meta?.officeSubdomain?.trim() || (await resolveOfficeSubdomain(session));
+    revalidatePublishedPublic(office, slug);
     revalidatePath("/");
     revalidatePath(`/lp/${slug}`);
     return { ok: true };

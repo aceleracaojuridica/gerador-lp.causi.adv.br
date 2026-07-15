@@ -1,15 +1,13 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import {
   ensureLpAccount,
   getLpAccount,
   isBackfillOfficeSubdomain,
   provisionOfficeSubdomainIfNeeded,
 } from "@/lib/landing-pages/account-store";
-import {
-  type GlobalConfig,
-  getAccountMarketingConfigByAccountId,
-} from "@/lib/landing-pages/config";
+import type { GlobalConfig } from "@/lib/landing-pages/config";
 import { DEFAULT_CONFIG } from "@/lib/landing-pages/global-config";
 import type { Session } from "@/lib/session/types";
 import type { LpDbClient } from "@/lib/supabase/lp-client";
@@ -23,6 +21,11 @@ import { GENERIC_ETAPAS } from "./focos";
 import { deleteOrphanedImages } from "./gallery-cleanup";
 import { syncImageUsagesFromSchema } from "./image-usages";
 import { buildLpListPreview, type LpListPreview } from "./lp-preview";
+import {
+  getCachedAccountMarketingConfig,
+  lpPublicCacheTag,
+  PUBLIC_REVALIDATE_SECONDS,
+} from "./lp-public-cache";
 import { persistLpSchemaMedia } from "./media-storage";
 import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
@@ -191,12 +194,14 @@ export async function getLpMeta(
   id: string;
   slug: string;
   createdByUserId: string;
+  officeSubdomain: string;
+  status: "draft" | "published";
 } | null> {
   const safe = safeSlug(slug);
   const db = createLpUserClient(session);
   const { data, error } = await db
     .from("landing_pages")
-    .select("id,slug,created_by_user_id")
+    .select("id,slug,created_by_user_id,office_subdomain,status")
     .eq("slug", safe)
     .maybeSingle();
   if (error) throwDbError(error);
@@ -205,6 +210,8 @@ export async function getLpMeta(
     id: data.id as string,
     slug: data.slug as string,
     createdByUserId: data.created_by_user_id as string,
+    officeSubdomain: (data.office_subdomain as string) ?? "",
+    status: (data.status as "draft" | "published") ?? "draft",
   };
 }
 
@@ -463,15 +470,13 @@ export type PublicLp = StoredLp & {
   accountMarketingConfig: GlobalConfig;
 };
 
-/** LP publicada — sem autenticação (cliente anônimo + policy pública). */
-export async function getLpPublic(
-  officeSubdomain: string,
-  lpSlug: string,
-): Promise<PublicLp | null> {
-  const office = safeSlug(officeSubdomain);
-  const slug = safeSlug(lpSlug);
-  if (!office || !slug) return null;
+type CachedPublicLpRow = StoredLp & { accountId: number | null };
 
+/** Carrega a linha publicada (sem marketing) — cacheada por office+slug. */
+async function fetchLpPublicRow(
+  office: string,
+  slug: string,
+): Promise<CachedPublicLpRow | null> {
   const db = createLpAnonClient();
   const { data, error } = await db
     .from("landing_pages")
@@ -490,10 +495,36 @@ export async function getLpPublic(
     status: "published",
     schema: row.schema,
   });
-
   const accountId = Number(row.account_id);
-  const accountMarketingConfig = Number.isFinite(accountId)
-    ? await getAccountMarketingConfigByAccountId(accountId)
+  return {
+    ...lp,
+    accountId: Number.isFinite(accountId) ? accountId : null,
+  };
+}
+
+/** LP publicada — sem autenticação (cliente anônimo + policy pública). */
+export async function getLpPublic(
+  officeSubdomain: string,
+  lpSlug: string,
+): Promise<PublicLp | null> {
+  const office = safeSlug(officeSubdomain);
+  const slug = safeSlug(lpSlug);
+  if (!office || !slug) return null;
+
+  const cached = await unstable_cache(
+    async () => fetchLpPublicRow(office, slug),
+    ["lp-public", office, slug],
+    {
+      revalidate: PUBLIC_REVALIDATE_SECONDS,
+      tags: [lpPublicCacheTag(office, slug)],
+    },
+  )();
+
+  if (!cached) return null;
+
+  const { accountId, ...lp } = cached;
+  const accountMarketingConfig = accountId
+    ? await getCachedAccountMarketingConfig(accountId)
     : { ...DEFAULT_CONFIG };
 
   return { ...lp, accountMarketingConfig };

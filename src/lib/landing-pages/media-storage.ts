@@ -70,10 +70,8 @@ export function getPublicMediaUrl(path: string): string {
 }
 
 /**
- * Envia data URL para a galeria da conta.
- * URLs já no bucket ou externas (Unsplash, catálogo de sistema) são mantidas
- * sem criar cópia na galeria — evita duplicar logo/favicon e poluir a galeria
- * com fotos de banco curado.
+ * Envia data URL ou URL HTTP externa (ex.: Unsplash) para a galeria da conta.
+ * URLs já no bucket do projeto são preservadas.
  */
 export async function persistMediaToGallery(
   session: Session,
@@ -83,7 +81,9 @@ export async function persistMediaToGallery(
   const trimmed = source.trim();
   if (!trimmed) return "";
   if (isGeradorStorageUrl(trimmed)) return trimmed;
-  if (!isDataUrl(trimmed)) return trimmed;
+
+  const isHttp = /^https?:\/\//i.test(trimmed);
+  if (!isDataUrl(trimmed) && !isHttp) return trimmed;
 
   const item = await uploadGalleryImage(session, trimmed, originalFilename);
   return item.url;

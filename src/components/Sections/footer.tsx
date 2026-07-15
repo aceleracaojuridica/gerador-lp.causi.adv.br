@@ -1,4 +1,5 @@
 import { SocialIcon } from "@/components/icons/social-icon";
+import { FooterPrivacyTrigger } from "@/components/Preview/lp-privacy-context";
 import type { Office } from "@/lib/landing-pages/schema";
 import { waLink } from "@/lib/landing-pages/schema";
 import { detectNetwork, SOCIALS_META } from "@/lib/landing-pages/socials";
@@ -195,9 +196,7 @@ export function Footer({
         {/* Barra inferior */}
         <div className="mt-12 border-t border-white/10 pt-6">
           <div className="flex flex-col items-center gap-3 text-sm md:flex-row md:justify-between">
-            {/* Tela separada. No preview do builder, onPrivacyClick mostra a
-                página em tela cheia; na LP publicada vira o link
-                /[slug]/politica-de-privacidade (o deploy gera a página). */}
+            {/* Takeover no preview/chrome público; âncora relativa sem contexto. */}
             {onPrivacyClick ? (
               <button
                 type="button"
@@ -207,12 +206,7 @@ export function Footer({
                 Política de Privacidade
               </button>
             ) : (
-              <a
-                href="politica-de-privacidade"
-                className="text-white/70 underline-offset-2 transition hover:text-white hover:underline"
-              >
-                Política de Privacidade
-              </a>
+              <FooterPrivacyTrigger />
             )}
             <span className="text-white/60">
               © {year} {nome}. Todos os direitos reservados.
