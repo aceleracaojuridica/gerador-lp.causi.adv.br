@@ -12,7 +12,6 @@ type TurnstileWidgetProps = {
 declare global {
   interface Window {
     turnstile?: {
-      ready: (callback: () => void) => void;
       render: (
         container: HTMLElement,
         options: {
@@ -27,7 +26,12 @@ declare global {
   }
 }
 
-/** Widget Cloudflare Turnstile para formulários públicos (SPA / popup). */
+/**
+ * Widget Cloudflare Turnstile (render explícito).
+ * Não usa turnstile.ready(): next/script carrega api.js com async/defer, e a
+ * Cloudflare exige script síncrono para ready(). Com onLoad / window.turnstile
+ * já presente, render() é seguro.
+ */
 export function TurnstileWidget({
   siteKey,
   onToken,
@@ -47,22 +51,18 @@ export function TurnstileWidget({
     const container = containerRef.current;
     if (!container || !window.turnstile || widgetIdRef.current) return;
 
-    window.turnstile.ready(() => {
-      if (!containerRef.current || !window.turnstile || widgetIdRef.current) {
-        return;
-      }
-      widgetIdRef.current = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        callback: (token) => onTokenEvent(token),
-        "expired-callback": () => onExpireEvent(),
-        theme: "auto",
-      });
+    widgetIdRef.current = window.turnstile.render(container, {
+      sitekey: siteKey,
+      callback: (token) => onTokenEvent(token),
+      "expired-callback": () => onExpireEvent(),
+      theme: "auto",
     });
   });
 
   // Remonta quando siteKey muda; mountWidget é useEffectEvent (identity estável).
   // biome-ignore lint/correctness/useExhaustiveDependencies: siteKey força remount; mountWidget é EffectEvent
   useEffect(() => {
+    // Script já no documento (reabrir popup): onLoad do next/script não refira.
     if (window.turnstile) {
       mountWidget();
     }
