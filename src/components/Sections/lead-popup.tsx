@@ -13,7 +13,7 @@ import { validatePopupAnswer } from "@/lib/landing-pages/popup/validation";
 import type { PopupQuestion } from "@/lib/landing-pages/schema";
 import { PopupQuestionField } from "./popup-question-field";
 
-const TURNSTILE_SITE_KEY =
+const FALLBACK_TURNSTILE_SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
 
 export type LeadCaptureContext = {
@@ -32,13 +32,17 @@ export function LeadPopup({
   questions,
   demo = false,
   leadContext,
+  turnstileSiteKey,
 }: {
   open: boolean;
   onClose: () => void;
   questions: PopupQuestion[];
   demo?: boolean;
   leadContext?: LeadCaptureContext;
+  /** Site key injetada pela page RSC (fallback: NEXT_PUBLIC_TURNSTILE_SITE_KEY). */
+  turnstileSiteKey?: string;
 }) {
+  const siteKey = turnstileSiteKey?.trim() || FALLBACK_TURNSTILE_SITE_KEY;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [lead, setLead] = useState({ nome: "", telefone: "" });
@@ -82,7 +86,7 @@ export function LeadPopup({
       setSubmitError("Preencha nome e telefone.");
       return;
     }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
+    if (siteKey && !captchaToken) {
       setSubmitError("Confirme o captcha antes de enviar.");
       return;
     }
@@ -238,10 +242,10 @@ export function LeadPopup({
                 required
               />
             </div>
-            {TURNSTILE_SITE_KEY && !demo ? (
+            {siteKey && !demo ? (
               <div className="mt-4">
                 <TurnstileWidget
-                  siteKey={TURNSTILE_SITE_KEY}
+                  siteKey={siteKey}
                   onToken={setCaptchaToken}
                   onExpire={() => setCaptchaToken("")}
                 />

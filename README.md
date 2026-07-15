@@ -38,10 +38,10 @@ Diagrama detalhado: [docs/architecture.md](docs/architecture.md)
 ### Instalação
 
 ```bash
-npm install
+pnpm install
 cp .env.local.example .env.local
 # preencha as variáveis (veja seção abaixo)
-npm run dev
+pnpm dev
 ```
 
 ### Variáveis de ambiente
@@ -128,6 +128,35 @@ Três camadas:
 
 O plano é resolvido via RPC `get_current_user_details_v4` no Projeto A, com cache por request (`React.cache()`). Se a RPC falhar, `plan` retorna `null` e o usuário é bloqueado — sem distinção de erro de provisionamento.
 
+## Deploy e domínios
+
+Hospedagem na **Vercel**, DNS na **Cloudflare**, registro no **Registro.br**. Dois contextos de host:
+
+| Host | Função |
+|------|--------|
+| `marketing.causi.com.br` | App SaaS (login, dashboard, editor) |
+| `{office}.causi.adv.br` | Landing pages públicas dos escritórios |
+
+O apex/`www` de `causi.adv.br` redireciona (308) para o marketing na borda Cloudflare — não são tenants. LPs usam wildcard (`*.causi.adv.br`) com certificado via delegação `_acme-challenge` para a Vercel (sem migrar nameservers para `vercel-dns`).
+
+```
+Registro.br → Cloudflare (DNS + Redirect Rules) → Vercel (Next.js + TLS)
+```
+
+| URL | Papel |
+|-----|-------|
+| `https://marketing.causi.com.br` | App principal |
+| `https://causi.adv.br` / `www` | Redirect → marketing |
+| `https://{office}.causi.adv.br/{slug}` | LP publicada |
+
+Passos (visão geral):
+
+1. **Registro.br** — delegar nameservers de `causi.com.br` e `causi.adv.br` para a Cloudflare.
+2. **Cloudflare** — CNAMEs apontando aos hostnames do painel Vercel; Redirect Rules apex/`www` → marketing; DNS only até domínio Valid.
+3. **Vercel** — adicionar `marketing.causi.com.br`, `causi.adv.br`, `www` e `*.causi.adv.br`.
+
+Guia completo (DNS, SSL wildcard, checklist, troubleshooting): [docs/guides/deploy-registrobr-cloudflare-vercel.md](docs/guides/deploy-registrobr-cloudflare-vercel.md).
+
 ## Status do MVP
 
 ### Implementado
@@ -159,16 +188,17 @@ O plano é resolvido via RPC `get_current_user_details_v4` no Projeto A, com cac
 
 ## Documentação
 
+Índice mestre: [docs/README.md](docs/README.md).
+
 | Documento | Conteúdo |
 |-----------|----------|
-| [docs/prd.md](docs/prd.md) | Requisitos de produto, critérios de aceite |
 | [docs/architecture.md](docs/architecture.md) | Stack, mapa de pastas, fluxos, variáveis de ambiente |
 | [docs/database.md](docs/database.md) | Schema dual-database, RPC, gaps conhecidos |
 | [docs/api.md](docs/api.md) | Endpoints e Server Actions |
 | [docs/features/authentication.md](docs/features/authentication.md) | Fluxo de auth, guards, matriz de acesso |
 | [docs/features/landing-pages.md](docs/features/landing-pages.md) | Templates, editor, publicação, schema JSON |
 | [docs/features/leads.md](docs/features/leads.md) | Captura de leads, dashboard, export |
-| [docs/features/marketing.md](docs/features/marketing.md) | Feature futura |
+| [docs/guides/deploy-registrobr-cloudflare-vercel.md](docs/guides/deploy-registrobr-cloudflare-vercel.md) | Deploy DNS/SSL: Registro.br + Cloudflare + Vercel |
 
 ## Convenções
 

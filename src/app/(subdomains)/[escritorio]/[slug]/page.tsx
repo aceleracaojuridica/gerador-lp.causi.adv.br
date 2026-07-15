@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { preconnect, preinit } from "react-dom";
 import { LandingPageTracking } from "@/components/landing-page-tracking";
-import { LandingPreview } from "@/components/Preview/landing-preview";
+import { LandingSections } from "@/components/Preview/landing-sections";
+import { LpPublicChrome } from "@/components/Preview/lp-public-chrome";
+import { resolvePublicExtraFonts } from "@/lib/landing-pages/fonts";
 import { applyGlobalConfigToOffice } from "@/lib/landing-pages/global-config";
 import { getLpPublic } from "@/lib/landing-pages/lp-store";
 import type { LpSchema } from "@/lib/landing-pages/schema";
 import { resolveSeo } from "@/lib/landing-pages/seo";
-
-export const dynamic = "force-dynamic";
+import { getTurnstileSiteKey } from "@/lib/turnstile";
 
 type Props = { params: Promise<{ escritorio: string; slug: string }> };
 
@@ -110,23 +112,36 @@ export default async function PublicLpPage({ params }: Props) {
   const seo = resolveSeo(schema, publicUrl);
   const jsonLd =
     seo.indexable && JSON.stringify(buildJsonLd(schema, publicUrl));
+  const turnstileSiteKey = getTurnstileSiteKey();
+  const { stylesheetHref, cssVarOverrides } = resolvePublicExtraFonts(
+    schema.office.fonts,
+  );
+
+  if (stylesheetHref) {
+    preconnect("https://fonts.googleapis.com");
+    preconnect("https://fonts.gstatic.com", { crossOrigin: "anonymous" });
+    preinit(stylesheetHref, { as: "style" });
+  }
 
   return (
     <>
+      {cssVarOverrides ? <style>{`:root { ${cssVarOverrides} }`}</style> : null}
       {jsonLd ? (
         <script type="application/ld+json" suppressHydrationWarning>
           {jsonLd}
         </script>
       ) : null}
       <LandingPageTracking office={office} />
-      <LandingPreview
+      <LpPublicChrome
         schema={schema}
-        demo={false}
+        turnstileSiteKey={turnstileSiteKey}
         leadContext={{
           officeSubdomain: lp.officeSubdomain,
           lpSlug: lp.slug,
         }}
-      />
+      >
+        <LandingSections schema={schema} demo={false} />
+      </LpPublicChrome>
     </>
   );
 }

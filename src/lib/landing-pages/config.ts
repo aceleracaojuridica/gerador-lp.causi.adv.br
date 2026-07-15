@@ -4,6 +4,7 @@ import {
   type GlobalConfig,
   normalizeGlobalConfig,
 } from "@/lib/landing-pages/global-config";
+import { revalidateLpMarketingCache } from "@/lib/landing-pages/lp-public-cache";
 import type { SocialNetwork } from "@/lib/landing-pages/schema";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import { getSession } from "@/lib/session";
@@ -274,4 +275,6 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
       await db.from("lp_account_socials").delete().in("id", toDeleteIds);
     }
   }
+
+  revalidateLpMarketingCache(ctx.accountId);
 }
