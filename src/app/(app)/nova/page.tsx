@@ -36,6 +36,7 @@ export default async function Page() {
 
   return (
     <NovaPageClient
+      key={session.account.id}
       defaultOfficeName={session.account.name}
       savedAddresses={addresses || []}
       savedContacts={contacts || []}

@@ -28,10 +28,7 @@ export default async function ConfiguracoesLayout({
       </aside>
 
       {/* Remonta forms client quando o super_admin troca de conta (router.refresh). */}
-      <div
-        key={session.account.id}
-        className="flex-1 relative pb-20 md:pb-0"
-      >
+      <div key={session.account.id} className="flex-1 relative pb-20 md:pb-0">
         {children}
       </div>
 

@@ -6,6 +6,11 @@ import {
   isBackfillOfficeSubdomain,
   provisionOfficeSubdomainIfNeeded,
 } from "@/lib/landing-pages/account-store";
+import {
+  type GlobalConfig,
+  getAccountMarketingConfigByAccountId,
+} from "@/lib/landing-pages/config";
+import { DEFAULT_CONFIG } from "@/lib/landing-pages/global-config";
 import type { Session } from "@/lib/session/types";
 import type { LpDbClient } from "@/lib/supabase/lp-client";
 import {
@@ -52,6 +57,7 @@ type LandingPageRow = {
   schema: StoredLp["schema"];
   created_by_user_id: string;
   causi_user_id: string;
+  account_id?: number | string;
 };
 
 function throwDbError(error: { message: string; code?: string }): never {
@@ -452,11 +458,16 @@ export async function unpublishLp(
   if (error) throwDbError(error);
 }
 
+/** LP publicada + padrão de marketing da conta (live-merge na rota pública). */
+export type PublicLp = StoredLp & {
+  accountMarketingConfig: GlobalConfig;
+};
+
 /** LP publicada — sem autenticação (cliente anônimo + policy pública). */
 export async function getLpPublic(
   officeSubdomain: string,
   lpSlug: string,
-): Promise<StoredLp | null> {
+): Promise<PublicLp | null> {
   const office = safeSlug(officeSubdomain);
   const slug = safeSlug(lpSlug);
   if (!office || !slug) return null;
@@ -464,14 +475,14 @@ export async function getLpPublic(
   const db = createLpAnonClient();
   const { data, error } = await db
     .from("landing_pages")
-    .select("slug,office_subdomain,name,tema,status,schema")
+    .select("slug,office_subdomain,name,tema,status,schema,account_id")
     .eq("office_subdomain", office)
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
   if (error || !data) return null;
   const row = data as LandingPageRow;
-  return migrate({
+  const lp = migrate({
     slug: row.slug,
     officeSubdomain: row.office_subdomain,
     name: row.name,
@@ -479,6 +490,13 @@ export async function getLpPublic(
     status: "published",
     schema: row.schema,
   });
+
+  const accountId = Number(row.account_id);
+  const accountMarketingConfig = Number.isFinite(accountId)
+    ? await getAccountMarketingConfigByAccountId(accountId)
+    : { ...DEFAULT_CONFIG };
+
+  return { ...lp, accountMarketingConfig };
 }
 
 /** Remove uma LP (RLS: owner/super_admin). */

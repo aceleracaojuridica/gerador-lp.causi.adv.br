@@ -43,11 +43,26 @@ function stripScriptMarkup(html: string): string {
   return html.replace(/<script\b[\s\S]*?(<\/script\s*>|$)/gi, "").trim();
 }
 
+/**
+ * Se o snippet não contém tags `<script>` e parece JS puro, trata como inline.
+ * Caso contrário, extrai scripts completos e o HTML restante (sem script).
+ */
 function renderSnippet(id: string, html: string | undefined) {
   if (!html?.trim()) return null;
 
-  const scripts = extractCompleteScripts(html, id);
-  const safeHtml = stripScriptMarkup(html);
+  const trimmed = html.trim();
+  const scripts = extractCompleteScripts(trimmed, id);
+  const safeHtml = stripScriptMarkup(trimmed);
+
+  // JS puro sem wrapper <script> (ex.: `console.log("Causi")`) → next/script
+  if (scripts.length === 0 && safeHtml === trimmed && !trimmed.includes("<")) {
+    return (
+      <Script key={id} id={id} strategy="afterInteractive">
+        {trimmed}
+      </Script>
+    );
+  }
+
   if (!safeHtml && scripts.length === 0) return null;
 
   return (

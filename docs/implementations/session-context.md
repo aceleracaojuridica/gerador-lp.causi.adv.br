@@ -207,6 +207,20 @@ A conta selecionada no `SystemBar` é persitida no cookie HTTP-only `causi_act` 
 
 > **Por que cookie e não localStorage?** Server Components e `getSession()` executam no servidor, onde `localStorage` não existe. Cookies são enviados automaticamente em cada request HTTP, tornando o contexto de conta visível para o servidor antes de qualquer render.
 
+### Troca de conta — remount de dados account-scoped
+
+Após `switchAccountAction`, o client chama `setSession` + `router.refresh()`. Rotas com estado client account-scoped remontam via `key={session.account.id}` (ou `key={accountId-slug}` no editor), alinhado ao padrão de Configurações:
+
+| Rota | Remount |
+|------|---------|
+| `/galeria` | `GalleryPageClient` com `key={session.account.id}` |
+| `/contatos` | `ContatosPageClient` com `key={session.account.id}` |
+| `/nova` | `NovaPageClient` com `key={session.account.id}` |
+| `/lp/[slug]` | `LpEditorPageClient` com `key={accountId-slug}` |
+| Configurações | layout com `key={session.account.id}` |
+
+Isso evita estado stale (galeria, leads, forms RHF) sem invalidar caches de biblioteca externa.
+
 ### `getUserAccountsAction` — conta principal + contas adicionais
 
 Para usuários comuns, a listagem consolida **duas fontes**:
