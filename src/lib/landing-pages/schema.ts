@@ -1,4 +1,5 @@
 import type { PopupQuestion } from "./schema";
+import type { SectionImages } from "./section-images";
 import type {
   AreasVariant,
   DorVariant,
@@ -121,6 +122,7 @@ export type CustomSection = {
   mapsUrl?: string; // usado no formato "maps" (src do iframe do Google Maps)
   variant?: "boxed" | "fullWidth"; // variação visual para youtube, calendar e maps
   cta?: string; // rótulo do botão primário; vazio não renderiza o botão
+  hidden?: boolean; // oculta a seção na página (ausente/false = ativa)
 };
 
 /** Endereço adicional no rodapé (além do principal). */
@@ -179,14 +181,19 @@ export type Office = {
   // Redes sociais (só as preenchidas) — exibidas no rodapé com ícone.
   socials: Social[];
   // Imagens de CENÁRIO por seção (Storage, Unsplash ou upload do usuário).
-  sectionImages: { hero: string; dor: string; sobre: string; solucao: string };
+  sectionImages: SectionImages;
   metrics: Metric[]; // destaques do Hero "Com métricas" (opcional) — ex: { icon: "trophy", label: "anos de atuação" }
   // Mini-cards de destaque do Hero centralizado (ícone + texto). Opcional p/
   // compatibilidade: ausente = usa os destaques da copy gerada; vazio = sem cards.
   heroFeatures?: HeroFeature[];
 };
 
-export type SectionImageKey = "hero" | "dor" | "sobre" | "solucao";
+export type {
+  SceneImages,
+  SceneSectionKey,
+  SectionImageKey,
+  SectionImages,
+} from "./section-images";
 
 /** Texto de manchete com um trecho em destaque (cor accent). */
 export type Headline = { pre: string; em: string; post: string };

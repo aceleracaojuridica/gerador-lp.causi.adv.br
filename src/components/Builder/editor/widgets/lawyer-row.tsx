@@ -2,6 +2,7 @@
 
 import {
   Add,
+  AddPhotoAlternate,
   Check,
   Close,
   OpenWith,
@@ -12,6 +13,7 @@ import {
 import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 import { AutoTextarea } from "@/components/auto-textarea";
+import { ImagePickerDialog } from "@/components/Builder/shared/image-picker-dialog";
 import { Input } from "@/components/ui/input";
 import { ZoomableImage } from "@/components/zoomable-image";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
@@ -19,6 +21,7 @@ import {
   type ImagemMelhorada,
   melhorarImagem,
 } from "@/lib/landing-pages/melhorar-imagem";
+import { useStableListKeys } from "../use-stable-list-keys";
 
 const ComparePhotoModal = dynamic(
   () => import("./compare-photo-modal").then((m) => m.ComparePhotoModal),
@@ -96,6 +99,7 @@ function LawyerRow({
   const [result, setResult] = useState<ImagemMelhorada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [framing, setFraming] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   async function melhorar() {
     setLoading(true);
@@ -110,7 +114,7 @@ function LawyerRow({
   }
 
   return (
-    <div className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white p-3">
+    <div className="min-w-0 max-w-full rounded-xl border border-border bg-card p-3">
       <div className="relative min-w-0 max-w-full">
         {framing ? (
           <FocalDragSurface
@@ -124,7 +128,7 @@ function LawyerRow({
             src={lawyer.photo}
             alt={`advogado ${index + 1}`}
             position="top"
-            className="h-[140px] w-full rounded-lg ring-1 ring-slate-200"
+            className="h-[140px] w-full rounded-lg ring-1 ring-border"
           />
         )}
 
@@ -155,7 +159,7 @@ function LawyerRow({
                 form.setLawyerFocal(index, { x: 50, y: 50 });
               }}
               title="Centralizar o enquadramento"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm backdrop-blur transition hover:bg-white"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm backdrop-blur transition hover:bg-white"
             >
               <Undo size={14} /> Centralizar
             </button>
@@ -178,6 +182,20 @@ function LawyerRow({
               {loading ? "Melhorando…" : "Melhorar foto"}
             </button>
           )}
+          {!framing ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPickerOpen(true);
+              }}
+              aria-label="Trocar foto"
+              title="Escolher outra foto: da galeria, do catálogo do sistema ou enviando uma nova"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow-sm backdrop-blur transition hover:bg-white"
+            >
+              <AddPhotoAlternate size={16} />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={(e) => {
@@ -185,11 +203,17 @@ function LawyerRow({
               setFraming((v) => !v);
             }}
             aria-label={framing ? "Concluir enquadramento" : "Enquadrar"}
-            title="Reposiciona a foto para o rosto não ser cortado"
+            title={
+              framing
+                ? "Concluir o enquadramento"
+                : "Reposiciona a foto para o rosto não ser cortado"
+            }
+            // Enquadrando, o botão vira "concluir": verde de confirmação, não a
+            // cor da marca — que é a mesma do estado de repouso e não sinaliza nada.
             className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur transition ${
               framing
-                ? "bg-ui-soft/95 text-ui"
-                : "bg-white/90 text-slate-600 hover:bg-white"
+                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                : "bg-white/90 text-slate-700 hover:bg-white"
             }`}
           >
             {framing ? <Check size={16} /> : <OpenWith size={16} />}
@@ -200,14 +224,14 @@ function LawyerRow({
       <div className="mt-3 flex flex-col gap-1.5">
         <Input
           aria-label={`Nome do advogado ${index + 1}`}
-          className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-slate-800 outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
+          className="w-full rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
           value={lawyer.name}
           onChange={(e) => form.setLawyerField(index, "name", e.target.value)}
           placeholder="Nome do advogado"
         />
         <AutoTextarea
           aria-label={`Descrição do advogado ${index + 1}`}
-          className="w-full resize-y rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-500 outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
+          className="w-full resize-y rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground outline-none transition focus:border-ui focus:ring-2 focus:ring-ui/15"
           value={lawyer.role}
           onChange={(e) => form.setLawyerField(index, "role", e.target.value)}
           placeholder="Cargo e OAB (ex: Sócio · OAB/SP 000)"
@@ -215,6 +239,17 @@ function LawyerRow({
       </div>
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
+
+      <ImagePickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        title={lawyer.name ? `Foto de ${lawyer.name}` : "Foto do advogado"}
+        onSelect={(url) => {
+          form.setLawyerPhoto(index, url);
+          // Outra pessoa, outro rosto: o enquadramento antigo não vale mais.
+          form.setLawyerFocal(index, { x: 50, y: 50 });
+        }}
+      />
 
       {result ? (
         <ComparePhotoModal
@@ -236,6 +271,13 @@ function LawyerRow({
 export function LawyerPhotosInput({ form }: { form: LpEditorForm }) {
   const ref = useRef<HTMLInputElement>(null);
   const lawyers = form.office.lawyers;
+  // Sem isso, cada tecla no nome/cargo muda a key, remonta a linha e o input
+  // perde o foco — só dava para digitar um caractere por vez.
+  const lawyerKeys = useStableListKeys(
+    lawyers,
+    (l) => `${l.photo}::${l.name}::${l.role}`,
+    "lawyer",
+  );
   return (
     <div className="flex flex-col gap-3">
       <Input
@@ -253,16 +295,11 @@ export function LawyerPhotosInput({ form }: { form: LpEditorForm }) {
       {lawyers.length > 0 ? (
         <div className="flex flex-col gap-3">
           {lawyers.map((l, i) => (
-            <LawyerRow
-              key={`${l.photo}::${l.name}::${l.role}`}
-              form={form}
-              lawyer={l}
-              index={i}
-            />
+            <LawyerRow key={lawyerKeys[i]} form={form} lawyer={l} index={i} />
           ))}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-slate-300 px-4 py-5 text-center text-xs text-slate-400">
+        <p className="rounded-lg border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">
           Nenhum advogado cadastrado.
         </p>
       )}

@@ -237,49 +237,62 @@ export function LazyImageSlot({
   return (
     <div
       className={cn(
-        "min-w-0 max-w-full rounded-xl border border-slate-200 bg-white p-3",
+        "min-w-0 max-w-full rounded-[5px] border border-border bg-card p-3",
         className,
       )}
     >
+      {/* Label acima da imagem, com o "remover" no mesmo nível (à direita).
+          Full width, então o texto não é mais cortado como quando dividia a
+          linha com os botões. */}
+      <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-sm font-medium text-foreground">
+          {label}
+        </p>
+        {src ? (
+          <button
+            type="button"
+            aria-label="Remover imagem"
+            onClick={onClear}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <Close size={14} />
+          </button>
+        ) : null}
+      </div>
+
       {src ? (
         <div className="relative min-w-0 max-w-full">
           {/* biome-ignore lint/performance/noImgElement: preview local no builder */}
           <img
             src={src}
             alt=""
-            className="h-[120px] w-full rounded-lg object-cover ring-1 ring-slate-200"
+            className="h-[120px] w-full rounded-[5px] object-cover ring-1 ring-border"
           />
-          <button
-            type="button"
-            aria-label="Remover imagem"
-            onClick={onClear}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-          >
-            <Close size={14} />
-          </button>
         </div>
       ) : (
-        <div className="flex h-[120px] w-full items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">
+        <div className="flex h-[120px] w-full items-center justify-center rounded-[5px] border border-dashed border-border bg-muted/40 text-xs text-muted-foreground">
           Sem imagem
         </div>
       )}
 
-      <div className="mt-2.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="min-w-0 truncate text-sm font-medium text-slate-700">
-          {label}
-        </span>
-        <div className="flex shrink-0 items-center gap-1.5 self-end">
-          {extraActions}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setPickerOpen(true)}
-          >
-            <AddPhotoAlternate className="size-4" />
-            {src ? "Alterar imagem" : "Escolher imagem"}
-          </Button>
-        </div>
+      {/* Ações em largura total, lado a lado. `[&>button]` alcança tanto o
+          <Button> daqui quanto o botão cru de `extraActions` (ex.: "IA escolhe"). */}
+      <div
+        className={cn(
+          "mt-2.5 grid gap-1.5 [&>button]:w-full [&>button]:justify-center [&>button]:rounded-[5px]",
+          extraActions ? "grid-cols-2" : "grid-cols-1",
+        )}
+      >
+        {extraActions}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPickerOpen(true)}
+        >
+          <AddPhotoAlternate className="size-4" />
+          {src ? "Alterar imagem" : "Escolher imagem"}
+        </Button>
       </div>
 
       <ImagePickerDialog

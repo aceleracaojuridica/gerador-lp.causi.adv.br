@@ -13,7 +13,7 @@ import {
   type Layout,
   type Theme,
 } from "@/lib/landing-pages/schema";
-import type { SectionImages } from "@/lib/landing-pages/section-images";
+import type { SceneImages } from "@/lib/landing-pages/section-images";
 import { normalizeSeo } from "@/lib/landing-pages/seo";
 import {
   buildOfficeFromGerarLpPayload,
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
   }
 
   let copy: FocoCopy;
-  let imageQueries: SectionImages = {
+  let imageQueries: SceneImages = {
     hero: "",
     dor: "",
     sobre: "",
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
   // (ver `videoSection` mais adiante). O Topo fica livre para qualquer variante.
   const layout: Layout = { ...baseLayout };
 
-  let images: SectionImages;
+  let images: SceneImages;
   if (p.images) {
     images = p.images;
   } else {

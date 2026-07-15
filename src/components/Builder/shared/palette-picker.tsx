@@ -44,10 +44,10 @@ export function PalettePicker({
           className="flex w-full items-center justify-between gap-2 text-left"
           aria-expanded={open}
         >
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-foreground">
             {activeName ? `Paleta: ${activeName}` : "Escolher uma paleta"}
           </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-ui-hover">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground transition hover:bg-ui-hover">
             {open ? "Fechar" : "Trocar"}
             <KeyboardArrowDown
               size={14}
@@ -67,9 +67,7 @@ export function PalettePicker({
                 variant={active ? "outline" : "ghost"}
                 onClick={() => onPick(p.theme)}
                 className={`h-auto justify-start gap-2 border-2 px-2.5 py-2 ${
-                  active
-                    ? "border-ui"
-                    : "border-slate-200 hover:border-slate-300"
+                  active ? "border-ui" : "border-border hover:border-border"
                 }`}
               >
                 <span className="flex shrink-0 gap-0.5">
@@ -86,7 +84,7 @@ export function PalettePicker({
                     />
                   ))}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700">
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
                   {p.name}
                 </span>
                 {active ? (

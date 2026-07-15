@@ -2,6 +2,7 @@ import type { LandingPageCreateFormValues } from "@/forms/LandingPageCreateForm/
 import type { FocoCopy } from "../focos";
 import { matchFoco } from "../focos";
 import { DEFAULT_HEADING_FONT_ID } from "../fonts";
+import { imagemAleatoria } from "../image-bank";
 import {
   DEFAULT_THEME,
   type Lawyer,
@@ -10,6 +11,7 @@ import {
   type Social,
   type Theme,
 } from "../schema";
+import type { SceneImages } from "../section-images";
 
 /** Payload aceito por POST /api/gerar-lp (wizard → LP salva). */
 export type GerarLpPayload = {
@@ -31,7 +33,7 @@ export type GerarLpPayload = {
   lawyers: Lawyer[];
   socials: Social[];
   copy: FocoCopy;
-  images: { hero: string; dor: string; sobre: string; solucao: string };
+  images: SceneImages;
   layout: Layout;
 };
 
@@ -103,6 +105,17 @@ export function createGerarLpPayloadFromWizard(
   };
 }
 
+/**
+ * Figura recortada do Topo. Com 2+ advogados a seção Equipe existe, e eleger um
+ * rosto para o Topo seria favoritismo — então entra uma imagem genérica do tema,
+ * distinta da cena de fundo. Com 0 ou 1 advogado o retrato dele segue valendo e
+ * o slot fica vazio.
+ */
+function heroDestaqueFor(lawyers: Lawyer[], scenes: SceneImages): string {
+  const withPhoto = lawyers.filter((l) => l.photo?.trim()).length;
+  return withPhoto > 1 ? imagemAleatoria("hero", scenes.hero) : "";
+}
+
 /** Monta `Office` a partir do payload do wizard (usado em /api/gerar-lp). */
 export function buildOfficeFromGerarLpPayload(
   p: GerarLpPayload,
@@ -112,6 +125,7 @@ export function buildOfficeFromGerarLpPayload(
   const tema = p.tema.trim();
   const foco = matchFoco(tema);
   const theme: Theme = p.theme ?? DEFAULT_THEME;
+  const lawyers = p.lawyers ?? [];
 
   return {
     name,
@@ -129,13 +143,16 @@ export function buildOfficeFromGerarLpPayload(
     diferenciais: p.diferenciais.map((d) => d.trim()).filter(Boolean),
     logoSrc: p.logoSrc ?? "",
     logoBg: p.logoBg ?? { type: "transparent", color: theme.brand },
-    lawyers: p.lawyers ?? [],
+    lawyers,
     socials: Array.isArray(p.socials)
       ? p.socials
           .map((s) => ({ ...s, url: (s.url ?? "").trim() }))
           .filter((s) => s.url)
       : [],
-    sectionImages: images,
+    sectionImages: {
+      ...images,
+      heroDestaque: heroDestaqueFor(lawyers, images),
+    },
     metrics: [],
     // Tipografia padrão da LP gerada: Cormorant Garamond nos títulos (peso 600).
     // Corpo fica no padrão do site. Editável em Aparência → Tipografia.

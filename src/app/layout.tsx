@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Causi",
+  title: "Causi | Marketing",
   description: "O Motor de Honorários da Advocacia Moderna",
   robots: { index: false, follow: false },
 };

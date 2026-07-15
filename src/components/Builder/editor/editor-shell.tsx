@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowBack,
   Badge,
   Campaign,
   Close,
@@ -19,7 +20,6 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
   Lightbulb,
-  OpenInNew,
   ProgressActivity,
   Save,
   Search,
@@ -41,14 +41,17 @@ import {
   saveLpAction,
   unpublishLpAction,
 } from "@/app/actions/lps";
+import { useAppChrome } from "@/components/app-chrome-context";
 import { AutoTextarea } from "@/components/auto-textarea";
 import {
   DevicePreview,
   type Viewport,
 } from "@/components/Preview/device-preview";
 import { LandingPreview } from "@/components/Preview/landing-preview";
+import { hasExplicitHeroBand } from "@/components/Sections/hero";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -68,7 +71,6 @@ import {
   type GlobalConfig,
 } from "@/lib/landing-pages/global-config";
 import { publicLpUrl } from "@/lib/landing-pages/lp-url";
-import { getLpPublicDomain } from "@/lib/landing-pages/public-routing";
 import {
   DEFAULT_LAYOUT,
   type EquipeVariant,
@@ -140,11 +142,16 @@ import {
 } from "./panels/hero-inputs";
 import { IdentidadePanel } from "./panels/identidade-panel";
 import { IntegracoesPanel } from "./panels/integracoes-panel";
-import { ImagensPanel, ReorderPanel } from "./panels/layout-panel";
+import {
+  heroDestaqueHint,
+  ImagensPanel,
+  ReorderPanel,
+} from "./panels/layout-panel";
 import { SeoPanel } from "./panels/seo-panel";
 import {
   AddSectionButton,
   CustomSectionEditor,
+  customSectionIcon,
 } from "./widgets/custom-section-editor";
 import { LawyerPhotosInput } from "./widgets/lawyer-row";
 import { SectionImageInput } from "./widgets/section-image-input";
@@ -208,89 +215,30 @@ function getSectionDescription(sectionId: DetailSectionId): string {
   }
 }
 
-/** Preview da URL pública da LP — layout único, discreto, para publicado e rascunho. */
-function PublicLpUrlPreview({
-  officeSubdomain,
-  slug,
-  status,
-}: {
-  officeSubdomain: string;
-  slug: string;
-  status: "draft" | "published";
-}) {
-  const lpDomain = getLpPublicDomain() || "causi.adv.br";
+/** Status da LP (publicado/rascunho). A URL pública vem do botão de olho. */
+function PublicLpUrlPreview({ status }: { status: "draft" | "published" }) {
   const isLive = status === "published";
 
-  const content = (
-    <>
-      <span className="flex shrink-0 items-center gap-1.5">
-        <span className="relative flex size-1.5" aria-hidden>
-          {isLive ? (
-            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/30" />
-          ) : null}
-          <span
-            className={cn(
-              "relative size-1.5 rounded-full",
-              isLive
-                ? "bg-emerald-500/70"
-                : "bg-rose-400/55 dark:bg-rose-400/45",
-            )}
-          />
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          {isLive ? "Ao vivo" : "Offline"}
-        </span>
-      </span>
-      <span aria-hidden className="h-3 w-px shrink-0 bg-border/80" />
-      <span
-        className={cn(
-          "min-w-0 truncate font-mono text-[11px] leading-none tabular-nums",
-          !isLive && "opacity-80",
-        )}
-      >
-        <span className="font-medium text-foreground/90">
-          {officeSubdomain}
-        </span>
-        <span className="text-muted-foreground/40">.{lpDomain}/</span>
-        <span className="font-medium text-foreground/90">{slug}</span>
-      </span>
-      {isLive ? (
-        <OpenInNew
-          size={12}
-          className="size-3 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-          aria-hidden
-        />
-      ) : null}
-    </>
-  );
-
-  const shellClass =
-    "inline-flex max-w-full items-center gap-2 rounded-md border border-border/70 bg-muted/20 px-2.5 py-1";
-
-  if (isLive) {
-    return (
-      <a
-        href={publicLpUrl(officeSubdomain, slug)}
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Abrir site publicado em nova aba"
-        className={cn(
-          shellClass,
-          "group transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60",
-        )}
-      >
-        {content}
-      </a>
-    );
-  }
-
   return (
-    <div
-      className={shellClass}
-      title="Landing page fora do ar — publique para ativar o link"
+    <span
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/20 px-2.5 py-1"
+      title={isLive ? "Landing page publicada" : "Landing page em rascunho"}
     >
-      {content}
-    </div>
+      <span className="relative flex size-1.5" aria-hidden>
+        {isLive ? (
+          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/30" />
+        ) : null}
+        <span
+          className={cn(
+            "relative size-1.5 rounded-full",
+            isLive ? "bg-emerald-500/70" : "bg-rose-400/55 dark:bg-rose-400/45",
+          )}
+        />
+      </span>
+      <span className="text-[10px] text-muted-foreground">
+        {isLive ? "Publicado" : "Rascunho"}
+      </span>
+    </span>
   );
 }
 
@@ -330,9 +278,9 @@ export function Editor({
   // Modo "Mudar sequência": colapsa tudo e mostra só as seções arrastáveis.
   const [reorderMode, setReorderMode] = useState(false);
   // Mestre-detalhe: seção aberta no painel de configuração (null = menu inicial).
-  const [detailSection, setDetailSection] = useState<DetailSectionId | null>(
-    null,
-  );
+  // Pode ser uma seção nativa (DetailSectionId) OU o id de uma seção
+  // personalizada (UUID) — ambos abrem no mesmo painel de detalhe.
+  const [detailSection, setDetailSection] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
@@ -352,8 +300,27 @@ export function Editor({
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  // Largura real (px) do painel de navegação — a coluna do status na barra de
+  // topo copia esse valor para a divisória cair EXATAMENTE na borda dos painéis,
+  // mesmo quando o usuário redimensiona. Default = 24rem (LEFT_PANEL_DEFAULT_SIZE).
+  const [navPanelPx, setNavPanelPx] = useState(384);
   // Esconde a barra do topo para ver a LP limpa (só no desktop).
   const [topBarHidden, setTopBarHidden] = useState(false);
+
+  // Esconder a navegação do editor é o gesto "quero a tela inteira para o
+  // preview" — e a trilha de ícones do app faz parte dessa tela. Sincronizamos
+  // pelo estado (e não dentro do clique) para valer também quando o usuário
+  // arrasta a divisória até fechar o painel.
+  const { setSidebarHidden } = useAppChrome();
+  useEffect(() => {
+    setSidebarHidden(leftPanelCollapsed);
+  }, [leftPanelCollapsed, setSidebarHidden]);
+
+  // A sidebar é GLOBAL: se o editor desmontar com ela escondida, o resto do app
+  // fica sem navegação e sem nenhum controle para trazê-la de volta.
+  useEffect(() => {
+    return () => setSidebarHidden(false);
+  }, [setSidebarHidden]);
   const isPublishing = publishState === "saving";
   const lawyerCount = office.lawyers?.length ?? 0;
 
@@ -579,6 +546,16 @@ export function Editor({
       ? null
       : (editorSections.find((section) => section.id === detailSection) ??
         null);
+  // Seção personalizada aberta no detalhe (quando não é uma seção nativa).
+  const currentCustom =
+    detailSection && !isDetailSectionId(detailSection)
+      ? (form.customSections.find((s) => s.id === detailSection) ?? null)
+      : null;
+  const detailLabel =
+    currentDetail?.label ??
+    (currentCustom
+      ? currentCustom.title.trim() || "Nova seção"
+      : "Campos editáveis");
   const resourceSections = editorSections.filter(
     (section) => section.stage === "foundation",
   );
@@ -588,7 +565,7 @@ export function Editor({
   const conversionSections = editorSections.filter(
     (section) => section.stage === "conversion",
   );
-  const syncDetailSectionUrl = useCallback((id: DetailSectionId | null) => {
+  const syncDetailSectionUrl = useCallback((id: string | null) => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("sec", id);
@@ -598,6 +575,18 @@ export function Editor({
       window.history.replaceState(null, "", next);
     }
   }, []);
+
+  // Se a seção personalizada aberta no detalhe for excluída, volta para a lista.
+  useEffect(() => {
+    if (
+      detailSection &&
+      !isDetailSectionId(detailSection) &&
+      !form.customSections.some((s) => s.id === detailSection)
+    ) {
+      setDetailSection(null);
+      syncDetailSectionUrl(null);
+    }
+  }, [detailSection, form.customSections, syncDetailSectionUrl]);
   const previewVariantControls = useMemo<
     Partial<Record<PreviewEditableSectionId, PreviewVariantControl>>
   >(
@@ -710,13 +699,14 @@ export function Editor({
     setLeftPanelCollapsed(true);
   }
 
-  function goToDetailSection(id: DetailSectionId) {
+  function goToDetailSection(id: string) {
     setDetailSection(id);
     syncDetailSectionUrl(id);
     // Os campos abrem no próprio painel da esquerda (mestre-detalhe).
     if (!isLgUp) setMobileTab("navigation");
     const target =
-      editorSections.find((s) => s.id === id)?.previewTarget ?? `sec-${id}`;
+      editorSections.find((s) => s.id === id)?.previewTarget ??
+      (isDetailSectionId(id) ? `sec-${id}` : `sec-custom-${id}`);
     scrollToSection(target);
   }
 
@@ -929,35 +919,35 @@ export function Editor({
   function renderSectionIcon(sectionId: DetailSectionId) {
     switch (sectionId) {
       case "identidade":
-        return <Storefront size={18} />;
+        return <Storefront size={22} />;
       case "imagens":
-        return <Image size={18} />;
+        return <Image size={22} />;
       case "aparencia":
-        return <Tune size={18} />;
+        return <Tune size={22} />;
       case "integracoes":
-        return <Campaign size={18} />;
+        return <Campaign size={22} />;
       case "seo":
-        return <Search size={18} />;
+        return <Search size={22} />;
       case "hero":
-        return <Web size={18} />;
+        return <Web size={22} />;
       case "dor":
-        return <SentimentDissatisfied size={18} />;
+        return <SentimentDissatisfied size={22} />;
       case "solucao":
-        return <Lightbulb size={18} />;
+        return <Lightbulb size={22} />;
       case "sobre":
-        return <Badge size={18} />;
+        return <Badge size={22} />;
       case "equipe":
-        return <Groups size={18} />;
+        return <Groups size={22} />;
       case "areas":
-        return <Gavel size={18} />;
+        return <Gavel size={22} />;
       case "etapas":
-        return <FormatListNumbered size={18} />;
+        return <FormatListNumbered size={22} />;
       case "faq":
-        return <Help size={18} />;
+        return <Help size={22} />;
       case "ctaFinal":
-        return <Campaign size={18} />;
+        return <Campaign size={22} />;
       case "footer":
-        return <ContactPage size={18} />;
+        return <ContactPage size={22} />;
     }
   }
 
@@ -989,6 +979,7 @@ export function Editor({
     collapsible,
     open,
     onToggle,
+    headerless,
   }: {
     step: string;
     title: string;
@@ -996,8 +987,10 @@ export function Editor({
     collapsible?: boolean;
     open?: boolean;
     onToggle?: () => void;
+    /** Sem cabeçalho próprio — o título/estado vêm da faixa acima. */
+    headerless?: boolean;
   }) {
-    const expanded = collapsible ? !!open : true;
+    const expanded = headerless ? true : collapsible ? !!open : true;
     const headerInner = (
       <>
         <div className="flex min-w-0 items-center gap-2">
@@ -1010,11 +1003,11 @@ export function Editor({
               )}
             />
           ) : (
-            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
               {step}
             </span>
           )}
-          <p className="truncate text-xs font-semibold text-foreground">
+          <p className="truncate text-xs font-medium text-foreground">
             {title}
           </p>
         </div>
@@ -1025,17 +1018,19 @@ export function Editor({
     );
     return (
       <section className="space-y-1.5">
-        {collapsible ? (
+        {headerless ? null : collapsible ? (
+          // py-2.5 iguala a altura das linhas de seção logo abaixo: o cabeçalho
+          // é clicável e antes tinha metade da altura delas, virando um alvo ruim.
           <button
             type="button"
             onClick={onToggle}
             aria-expanded={expanded ? "true" : "false"}
-            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-0.5 text-left transition hover:bg-muted/60"
+            className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-muted/60"
           >
             {headerInner}
           </button>
         ) : (
-          <div className="flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center justify-between gap-2 px-2.5 py-2.5">
             {headerInner}
           </div>
         )}
@@ -1044,14 +1039,12 @@ export function Editor({
             <EditorSectionMenuRow
               key={section.id}
               title={section.label}
-              meta={section.variantLabel}
               icon={
                 <span
                   className={cn(
-                    "inline-flex size-7 items-center justify-center rounded-md",
-                    section.enabled
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-muted text-muted-foreground/50",
+                    // size-10 + ícone 22: mesmo tamanho do ícone da "Nova seção".
+                    "inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-[#808c97]/10 bg-card",
+                    section.enabled ? "text-[#808c97]" : "text-[#808c97]/50",
                   )}
                 >
                   {renderSectionIcon(section.id)}
@@ -1064,6 +1057,56 @@ export function Editor({
           ))}
         </div>
       </section>
+    );
+  }
+
+  /** Cabeçalho-faixa dos grupos da navegação: borda inferior, caixa alta e seta.
+   *  Estilo único para "Seções principais", "Recursos" e "Personalizadas". */
+  function renderStripHeader({
+    title,
+    subtitle,
+    count,
+    open,
+    onToggle,
+  }: {
+    title: string;
+    subtitle?: string;
+    count?: number;
+    open: boolean;
+    onToggle: () => void;
+  }) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open ? "true" : "false"}
+        className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2.5 text-left transition hover:bg-muted/40"
+      >
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium leading-[22px] text-[#0f1828] dark:text-foreground">
+            {title}
+          </span>
+          {subtitle ? (
+            <span className="block text-[11px] text-muted-foreground">
+              {subtitle}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {typeof count === "number" ? (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {count}
+            </span>
+          ) : null}
+          <KeyboardArrowDown
+            size={18}
+            className={cn(
+              "shrink-0 text-muted-foreground transition-transform",
+              open ? "" : "-rotate-90",
+            )}
+          />
+        </span>
+      </button>
     );
   }
 
@@ -1095,19 +1138,20 @@ export function Editor({
                 className="-ml-1 h-7 shrink-0 px-1.5 text-xs"
                 onClick={closeDetailSection}
               >
-                <KeyboardArrowLeft size={16} />
+                <ArrowBack size={16} />
                 Voltar
               </Button>
               {/* Título e badges empurrados para a direita da barra. */}
               <p className="ml-auto min-w-0 truncate text-sm font-semibold text-foreground">
-                {currentDetail?.label ?? "Campos editáveis"}
+                {detailLabel}
               </p>
               {currentDetail?.variantLabel ? (
                 <UiBadge variant="secondary" className="shrink-0">
                   {currentDetail.variantLabel}
                 </UiBadge>
               ) : null}
-              {currentDetail && !currentDetail.enabled ? (
+              {(currentDetail && !currentDetail.enabled) ||
+              currentCustom?.hidden ? (
                 <UiBadge variant="muted" className="shrink-0">
                   Oculta na página
                 </UiBadge>
@@ -1119,102 +1163,105 @@ export function Editor({
           </div>
         </>
       ) : (
-        <>
-          <div className="border-b border-border px-3 py-2.5">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">
-                Navegação
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Clique em um item para editar aqui.
-              </p>
-            </div>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-            {reorderMode ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {reorderMode ? (
+            <div className="px-3 py-3">
               <ReorderPanel form={form} onClose={() => setReorderMode(false)} />
-            ) : (
-              <div className="space-y-2">
-                {/* Seções principais engloba conteúdo + conversão/fechamento. */}
-                {renderNavigationGroup({
-                  step: "1",
-                  title: "Seções principais",
-                  sections: [...contentSections, ...conversionSections],
-                  collapsible: true,
-                  open: mainOpen,
-                  onToggle: () => setMainOpen((v) => !v),
-                })}
+            </div>
+          ) : (
+            <>
+              {/* As três faixas usam o MESMO estilo (renderStripHeader): borda
+                    inferior de ponta a ponta, caixa alta e seta. As linhas de cada
+                    grupo ficam abaixo, recuadas, quando ele está aberto. */}
+              {renderStripHeader({
+                title: "Seções principais",
+                subtitle: "Clique em um item para editar aqui.",
+                open: mainOpen,
+                onToggle: () => setMainOpen((v) => !v),
+              })}
+              {mainOpen ? (
+                // px-0.5 soma com o px-2.5 interno do row e alinha o ícone com o
+                // texto do cabeçalho (px-3 = 12px).
+                <div className="px-0.5 py-2">
+                  {renderNavigationGroup({
+                    step: "1",
+                    title: "Seções principais",
+                    sections: [...contentSections, ...conversionSections],
+                    headerless: true,
+                  })}
+                </div>
+              ) : null}
 
-                {renderNavigationGroup({
-                  step: "2",
-                  title: "Recursos da página",
-                  sections: resourceSections,
-                  collapsible: true,
-                  open: resourcesOpen,
-                  onToggle: () => setResourcesOpen((v) => !v),
-                })}
+              {renderStripHeader({
+                title: "Recursos da página",
+                subtitle: "Configurações avançadas da página.",
+                open: resourcesOpen,
+                onToggle: () => setResourcesOpen((v) => !v),
+              })}
+              {resourcesOpen ? (
+                <div className="px-0.5 py-2">
+                  {renderNavigationGroup({
+                    step: "2",
+                    title: "Recursos da página",
+                    sections: resourceSections,
+                    headerless: true,
+                  })}
+                </div>
+              ) : null}
 
-                <section className="space-y-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setCustomOpen((v) => !v)}
-                    aria-expanded={customOpen ? "true" : "false"}
-                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-0.5 text-left transition hover:bg-muted/60"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <KeyboardArrowDown
-                        size={16}
-                        className={cn(
-                          "shrink-0 text-muted-foreground transition-transform",
-                          customOpen ? "" : "-rotate-90",
-                        )}
-                      />
-                      <span className="truncate text-xs font-semibold text-foreground">
-                        Seções personalizadas
-                      </span>
-                    </span>
-                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {form.customSections.length}
-                    </span>
-                  </button>
-
-                  <div className={cn("space-y-2", customOpen ? "" : "hidden")}>
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setReorderMode(true)}
-                      >
-                        <SwapVert size={14} />
-                        Reordenar
-                      </Button>
-                    </div>
-
-                    {form.customSections.length ? (
-                      <div className="space-y-0.5">
-                        {form.customSections.map((sec) => (
-                          <CustomSectionEditor
-                            key={sec.id}
-                            form={form}
-                            section={sec}
-                            onScroll={() =>
-                              scrollToSection(`sec-custom-${sec.id}`)
-                            }
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-border bg-background px-3 py-3 text-xs text-muted-foreground">
-                        Nenhuma seção personalizada adicionada.
-                      </div>
-                    )}
-
-                    <AddSectionButton onAdd={form.addCustomSection} />
+              {renderStripHeader({
+                title: "Seções personalizadas",
+                subtitle: "Crie novas seções.",
+                count: form.customSections.length,
+                open: customOpen,
+                onToggle: () => setCustomOpen((v) => !v),
+              })}
+              {customOpen ? (
+                <div className="space-y-2 px-3 py-2">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setReorderMode(true)}
+                    >
+                      <SwapVert size={14} />
+                      Reordenar
+                    </Button>
                   </div>
-                </section>
 
-                {editorNotices.length ? (
+                  {form.customSections.length ? (
+                    <div className="space-y-0.5">
+                      {form.customSections.map((sec) => (
+                        <EditorSectionMenuRow
+                          key={sec.id}
+                          title={sec.title.trim() || "Nova seção"}
+                          icon={
+                            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-[#808c97]/10 bg-card text-[#808c97]">
+                              {customSectionIcon(sec.kind)}
+                            </span>
+                          }
+                          toggle={{
+                            on: !sec.hidden,
+                            onChange: (on) => form.setCustomHidden(sec.id, !on),
+                          }}
+                          active={detailSection === sec.id}
+                          onPress={() => goToDetailSection(sec.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border bg-background px-3 py-3 text-xs text-muted-foreground">
+                      Nenhuma seção personalizada adicionada.
+                    </div>
+                  )}
+
+                  <AddSectionButton onAdd={form.addCustomSection} />
+                </div>
+              ) : null}
+
+              {editorNotices.length ? (
+                <div className="px-3 py-3">
                   <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
                     <div>
                       <p className="text-xs font-semibold text-amber-900">
@@ -1234,11 +1281,11 @@ export function Editor({
                       ))}
                     </div>
                   </section>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       )}
     </aside>
   );
@@ -1310,6 +1357,19 @@ export function Editor({
   /* Campos da seção aberta. Renderizado dentro do painel da esquerda
      (mestre-detalhe) — não existe mais painel de CMS à direita. */
   function renderDetailContent() {
+    // Seção personalizada: os mesmos campos do editor, sem o accordion (bare).
+    if (currentCustom) {
+      return (
+        <div className="min-w-0 max-w-full space-y-3">
+          <CustomSectionEditor
+            form={form}
+            section={currentCustom}
+            bare
+            onScroll={() => scrollToSection(`sec-custom-${currentCustom.id}`)}
+          />
+        </div>
+      );
+    }
     return (
       <div className="min-w-0 max-w-full space-y-3">
         {detailSection === "identidade" && <IdentidadePanel form={form} />}
@@ -1328,14 +1388,31 @@ export function Editor({
               value: tones.hero ?? "light",
               onChange: (t) => form.setTone("hero", t),
             })}
-            <SectionImageInput form={form} sectionKey="hero" />
+            {/* As duas imagens do topo ficam aqui, juntas: a cena ao fundo e a
+                figura à direita. Antes só o fundo estava nesta tela, e a figura
+                vivia no painel Imagens — ninguém achava. */}
+            <SectionImageInput
+              form={form}
+              sectionKey="hero"
+              label="Fundo do topo"
+            />
+            <SectionImageInput
+              form={form}
+              sectionKey="heroDestaque"
+              label="Destaque do topo"
+            />
+            <p className="-mt-1 px-0.5 text-xs text-muted-foreground">
+              {heroDestaqueHint(form.office)}
+            </p>
             <FieldGroup title="Textos">
               <HeroTexts form={form} />
             </FieldGroup>
-            {needsMetrics ? (
+            {/* Métricas e faixa são exclusivas: preencher a faixa esconde as
+                métricas (elas não renderizariam mesmo). */}
+            {needsMetrics && !hasExplicitHeroBand(form.office) ? (
               <FieldGroupAccordion
                 title="Métricas"
-                hint="Números de destaque exibidos no topo"
+                hint="Números de destaque exibidos no topo. Indisponível enquanto houver faixa de destaques."
               >
                 <MetricsInput form={form} />
               </FieldGroupAccordion>
@@ -1353,7 +1430,7 @@ export function Editor({
         {detailSection === "aparencia" && (
           <>
             <div>
-              <p className="mb-2 text-sm font-medium text-slate-700">
+              <p className="mb-2 text-sm font-medium text-foreground">
                 Cantos (arredondado ou quadrado)
               </p>
               <div className="space-y-2">
@@ -1372,7 +1449,7 @@ export function Editor({
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-slate-100 pt-3">
+            <div className="space-y-2 border-t border-border/60 pt-3">
               <BuilderField
                 label="O que acontece ao clicar num botão"
                 hint="Vale para todos os botões de chamada da página."
@@ -1405,13 +1482,13 @@ export function Editor({
                   />
                 </BuilderField>
               ) : (office.buttons?.action ?? "popup") === "whatsapp" ? (
-                <p className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500">
+                <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
                   Os botões abrem o WhatsApp informado no{" "}
                   <strong>Rodapé</strong>.
                 </p>
               ) : (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                  <p className="text-xs leading-relaxed text-slate-500">
+                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
                     Abre um formulário que termina sempre com{" "}
                     <strong>nome</strong> e <strong>telefone</strong>. Adicione
                     perguntas personalizadas (texto, e-mail, valor, CEP, etc.)
@@ -1431,8 +1508,8 @@ export function Editor({
               )}
             </div>
 
-            <div className="space-y-2 border-t border-slate-100 pt-3">
-              <p className="text-sm font-medium text-slate-700">Tipografia</p>
+            <div className="space-y-2 border-t border-border/60 pt-3">
+              <p className="text-sm font-medium text-foreground">Tipografia</p>
               <BuilderField
                 label="Títulos e destaques"
                 hint="Fonte usada nos títulos de seção e manchetes."
@@ -1624,7 +1701,9 @@ export function Editor({
 
   return (
     <Form {...form.form}>
-      <div className="app-ui flex h-[100dvh] min-h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
+      {/* Altura vem do pai (AppLayout desconta a SystemBar). Fixar 100dvh aqui
+          estoura o container e o overflow-hidden corta o rodapé dos painéis. */}
+      <div className="app-ui flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-hidden bg-muted/40">
         <ConfirmDialog
           open={leaveOpen}
           onOpenChange={setLeaveOpen}
@@ -1645,13 +1724,20 @@ export function Editor({
         />
         <div
           className={cn(
-            "shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5",
+            "shrink-0 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5 lg:px-0 lg:py-0",
             // Escondida só no desktop, pelo botão da borda superior do preview.
             isLgUp && topBarHidden && "hidden",
           )}
         >
-          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4">
-            <div className="flex min-w-0 items-center gap-2 lg:col-span-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-0">
+            {/* Coluna do status: mesma largura do painel de navegação (24rem =
+                LEFT_PANEL_DEFAULT_SIZE). A borda direita continua a divisória
+                dos painéis logo abaixo, e "Rascunho/Publicado" fica à esquerda. */}
+            <div
+              className="flex min-w-0 items-center gap-2 lg:shrink-0 lg:self-stretch lg:border-r lg:border-border lg:px-5"
+              // Largura = painel de navegação, para a borda cair na divisória.
+              style={isLgUp ? { width: navPanelPx } : undefined}
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -1666,91 +1752,109 @@ export function Editor({
               >
                 <Close size={16} />
               </Button>
-              <div className="min-w-0">
-                <PublicLpUrlPreview
-                  officeSubdomain={officeSubdomain}
-                  slug={slug}
-                  status={status}
-                />
+              <div className="ml-auto min-w-0">
+                <PublicLpUrlPreview status={status} />
               </div>
             </div>
 
-            <div className="flex min-w-0 items-center lg:col-span-3 lg:justify-center">
-              <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
-                {(
-                  [
-                    { id: "desktop", label: "Desktop", Icon: DesktopWindows },
-                    { id: "tablet", label: "Tablet", Icon: Tablet },
-                    { id: "mobile", label: "Mobile", Icon: Devices },
-                  ] as const
-                ).map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setViewport(id)}
-                    aria-pressed={viewport === id}
-                    title={label}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
-                      viewport === id
-                        ? "bg-ui-soft text-ui"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Icon size={14} />
-                    <span className="hidden sm:inline">{label}</span>
-                  </button>
-                ))}
+            {/* Sobre o preview: seletor de viewport (centralizado) + ações.
+                O py-3 vive aqui (a barra ficou lg:py-0) para a coluna do status
+                — e a borda dela — esticarem de ponta a ponta. */}
+            <div className="flex flex-col gap-3 lg:flex-1 lg:flex-row lg:items-center lg:gap-4 lg:px-5 lg:py-3">
+              <div className="flex min-w-0 items-center lg:flex-1 lg:justify-center">
+                <div className="inline-flex shrink-0 rounded-lg border border-border p-0.5">
+                  {(
+                    [
+                      { id: "desktop", label: "Desktop", Icon: DesktopWindows },
+                      { id: "tablet", label: "Tablet", Icon: Tablet },
+                      { id: "mobile", label: "Mobile", Icon: Devices },
+                    ] as const
+                  ).map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setViewport(id)}
+                      aria-pressed={viewport === id}
+                      aria-label={label}
+                      title={label}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-md px-2 py-1 transition",
+                        viewport === id
+                          ? "bg-ui-soft text-ui"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:col-span-4 lg:justify-end">
-              <UiBadge variant={dirty ? "secondary" : "muted"}>
-                {dirty ? "Alterações locais" : "Tudo salvo"}
-              </UiBadge>
-              <Button
-                type="button"
-                variant={dirty ? "default" : "outline"}
-                size="sm"
-                onClick={salvar}
-                disabled={!dirty || saveState === "saving" || isPublishing}
-              >
-                {saveState === "saving" ? (
-                  <ProgressActivity size={16} className="animate-spin" />
-                ) : (
-                  <Save size={16} />
-                )}
-                Salvar
-              </Button>
-              {status === "published" ? (
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant={dirty ? "default" : "outline"}
                   size="sm"
-                  onClick={despublicar}
-                  disabled={isPublishing}
+                  onClick={salvar}
+                  disabled={!dirty || saveState === "saving" || isPublishing}
                 >
-                  {isPublishing ? (
+                  {saveState === "saving" ? (
                     <ProgressActivity size={16} className="animate-spin" />
                   ) : (
-                    <CloudOff size={16} />
+                    <Save size={16} />
                   )}
-                  Retirar do ar
+                  Salvar
                 </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={publicar}
-                  disabled={isPublishing}
-                >
-                  {isPublishing ? (
-                    <ProgressActivity size={16} className="animate-spin" />
-                  ) : null}
-                  {dirty ? "Salvar e publicar" : "Publicar"}
-                </Button>
-              )}
+                {status === "published" ? (
+                  // Publicada: tirar do ar e espiar o que está no ar são ações
+                  // irmãs — ficam num grupo só, com o olho abrindo a página real.
+                  <ButtonGroup>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={despublicar}
+                      disabled={isPublishing}
+                    >
+                      {isPublishing ? (
+                        <ProgressActivity size={16} className="animate-spin" />
+                      ) : (
+                        <CloudOff size={16} />
+                      )}
+                      Retirar do ar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label="Ver página publicada"
+                      title="Abrir a página publicada em nova aba"
+                      asChild
+                    >
+                      <a
+                        href={publicLpUrl(officeSubdomain, slug)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Visibility size={16} />
+                      </a>
+                    </Button>
+                  </ButtonGroup>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={publicar}
+                    disabled={isPublishing}
+                  >
+                    {isPublishing ? (
+                      <ProgressActivity size={16} className="animate-spin" />
+                    ) : null}
+                    Publicar
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1770,11 +1874,12 @@ export function Editor({
               collapsible
               groupResizeBehavior="preserve-pixel-size"
               className="min-w-0"
-              onResize={(panelSize) =>
+              onResize={(panelSize) => {
                 setLeftPanelCollapsed(
                   panelSize.inPixels <= PANEL_COLLAPSED_THRESHOLD_PX,
-                )
-              }
+                );
+                setNavPanelPx(panelSize.inPixels);
+              }}
             >
               {navigationPanel}
             </ResizablePanel>

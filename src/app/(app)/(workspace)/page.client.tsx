@@ -40,7 +40,9 @@ export function HomePageClient({ lps }: HomePageClientProps) {
 
   return (
     <Container orientation="vertical" overflow="hidden">
-      <Header>
+      {/* py-[30px] no desktop: iguala a altura ao cabeçalho "Landing Pages"
+          da sub-nav (py-5 = 96px), já que aqui o botão h-9 dita a linha. */}
+      <Header className="md:py-[30px]">
         <HeaderContent>
           <HeaderHeading>
             <h1>Suas landing pages</h1>
@@ -87,8 +89,10 @@ export function HomePageClient({ lps }: HomePageClientProps) {
                 slug={lp.slug}
                 officeSubdomain={lp.officeSubdomain}
                 name={lp.name}
+                tema={lp.tema}
                 status={lp.status}
                 preview={lp.preview}
+                createdAt={lp.createdAt}
                 createdByUserId={lp.createdByUserId}
                 createdByLabel={lp.createdByLabel}
               />

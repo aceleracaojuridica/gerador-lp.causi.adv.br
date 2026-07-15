@@ -120,7 +120,7 @@ export function IconPicker({
         type="button"
         aria-label="Escolher ícone"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-[38px] w-[38px] items-center justify-center rounded-lg border border-slate-300 bg-white text-ui transition hover:bg-ui-hover"
+        className="flex h-[38px] w-[38px] items-center justify-center rounded-lg border border-border bg-card text-ui transition hover:bg-ui-hover"
       >
         <IconForKey iconKey={value} size={18} />
       </button>
@@ -131,7 +131,7 @@ export function IconPicker({
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-20 cursor-default"
           />
-          <div className="absolute left-0 top-[42px] z-30 grid max-h-56 w-56 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+          <div className="absolute left-0 top-[42px] z-30 grid max-h-56 w-56 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-xl">
             {ICON_KEYS.map((key) => {
               const active = key === value;
               return (
@@ -147,7 +147,7 @@ export function IconPicker({
                   className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
                     active
                       ? "bg-ui-soft text-ui"
-                      : "text-slate-500 hover:bg-ui-hover hover:text-slate-800"
+                      : "text-muted-foreground hover:bg-ui-hover hover:text-foreground"
                   }`}
                 >
                   <IconForKey iconKey={key} size={17} />

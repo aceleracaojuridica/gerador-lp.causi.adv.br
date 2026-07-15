@@ -119,12 +119,12 @@ export function PopupBuilder({
       onClick={handleBackdropClick}
       onKeyDown={handleBackdropKeyDown}
     >
-      <div className="flex max-h-[88vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <div className="flex max-h-[88vh] w-full max-w-lg flex-col rounded-xl bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
             <h2
               id="popup-builder-title"
-              className="text-sm font-semibold text-slate-900"
+              className="text-sm font-semibold text-foreground"
             >
               Personalizar formulário
             </h2>
@@ -136,7 +136,7 @@ export function PopupBuilder({
             type="button"
             aria-label="Fechar"
             onClick={onClose}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-slate-400 transition hover:bg-ui-hover hover:text-slate-700"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
           >
             <Close size={20} />
           </button>
@@ -144,7 +144,7 @@ export function PopupBuilder({
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
           {questions.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-400">
+            <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
               Nenhuma pergunta ainda. O popup abre direto no nome e telefone.
             </p>
           ) : null}
@@ -152,7 +152,7 @@ export function PopupBuilder({
           {questions.map((q, i) => (
             <div
               key={q.id}
-              className="space-y-3 rounded-lg border border-slate-200 p-3.5"
+              className="space-y-3 rounded-lg border border-border p-3.5"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
@@ -162,7 +162,7 @@ export function PopupBuilder({
                   type="button"
                   aria-label="Remover pergunta"
                   onClick={() => removeQ(i)}
-                  className="rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-red-600"
+                  className="rounded-lg px-1.5 text-muted-foreground transition hover:bg-ui-hover hover:text-red-600"
                 >
                   <Delete size={14} />
                 </button>
@@ -199,14 +199,14 @@ export function PopupBuilder({
                 </select>
               </BuilderField>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-600">Obrigatório</span>
+                <span className="text-xs text-foreground">Obrigatório</span>
                 <button
                   type="button"
                   onClick={() => setRequired(i, q.required === false)}
                   className={`rounded-[5px] px-2 py-0.5 text-[0.7rem] font-semibold transition ${
                     q.required !== false
                       ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
-                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                      : "bg-muted text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {q.required !== false ? "Sim" : "Não"}
@@ -230,7 +230,7 @@ export function PopupBuilder({
               {q.type === "choice" ? (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-foreground">
                       Várias respostas
                     </span>
                     <button
@@ -239,14 +239,16 @@ export function PopupBuilder({
                       className={`rounded-[5px] px-2 py-0.5 text-[0.7rem] font-semibold transition ${
                         q.allowMultiple
                           ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
-                          : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                          : "bg-muted text-muted-foreground hover:bg-muted"
                       }`}
                     >
                       {q.allowMultiple ? "Sim" : "Não"}
                     </button>
                   </div>
                   <div className="space-y-1.5">
-                    <p className="text-sm font-medium text-slate-700">Opções</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Opções
+                    </p>
                     {q.options.map((opt, oi) => (
                       <div
                         key={`${q.id}-opt-${oi}`}
@@ -262,7 +264,7 @@ export function PopupBuilder({
                           type="button"
                           aria-label="Remover opção"
                           onClick={() => removeOption(i, oi)}
-                          className="shrink-0 rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700"
+                          className="shrink-0 rounded-lg px-1.5 text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
                         >
                           <Close size={14} />
                         </button>
@@ -271,7 +273,7 @@ export function PopupBuilder({
                     <button
                       type="button"
                       onClick={() => addOption(i)}
-                      className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-1.5 text-xs font-medium text-ui transition hover:bg-ui-hover"
+                      className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border py-1.5 text-xs font-medium text-ui transition hover:bg-ui-hover"
                     >
                       <Add size={13} /> Adicionar opção
                     </button>
@@ -284,23 +286,23 @@ export function PopupBuilder({
           <button
             type="button"
             onClick={addQ}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-ui-hover"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-3 text-sm font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
           >
             <Add size={16} /> Adicionar pergunta
           </button>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
+          <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
             <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
               Passo final (fixo)
             </span>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Nome e telefone são sempre o último passo. Use os tipos acima para
               coletar e-mail, valor, localização e outros dados.
             </p>
           </div>
         </div>
 
-        <div className="border-t border-slate-200 px-5 py-3">
+        <div className="border-t border-border px-5 py-3">
           <button
             type="button"
             onClick={onClose}

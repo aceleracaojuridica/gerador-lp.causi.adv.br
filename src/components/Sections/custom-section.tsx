@@ -5,6 +5,11 @@ import {
   extractIframeSrc,
   validateIframeDomain,
 } from "@/lib/landing-pages/validation/iframe-extractor";
+import { cn } from "@/lib/utils";
+
+/** Seção personalizada "com cards": 2 (lado a lado, 50%) a 6 (3 em cima, 3 embaixo). */
+export const CUSTOM_CARDS_MIN = 2;
+export const CUSTOM_CARDS_MAX = 6;
 
 /**
  * Player do YouTube da seção de vídeo.
@@ -254,10 +259,19 @@ export function CustomSection({
             );
           })()
         ) : (
-          <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          <div
+            className={cn(
+              "mt-14 grid grid-cols-1 gap-5 md:gap-6",
+              // 2 cards → 50% cada; 3+ → até 3 por linha (6 = 3 em cima, 3 embaixo).
+              cards.length <= 2
+                ? "sm:grid-cols-2"
+                : "sm:grid-cols-2 lg:grid-cols-3",
+            )}
+          >
             {cards.map((c, index) => (
               <div
-                key={`${c.title}::${c.text}`}
+                // biome-ignore lint/suspicious/noArrayIndexKey: key posicional evita remontar o card ao digitar no editor; a lista não reordena.
+                key={`custom-card-${index}`}
                 className="flex h-full flex-col break-words rounded-2xl bg-white p-7 transition hover:-translate-y-1 hover:shadow-xl"
               >
                 <span className="mb-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lp-brand font-display text-lg font-bold text-lp-accent-soft">

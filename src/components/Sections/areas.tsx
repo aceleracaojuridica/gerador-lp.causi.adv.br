@@ -178,7 +178,8 @@ function Grade({ content, dark, accentRgb }: VariantProps) {
 
       <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         {content.cards.map((a, i) => (
-          <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
+          // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do texto do card faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+          <Reveal key={`areas-card-${i}`} delay={i * 80}>
             <div className="flex h-full items-start gap-5 rounded-xl bg-white p-7 ring-1 ring-lp-ink-soft/10 transition hover:-translate-y-0.5">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-lp-accent text-lp-accent">
                 <IconForKey iconKey={a.icon} size={28} />
@@ -236,7 +237,8 @@ function Quadrantes({ content, dark, accentRgb }: VariantProps) {
         className={`mt-14 grid grid-cols-1 overflow-hidden rounded-2xl border-t border-l md:grid-cols-2 ${line}`}
       >
         {content.cards.map((a, i) => (
-          <Reveal key={`${a.title}-${a.text}`} delay={i * 80}>
+          // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do texto do card faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+          <Reveal key={`areas-card-${i}`} delay={i * 80}>
             <div className={`h-full border-r border-b p-7 md:p-10 ${line}`}>
               <div className="flex items-center gap-3">
                 <span

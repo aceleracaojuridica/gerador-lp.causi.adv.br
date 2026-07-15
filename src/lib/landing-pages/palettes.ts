@@ -120,14 +120,17 @@ export const PALETTES: Palette[] = [
     id: "simples",
     name: "Simples",
     theme: {
-      brand: "#252629",
-      brandDark: "#131416",
-      accent: "#cfa561",
-      accentSoft: "#e6cd9c",
-      cream: "#f9f6f2",
-      creamDeep: "#ece6dc",
-      ink: "#1a1b1d",
-      inkSoft: "#565759",
+      // As 4 amostras do seletor são brand/accent/accentSoft/cream — mapeei
+      // aqui as 4 cores informadas. brandDark/creamDeep/ink/inkSoft são os pares
+      // (mais escuro / card / textos) derivados para o tema funcionar.
+      brand: "#111318",
+      brandDark: "#08090c",
+      accent: "#1b6e6e",
+      accentSoft: "#8a8f98",
+      cream: "#ffffff",
+      creamDeep: "#f2f3f5",
+      ink: "#111318",
+      inkSoft: "#8a8f98",
     },
   },
   {

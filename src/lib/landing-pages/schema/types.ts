@@ -1,4 +1,5 @@
 import type { PopupQuestion } from "../popup/types";
+import type { SectionImages } from "../section-images";
 import type {
   AreasVariant,
   DorVariant,
@@ -120,7 +121,7 @@ export type Office = {
   logoBg: { type: "transparent" | "light" | "dark"; color: string };
   lawyers: Lawyer[];
   socials: Social[];
-  sectionImages: { hero: string; dor: string; sobre: string; solucao: string };
+  sectionImages: SectionImages;
   metrics: Metric[];
   heroFeatures?: HeroFeature[];
 };

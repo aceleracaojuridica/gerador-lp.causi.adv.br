@@ -16,10 +16,14 @@ import {
   type ExternalApiLogMeta,
   logExternalApiCall,
 } from "./lp-external-api-log";
-import { EMPTY_SECTION_IMAGES, type SectionImages } from "./section-images";
+import {
+  EMPTY_SCENE_IMAGES,
+  type SceneImages,
+  type SceneSectionKey,
+} from "./section-images";
 
 // Consultas-base (inglês) quando a IA não sugere termos.
-const FALLBACK_QUERIES: SectionImages = {
+const FALLBACK_QUERIES: SceneImages = {
   hero: "worried person reading legal documents at home",
   dor: "stressed person with papers financial problem",
   sobre: "modern law office interior professional meeting room",
@@ -258,14 +262,14 @@ export async function buscarImagemAleatoria(
  * outras. Sem UNSPLASH_ACCESS_KEY, devolve tudo vazio.
  */
 export async function buscarImagensUnsplash(
-  queries: Partial<SectionImages>,
+  queries: Partial<SceneImages>,
   log?: ExternalApiLogMeta,
-): Promise<SectionImages> {
+): Promise<SceneImages> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-  if (!accessKey) return { ...EMPTY_SECTION_IMAGES };
+  if (!accessKey) return { ...EMPTY_SCENE_IMAGES };
 
-  const out: SectionImages = { ...EMPTY_SECTION_IMAGES };
-  const keys: (keyof SectionImages)[] = ["hero", "dor", "sobre", "solucao"];
+  const out: SceneImages = { ...EMPTY_SCENE_IMAGES };
+  const keys: SceneSectionKey[] = ["hero", "dor", "sobre", "solucao"];
 
   await Promise.all(
     keys.map(async (k) => {

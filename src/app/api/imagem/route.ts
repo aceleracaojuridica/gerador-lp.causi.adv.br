@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 // Intenção de cada seção (termos em inglês — Unsplash responde melhor).
 const SECTION_INTENT: Record<string, string> = {
   hero: "law office professional consultation",
+  heroDestaque: "scales of justice law books courthouse symbolic",
   dor: "worried person stressed documents problem",
   sobre: "modern law firm office interior",
   solucao: "lawyer advising client handshake success",
@@ -24,7 +25,7 @@ const AREA_TERMS: Record<string, string> = {
   generico: "law justice professional",
 };
 
-const KEYS = ["hero", "dor", "sobre", "solucao"] as const;
+const KEYS = ["hero", "heroDestaque", "dor", "sobre", "solucao"] as const;
 type Key = (typeof KEYS)[number];
 
 function categoriaDoTema(tema: string): string {
@@ -126,9 +127,10 @@ export async function POST(req: Request) {
   }
 
   // Fallback: banco de imagens local curado (garante algo mesmo sem API key).
+  // O banco só tem pools de CENA — "heroDestaque" reaproveita o pool do topo.
   if (!url) {
     console.log("[imagem] Unsplash vazio, usando banco local");
-    url = imagemAleatoria(key, body.current);
+    url = imagemAleatoria(key === "heroDestaque" ? "hero" : key, body.current);
   }
 
   console.log("[imagem] url final:", url);

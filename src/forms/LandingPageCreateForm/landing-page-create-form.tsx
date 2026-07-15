@@ -2,9 +2,9 @@
 
 import {
   Add,
+  ArrowBack,
   Call,
   Check,
-  ChevronLeft,
   ChevronRight,
   Close,
   Delete,
@@ -564,19 +564,19 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                   }}
                   className={cn(
                     "flex w-full items-start gap-3 rounded-md p-2 text-left transition-colors md:p-3",
-                    active && "bg-muted-foreground/10",
-                    !active && clickable && "hover:bg-muted-foreground/5",
+                    active && "bg-[#808c97]/8",
+                    !active && clickable && "hover:bg-[#808c97]/8",
                     !clickable && "cursor-default opacity-60",
                   )}
                 >
                   <span
                     className={cn(
-                      "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-sm border bg-background",
+                      "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-sm border border-[#808c97]/10 bg-background",
                       active
-                        ? "border-primary/30 text-primary"
+                        ? "text-primary"
                         : done
-                          ? "border-primary/30 bg-primary/5 text-primary"
-                          : "border-border text-muted-foreground",
+                          ? "bg-primary/5 text-primary"
+                          : "text-muted-foreground",
                     )}
                   >
                     {done ? <Check size={18} /> : <Icon className="size-5" />}
@@ -1301,7 +1301,7 @@ export function LandingPageCreateForm(props: LandingPageCreateFormProps = {}) {
                       className="h-11 flex-1"
                       onClick={() => setStep((s) => s - 1)}
                     >
-                      <ChevronLeft size={16} />
+                      <ArrowBack size={16} />
                       Voltar
                     </Button>
                   ) : null}

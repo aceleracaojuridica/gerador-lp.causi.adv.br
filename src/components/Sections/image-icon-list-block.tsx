@@ -49,17 +49,13 @@ export function ImageIconListBlock({
 
       <Reveal delay={120}>
         <div>
-          <div className="mb-4 flex items-center gap-3">
-            <span
-              aria-hidden
-              className={`h-px w-8 shrink-0 ${dark ? "bg-lp-accent-soft/60" : "bg-lp-accent/60"}`}
-            />
-            <p
-              className={`eyebrow ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
-            >
-              {eyebrow}
-            </p>
-          </div>
+          {/* O traço decorativo agora vem da classe .eyebrow (lp-theme.css) —
+              antes era montado aqui à mão, e só esta variante o tinha. */}
+          <p
+            className={`eyebrow mb-4 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+          >
+            {eyebrow}
+          </p>
 
           <h2
             className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}

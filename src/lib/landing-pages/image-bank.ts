@@ -6,7 +6,7 @@
 
   Só CENÁRIO (hero/dor/sobre). Fotos de pessoas são upload do usuário.
 */
-import type { SectionImages } from "./section-images";
+import type { SceneImages, SceneSectionKey } from "./section-images";
 
 const SIZE = "?auto=format&fit=crop&w=1600&q=80";
 const u = (id: string) => `https://images.unsplash.com/photo-${id}${SIZE}`;
@@ -99,7 +99,7 @@ const KEYWORDS: [string, string[]][] = [
 
 // Pools por seção (IDs verificados) — usados quando NÃO há chave do Unsplash,
 // para VARIAR a imagem a cada clique mesmo sem busca ao vivo.
-const POOL: Record<keyof SectionImages, string[]> = {
+const POOL: Record<SceneSectionKey, string[]> = {
   hero: [
     u("1551836022-d5d88e9218df"),
     u("1551559347-b2df2a690bd5"),
@@ -126,7 +126,7 @@ const POOL: Record<keyof SectionImages, string[]> = {
 
 /** Sorteia uma imagem do pool da seção, evitando repetir a atual (exclude). */
 export function imagemAleatoria(
-  sectionKey: keyof SectionImages,
+  sectionKey: SceneSectionKey,
   exclude?: string,
 ): string {
   const pool = POOL[sectionKey] ?? POOL.hero;
@@ -145,7 +145,7 @@ export function categoriaDoTema(tema: string): string {
 }
 
 /** Resolve as 3 imagens de cenário a partir do tema (por palavra-chave). */
-export function imagensDoTema(tema: string): SectionImages {
+export function imagensDoTema(tema: string): SceneImages {
   const sel = CATS[categoriaDoTema(tema)] ?? CATS.generico;
   return { hero: sel.hero, dor: sel.dor, sobre: SOBRE, solucao: SOLUCAO };
 }

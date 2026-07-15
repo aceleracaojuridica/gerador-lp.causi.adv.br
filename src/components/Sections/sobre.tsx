@@ -231,7 +231,7 @@ function FotoLista({
           {img ? (
             <Reveal>
               <div
-                className="min-h-[20rem] w-full rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand-dark lg:h-full"
+                className="min-h-[20rem] w-full rounded-[var(--lp-corner)] bg-lp-brand-dark lg:h-full"
                 style={imgStyle(img, pos)}
               />
             </Reveal>

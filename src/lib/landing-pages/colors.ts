@@ -137,6 +137,24 @@ function hueDist(a: number, b: number): number {
 
 type Sample = { r: number; g: number; b: number; count: number; hsl: Hsl };
 
+/**
+ * Carrega a logo pronta para ser lida pixel a pixel num `<canvas>`.
+ *
+ * `crossOrigin = "anonymous"` é obrigatório para imagens remotas (a logo salva
+ * vive no Supabase Storage, outra origem): sem ele o canvas fica *tainted* e o
+ * `getImageData` lança, fazendo a extração devolver o tema padrão em silêncio.
+ * O atributo precisa ser definido ANTES do `src`. Data URLs não são afetadas.
+ */
+export function loadLogoImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:\/\//i.test(src)) img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Falha ao carregar a logo."));
+    img.src = src;
+  });
+}
+
 function sampleCanvas(img: HTMLImageElement, size = 72) {
   const canvas = document.createElement("canvas");
   canvas.width = size;

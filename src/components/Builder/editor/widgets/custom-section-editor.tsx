@@ -13,12 +13,18 @@ import {
 } from "@material-symbols-svg/react";
 import { useState } from "react";
 import { AutoTextarea } from "@/components/auto-textarea";
+import {
+  CUSTOM_CARDS_MAX,
+  CUSTOM_CARDS_MIN,
+} from "@/components/Sections/custom-section";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import type { CustomSection } from "@/lib/landing-pages/schema";
 import { extractYouTubeId } from "@/lib/landing-pages/youtube";
 import { BuilderField } from "../../shared/fields";
 import { Accordion, Segmented, ToneToggle } from "../controls/editor-controls";
+import { useStableListKeys } from "../use-stable-list-keys";
 
 export function AddSectionButton({
   onAdd,
@@ -31,15 +37,15 @@ export function AddSectionButton({
       <button
         type="button"
         onClick={() => setChoosing(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-ui-hover"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-3 text-sm font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
       >
         <Add size={16} /> Adicionar seção
       </button>
     );
   }
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      <p className="mb-2 text-xs font-medium text-slate-600">
+    <div className="rounded-xl border border-border bg-muted/40 p-3">
+      <p className="mb-2 text-xs font-medium text-foreground">
         Que tipo de seção você quer?
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -49,9 +55,9 @@ export function AddSectionButton({
             onAdd("cards");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3 text-xs font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
         >
-          <GridView size={20} className="text-slate-500" />
+          <GridView size={20} className="text-muted-foreground" />
           Com cards
         </button>
         <button
@@ -60,9 +66,9 @@ export function AddSectionButton({
             onAdd("texto");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3 text-xs font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
         >
-          <Notes size={20} className="text-slate-500" />
+          <Notes size={20} className="text-muted-foreground" />
           Com texto
         </button>
         <button
@@ -71,9 +77,9 @@ export function AddSectionButton({
             onAdd("youtube");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3 text-xs font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
         >
-          <Movie size={20} className="text-slate-500" />
+          <Movie size={20} className="text-muted-foreground" />
           Vídeo YouTube
         </button>
         <button
@@ -82,9 +88,9 @@ export function AddSectionButton({
             onAdd("calendar");
             setChoosing(false);
           }}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3 text-xs font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
         >
-          <CalendarMonth size={20} className="text-slate-500" />
+          <CalendarMonth size={20} className="text-muted-foreground" />
           Agendamento
         </button>
         <button
@@ -93,9 +99,9 @@ export function AddSectionButton({
             onAdd("maps");
             setChoosing(false);
           }}
-          className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-ui-hover"
+          className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2 py-2.5 text-xs font-medium text-foreground transition hover:border-muted-foreground/50 hover:bg-ui-hover"
         >
-          <HomePin size={20} className="text-slate-500" />
+          <HomePin size={20} className="text-muted-foreground" />
           Mapa Google Maps
         </button>
       </div>
@@ -103,40 +109,56 @@ export function AddSectionButton({
   );
 }
 
+/** Ícone da seção personalizada por tipo — reusado na lista e no cabeçalho. */
+export function customSectionIcon(kind: CustomSection["kind"], size = 22) {
+  switch (kind) {
+    case "cards":
+      return <Dashboard size={size} />;
+    case "youtube":
+      return <Movie size={size} />;
+    case "calendar":
+      return <CalendarMonth size={size} />;
+    case "maps":
+      return <HomePin size={size} />;
+    default:
+      return <Notes size={size} />;
+  }
+}
+
 export function CustomSectionEditor({
   form,
   section,
   onScroll,
+  bare,
 }: {
   form: LpEditorForm;
   section: CustomSection;
   onScroll: () => void;
+  /** No painel de detalhe: só os campos, sem o cabeçalho/borda do accordion. */
+  bare?: boolean;
 }) {
   const titulo = section.title.trim() || "Nova seção";
   const tipo = section.kind;
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // Espelha o render: em "Preenchido" a seção é só a mídia, sem título/texto/botão.
   const isFullWidth =
     section.variant === "fullWidth" &&
     (tipo === "youtube" || tipo === "calendar" || tipo === "maps");
+  // Key estável por posição: derivar do texto digitado remontava o card a cada
+  // tecla e derrubava o foco (só dava para digitar um caractere por vez).
+  const cardKeys = useStableListKeys(
+    section.cards,
+    (c) => `${c.title} ${c.text}`,
+    "custom-card",
+  );
   return (
     <Accordion
+      bare={bare}
       title={titulo}
       domId={`acc-custom-${section.id}`}
       onOpen={onScroll}
       target={`sec-custom-${section.id}`}
-      icon={
-        tipo === "cards" ? (
-          <Dashboard size={22} />
-        ) : tipo === "youtube" ? (
-          <Movie size={22} />
-        ) : tipo === "calendar" ? (
-          <CalendarMonth size={22} />
-        ) : tipo === "maps" ? (
-          <HomePin size={22} />
-        ) : (
-          <Notes size={22} />
-        )
-      }
+      icon={customSectionIcon(tipo)}
       subtitle={`Seção personalizada · ${
         tipo === "cards"
           ? "com cards"
@@ -149,6 +171,11 @@ export function CustomSectionEditor({
                 : "com texto"
       }`}
     >
+      <ToneToggle
+        value={section.tone}
+        onChange={(t) => form.setCustomTone(section.id, t)}
+      />
+
       <BuilderField label="Título de cima (opcional)">
         <Input
           value={section.eyebrow}
@@ -255,21 +282,23 @@ export function CustomSectionEditor({
           <div className="space-y-2">
             {section.cards.map((c, i) => (
               <div
-                key={`card_${i}_${c.title.toLowerCase().replaceAll(" ", "_").trim()}`}
-                className="space-y-2 rounded-lg border border-slate-200 p-2.5"
+                key={cardKeys[i]}
+                className="space-y-2 rounded-lg border border-border p-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-500">
+                  <span className="text-xs font-medium text-muted-foreground">
                     Card {i + 1}
                   </span>
-                  <button
-                    type="button"
-                    aria-label="Remover card"
-                    onClick={() => form.removeCustomCard(section.id, i)}
-                    className="rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700"
-                  >
-                    <Close size={14} />
-                  </button>
+                  {section.cards.length > CUSTOM_CARDS_MIN ? (
+                    <button
+                      type="button"
+                      aria-label="Remover card"
+                      onClick={() => form.removeCustomCard(section.id, i)}
+                      className="rounded-lg px-1.5 text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
+                    >
+                      <Close size={14} />
+                    </button>
+                  ) : null}
                 </div>
                 <Input
                   aria-label={`Título do card ${i + 1}`}
@@ -301,13 +330,20 @@ export function CustomSectionEditor({
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => form.addCustomCard(section.id)}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 transition hover:bg-ui-hover hover:text-slate-800"
-          >
-            <Add size={13} /> Adicionar card
-          </button>
+          {section.cards.length < CUSTOM_CARDS_MAX ? (
+            <button
+              type="button"
+              onClick={() => form.addCustomCard(section.id)}
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-2.5 py-2 text-xs font-medium text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
+            >
+              <Add size={13} /> Adicionar card ({section.cards.length}/
+              {CUSTOM_CARDS_MAX})
+            </button>
+          ) : (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Máximo de {CUSTOM_CARDS_MAX} cards atingido.
+            </p>
+          )}
         </div>
       )}
 
@@ -344,18 +380,23 @@ export function CustomSectionEditor({
         </BuilderField>
       )}
 
-      <ToneToggle
-        value={section.tone}
-        onChange={(t) => form.setCustomTone(section.id, t)}
-      />
-
       <button
         type="button"
-        onClick={() => form.removeCustomSection(section.id)}
+        onClick={() => setConfirmDelete(true)}
         className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50"
       >
         <Delete size={14} /> Excluir seção
       </button>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Excluir seção"
+        description={`Remover "${titulo}"? Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        variant="destructive"
+        onConfirm={() => form.removeCustomSection(section.id)}
+      />
     </Accordion>
   );
 }

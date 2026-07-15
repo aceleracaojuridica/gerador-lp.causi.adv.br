@@ -34,8 +34,10 @@ type LpCardProps = {
   slug: string;
   officeSubdomain: string;
   name: string;
+  tema: string;
   status: "draft" | "published";
   preview: LpListPreview;
+  createdAt?: string | null;
   createdByUserId: string;
   createdByLabel?: string;
 };
@@ -44,8 +46,10 @@ export function LpCard({
   slug,
   officeSubdomain,
   name,
+  tema,
   status,
   preview,
+  createdAt,
   createdByUserId,
   createdByLabel,
 }: LpCardProps) {
@@ -58,6 +62,12 @@ export function LpCard({
 
   const statusLabel = status === "published" ? "Publicada" : "Rascunho";
   const responsibleName = createdByLabel || "Usuário";
+  // Título limpo (só o tema, ex.: "Direito Médico") em vez do título de SEO
+  // completo ("Direito Médico | Escritório").
+  const displayTitle = tema.trim() || preview.title || name;
+  const createdLabel = createdAt
+    ? new Date(createdAt).toLocaleDateString("pt-BR")
+    : null;
 
   function pedirExclusao() {
     if (!guardWrite()) return;
@@ -112,7 +122,7 @@ export function LpCard({
       >
         <DialogContent showCloseButton={!excluindo}>
           <DialogHeader>
-            <DialogTitle>Excluir &ldquo;{name}&rdquo;?</DialogTitle>
+            <DialogTitle>Excluir &ldquo;{displayTitle}&rdquo;?</DialogTitle>
             <DialogDescription>
               Escolha como deseja excluir esta landing page.
             </DialogDescription>
@@ -170,7 +180,7 @@ export function LpCard({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="mb-0.5 truncate text-base font-semibold text-foreground sm:mb-1 sm:text-lg">
-                {preview.title || name}
+                {displayTitle}
               </h3>
               <p className="truncate text-xs text-muted-foreground sm:text-sm">
                 {preview.host}
@@ -187,6 +197,16 @@ export function LpCard({
                 {responsibleName}
               </span>
             </div>
+            {createdLabel ? (
+              <div className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
+                <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                  Criada em
+                </span>
+                <span className="flex-1 truncate text-xs sm:text-sm">
+                  {createdLabel}
+                </span>
+              </div>
+            ) : null}
             <div className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
               <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
                 Status
