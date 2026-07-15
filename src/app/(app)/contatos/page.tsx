@@ -4,6 +4,6 @@ import { ContatosPageClient } from "./page.client";
 export const dynamic = "force-dynamic";
 
 export default async function ContatosPage() {
-  await requireAuth();
-  return <ContatosPageClient />;
+  const session = await requireAuth();
+  return <ContatosPageClient key={session.account.id} />;
 }

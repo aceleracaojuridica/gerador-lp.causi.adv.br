@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LandingPageTracking } from "@/components/landing-page-tracking";
 import { LandingPreview } from "@/components/Preview/landing-preview";
+import { applyGlobalConfigToOffice } from "@/lib/landing-pages/global-config";
 import { getLpPublic } from "@/lib/landing-pages/lp-store";
 import type { LpSchema } from "@/lib/landing-pages/schema";
 import { resolveSeo } from "@/lib/landing-pages/seo";
@@ -95,13 +96,20 @@ export default async function PublicLpPage({ params }: Props) {
   const lp = await getLpPublic(escritorio, slug);
   if (!lp) notFound();
 
+  const office = applyGlobalConfigToOffice(
+    lp.schema.office,
+    lp.accountMarketingConfig,
+    { overwrite: false, marketingOnly: true },
+  );
+  const schema: LpSchema = { ...lp.schema, office };
+
   const publicUrl = {
     officeSubdomain: lp.officeSubdomain,
     lpSlug: lp.slug,
   };
-  const seo = resolveSeo(lp.schema, publicUrl);
+  const seo = resolveSeo(schema, publicUrl);
   const jsonLd =
-    seo.indexable && JSON.stringify(buildJsonLd(lp.schema, publicUrl));
+    seo.indexable && JSON.stringify(buildJsonLd(schema, publicUrl));
 
   return (
     <>
@@ -110,9 +118,9 @@ export default async function PublicLpPage({ params }: Props) {
           {jsonLd}
         </script>
       ) : null}
-      <LandingPageTracking office={lp.schema.office} />
+      <LandingPageTracking office={office} />
       <LandingPreview
-        schema={lp.schema}
+        schema={schema}
         demo={false}
         leadContext={{
           officeSubdomain: lp.officeSubdomain,

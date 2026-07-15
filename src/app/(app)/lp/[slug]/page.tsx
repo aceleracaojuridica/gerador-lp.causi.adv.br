@@ -30,6 +30,7 @@ export default async function Page({
 
   return (
     <LpEditorPageClient
+      key={`${session.account.id}-${slug}`}
       initial={lp}
       initialAccountConfig={initialAccountConfig}
     />

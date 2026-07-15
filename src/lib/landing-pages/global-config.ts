@@ -42,32 +42,35 @@ function pickString(
   return value?.trim() ? value : fallback;
 }
 
-function pickBoolean(
-  value: boolean | undefined,
-  fallback: boolean,
-  overwrite: boolean,
-): boolean {
-  if (overwrite) return fallback;
-  return value ?? fallback;
-}
-
+/**
+ * Merge de um provedor: ID vazio na LP herda id + enabled da conta;
+ * ID preenchido usa os valores da LP (override explícito).
+ */
 function mergeProvider<T extends { enabled: boolean }>(
   current: T | undefined,
   incoming: T,
   overwrite: boolean,
   idKey: keyof T,
 ): T {
-  const id = pickString(
-    String(current?.[idKey] ?? ""),
-    String(incoming[idKey] ?? ""),
-    overwrite,
-  );
-  const enabled = pickBoolean(current?.enabled, incoming.enabled, overwrite);
+  if (overwrite) {
+    return { ...incoming };
+  }
+
+  const currentId = String(current?.[idKey] ?? "").trim();
+  if (!currentId) {
+    return {
+      ...incoming,
+      ...current,
+      enabled: incoming.enabled,
+      [idKey]: incoming[idKey],
+    } as T;
+  }
+
   return {
     ...incoming,
     ...current,
-    enabled,
-    [idKey]: id,
+    enabled: current?.enabled ?? incoming.enabled,
+    [idKey]: currentId,
   } as T;
 }
 
@@ -79,6 +82,8 @@ function mergeTracking(
   const base = normalizeTracking(current);
   const defaults = normalizeTracking(incoming);
 
+  const googleAdsIdEmpty = !base.googleAds.adsId.trim();
+
   return {
     ga4: mergeProvider(base.ga4, defaults.ga4, overwrite, "measurementId"),
     gtm: mergeProvider(base.gtm, defaults.gtm, overwrite, "containerId"),
@@ -88,23 +93,23 @@ function mergeTracking(
       overwrite,
       "pixelId",
     ),
-    googleAds: {
-      enabled: pickBoolean(
-        base.googleAds.enabled,
-        defaults.googleAds.enabled,
-        overwrite,
-      ),
-      adsId: pickString(
-        base.googleAds.adsId,
-        defaults.googleAds.adsId,
-        overwrite,
-      ),
-      conversionLabel: pickString(
-        base.googleAds.conversionLabel,
-        defaults.googleAds.conversionLabel,
-        overwrite,
-      ),
-    },
+    googleAds: overwrite
+      ? defaults.googleAds
+      : {
+          adsId: pickString(
+            base.googleAds.adsId,
+            defaults.googleAds.adsId,
+            false,
+          ),
+          enabled: googleAdsIdEmpty
+            ? defaults.googleAds.enabled
+            : base.googleAds.enabled,
+          conversionLabel: pickString(
+            base.googleAds.conversionLabel,
+            defaults.googleAds.conversionLabel,
+            false,
+          ),
+        },
   };
 }
 
@@ -161,21 +166,28 @@ export function normalizeGlobalConfig(
 export function applyGlobalConfigToOffice(
   office: Office,
   config: GlobalConfig,
-  options?: { overwrite?: boolean },
+  options?: { overwrite?: boolean; marketingOnly?: boolean },
 ): Office {
   const overwrite = options?.overwrite ?? false;
+  const marketingOnly = options?.marketingOnly ?? false;
   const normalized = normalizeGlobalConfig(config);
 
   return {
     ...office,
-    fonts: {
-      heading: pickString(
-        office.fonts?.heading,
-        normalized.fonts.heading,
-        overwrite,
-      ),
-      body: pickString(office.fonts?.body, normalized.fonts.body, overwrite),
-    },
+    fonts: marketingOnly
+      ? office.fonts
+      : {
+          heading: pickString(
+            office.fonts?.heading,
+            normalized.fonts.heading,
+            overwrite,
+          ),
+          body: pickString(
+            office.fonts?.body,
+            normalized.fonts.body,
+            overwrite,
+          ),
+        },
     tags: mergeTags(office.tags, normalized.tags, overwrite),
     tracking: mergeTracking(
       normalizeTracking(office.tracking),

@@ -61,9 +61,15 @@ type SeoMeta = {
 
 ## Rastreamento de campanhas (separado dos metadados)
 
-Pixels e tags usam toggles por provedor (`ga4`, `gtm`, `metaPixel`, `googleAds`) em `office.tracking`. Configuração padrão da conta em `lp_account_settings.tracking_providers`; override por LP no editor.
+Pixels e tags usam toggles por provedor (`ga4`, `gtm`, `metaPixel`, `googleAds`).
 
-Scripts HTML avançados ficam em `office.tags` (`head`, `body`, `footer`).
+| Camada | Onde | Comportamento |
+|--------|------|---------------|
+| Padrão da conta | `lp_account_settings.tracking_providers` / `tracking_scripts` | Configurações → Trackeamento / Scripts |
+| Override por LP | `schema.office.tracking` / `schema.office.tags` | Editor → Integrações; campo vazio herda |
+| Página publicada | live-merge | `getLpPublic` + `applyGlobalConfigToOffice({ marketingOnly: true })` → `LandingPageTracking` |
+
+Regra de herança: ID de provedor vazio na LP herda id e `enabled` da conta; snippet `head`/`body`/`footer` vazio herda da conta. Snippets em texto puro (sem ofuscação); JS sem wrapper `<script>` é executado via `next/script`.
 
 ---
 

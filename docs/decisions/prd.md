@@ -233,7 +233,10 @@ O único propósito das LPs é ser vinculada em campanhas de anúncios pagos (Go
 | `seo.description` | `lps.schema.seo` | IA na geração; fallbacks em `buildDefaultSeo()` |
 | Open Graph | Derivado do `seo` + `sectionImages.hero` | Automático na rota pública |
 | Schema.org `LegalService` | JSON-LD inline | Rota pública |
-| `office.tags` (GTM/Pixel) | `lps.schema.office.tags` | Advogado configura no editor |
+| Tracking (GTM, GA4, Pixel, Ads) | `lp_account_settings.tracking_providers` + `tracking_scripts` | Padrão da conta em Configurações |
+| Override por LP | `schema.office.tracking` / `schema.office.tags` | Editor — campo vazio herda o padrão da conta |
+
+**Herança live na página publicada:** `getLpPublic` carrega o padrão da conta; a rota pública aplica `applyGlobalConfigToOffice(..., { marketingOnly: true })` antes de `LandingPageTracking`. Alterar o pixel/scripts na conta reflete em todas as LPs sem re-salvar cada página. Override só ocorre quando o ID (provedor) ou o snippet (tags) da LP está preenchido.
 
 **Regras do `seo.title`:** keyword do tema no início + ` | ` + nome do escritório · 50–60 chars · sem promessa de resultado.
 

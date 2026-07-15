@@ -8,11 +8,15 @@ import type { SocialNetwork } from "@/lib/landing-pages/schema";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import { getSession } from "@/lib/session";
 import {
+  createLpServiceClient,
   createLpUserClient,
   sessionToLpContext,
 } from "@/lib/supabase/lp-client";
 
 export type { GlobalConfig } from "@/lib/landing-pages/global-config";
+
+/** Limite total dos snippets custom (head+body+footer) em caracteres. */
+const MAX_TRACKING_SCRIPTS_CHARS = 100_000;
 
 type AccountSettingsRow = {
   heading_font: string | null;
@@ -30,6 +34,58 @@ type LpAccountSocialIdRow = {
   id: string;
   network: SocialNetwork;
 };
+
+function mapSettingsToMarketingConfig(
+  data: AccountSettingsRow | null,
+): GlobalConfig {
+  return normalizeGlobalConfig({
+    fonts: data
+      ? {
+          heading: data.heading_font ?? "",
+          body: data.body_font ?? "",
+        }
+      : undefined,
+    tags: data
+      ? { ...DEFAULT_CONFIG.tags, ...(data.tracking_scripts ?? {}) }
+      : undefined,
+    tracking: normalizeTracking(
+      data?.tracking_providers as Parameters<typeof normalizeTracking>[0],
+    ),
+  });
+}
+
+/**
+ * Padrão de marketing da conta para LP publicada (anon não tem RLS).
+ * Lê apenas tracking via service role — IDs/scripts não são segredos.
+ */
+export async function getAccountMarketingConfigByAccountId(
+  accountId: number,
+): Promise<GlobalConfig> {
+  if (!Number.isFinite(accountId) || accountId <= 0) {
+    return { ...DEFAULT_CONFIG };
+  }
+
+  const db = createLpServiceClient();
+  const { data } = await db
+    .from("lp_account_settings")
+    .select("heading_font,body_font,tracking_scripts,tracking_providers")
+    .eq("account_id", accountId)
+    .maybeSingle<AccountSettingsRow>();
+
+  return mapSettingsToMarketingConfig(data);
+}
+
+function assertTrackingScriptsSize(tags: GlobalConfig["tags"]): void {
+  const total =
+    (tags.head?.length ?? 0) +
+    (tags.body?.length ?? 0) +
+    (tags.footer?.length ?? 0);
+  if (total > MAX_TRACKING_SCRIPTS_CHARS) {
+    throw new Error(
+      `Scripts customizados excedem o limite de ${MAX_TRACKING_SCRIPTS_CHARS.toLocaleString("pt-BR")} caracteres.`,
+    );
+  }
+}
 
 export async function getConfig(): Promise<GlobalConfig> {
   const session = await getSession();
@@ -64,20 +120,7 @@ export async function getConfig(): Promise<GlobalConfig> {
     .eq("is_primary", true)
     .returns<LpAccountSocialRow[]>();
 
-  const baseConfig = normalizeGlobalConfig({
-    fonts: data
-      ? {
-          heading: data.heading_font ?? "",
-          body: data.body_font ?? "",
-        }
-      : undefined,
-    tags: data
-      ? { ...DEFAULT_CONFIG.tags, ...(data.tracking_scripts ?? {}) }
-      : undefined,
-    tracking: normalizeTracking(
-      data?.tracking_providers as Parameters<typeof normalizeTracking>[0],
-    ),
-  });
+  const baseConfig = mapSettingsToMarketingConfig(data);
 
   return {
     ...baseConfig,
@@ -111,6 +154,7 @@ export async function saveConfig(c: GlobalConfig): Promise<void> {
   const ctx = sessionToLpContext(session);
   const db = createLpUserClient(session);
   const normalized = normalizeGlobalConfig(c);
+  assertTrackingScriptsSize(normalized.tags);
 
   const { error } = await db.from("lp_account_settings").upsert(
     {
