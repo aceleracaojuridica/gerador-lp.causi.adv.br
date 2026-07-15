@@ -194,8 +194,8 @@ Configuração global por conta (vale para todas as LPs da conta).
 | `account_id` | `bigint` | PK/FK lógica da conta no Causi |
 | `heading_font` | `text` | Fonte de títulos |
 | `body_font` | `text` | Fonte de corpo |
-| `tracking_providers` | `jsonb` | IDs de GA4, GTM, Meta Pixel e Google Ads |
-| `tracking_scripts` | `jsonb` | Scripts customizados `{ head, body, footer }` |
+| `tracking_providers` | `jsonb` | IDs de GA4, GTM, Meta Pixel e Google Ads (padrão da conta; live-merge na LP publicada) |
+| `tracking_scripts` | `jsonb` | Scripts customizados `{ head, body, footer }` em texto puro (máx. 100k chars no save) |
 | `updated_at` | `timestamptz` | Última atualização |
 
 ### `public.lp_external_api_logs`

@@ -1,6 +1,7 @@
+import Image from "next/image";
 import type { Office } from "@/lib/landing-pages/schema";
 
-// Renderiza a logo enviada (data URL ou caminho). Sem arquivo, mostra um
+// Renderiza a logo enviada (data URL ou storage). Sem arquivo, mostra um
 // wordmark textual com o nome do escritório como placeholder.
 // tone: "light" para fundos escuros (texto claro) | "dark" para fundos claros (texto navy).
 export function LogoMark({
@@ -13,12 +14,30 @@ export function LogoMark({
   tone?: "light" | "dark";
 }) {
   if (office.logoSrc) {
+    const src = office.logoSrc.trim();
+    const isDataUrl = /^data:image\//i.test(src);
+    const imgClass = `h-auto w-[200px] object-contain md:w-[240px] ${className}`;
+
+    if (isDataUrl) {
+      return (
+        // biome-ignore lint/performance/noImgElement: data URL não passa por next/image
+        <img
+          src={src}
+          alt={office.fullName || office.name}
+          width={200}
+          height={200}
+          className={imgClass}
+        />
+      );
+    }
+
     return (
-      // biome-ignore lint/performance/noImgElement: logo dinâmica do escritório (data URL ou storage)
-      <img
-        src={office.logoSrc}
+      <Image
+        src={src}
         alt={office.fullName || office.name}
-        className={`h-auto w-[200px] object-contain md:w-[240px] ${className}`}
+        width={200}
+        height={200}
+        className={imgClass}
       />
     );
   }

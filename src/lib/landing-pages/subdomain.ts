@@ -25,6 +25,7 @@ export function formatOfficeSubdomainDraft(value: string): string {
     .replace(/-{2,}/g, "-");
 }
 
+/** Bloqueia nomes de `RESERVED_SEGMENTS` — só se aplica a subdomínio, não a slug de LP. */
 export function isReservedOfficeSubdomain(value: string): boolean {
   return isReservedSegment(value);
 }

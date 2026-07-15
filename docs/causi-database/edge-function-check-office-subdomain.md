@@ -34,14 +34,14 @@ sequenceDiagram
   UI->>UI: lp_accounts + profiles (colisão Projeto B)
   UI->>EF: POST + JWT do usuário
   EF->>Auth: getUser(jwt)
-  EF->>DB: is_user_in_account_or_shared
+  EF->>DB: is_super_admin OR is_user_in_account_or_shared
   EF->>DB: SELECT id, name, slug (exceto conta atual)
   EF-->>UI: { available: true|false }
 ```
 
 | Camada | Responsabilidade |
 |--------|------------------|
-| **Gerador LP** | Formato do subdomínio (Zod), segmentos reservados do app (`causi`, `login`, …), unicidade em `lp_accounts` e `profiles` |
+| **Gerador LP** | Formato do subdomínio (Zod), nomes reservados para **subdomínio** (`causi`, `login`, … em `RESERVED_SEGMENTS`), unicidade em `lp_accounts` e `profiles` |
 | **Causi (esta function)** | Reserva por `accounts.name` (slugificado) e `accounts.slug` de outras contas; bloqueio estrito de `causi` |
 | **Postgres Projeto B** | `UNIQUE (office_subdomain)` em `lp_accounts` como garantia final |
 
@@ -85,7 +85,7 @@ POST {SUPABASE_URL}/functions/v1/check-office-subdomain
 | `200` | `{ "available": false }` | Reservado por outro escritório ou proibido (`causi`) |
 | `400` | `{ "error": "Invalid input" }` | Payload inválido |
 | `401` | `{ "error": "Unauthorized" }` | JWT ausente ou inválido |
-| `403` | `{ "error": "Forbidden" }` | Usuário sem acesso à `account_id` informada |
+| `403` | `{ "error": "Forbidden" }` | Usuário sem acesso à `account_id` e sem role `super_admin` |
 | `405` | — | Método diferente de `POST` |
 | `500` | `{ "error": "..." }` | Erro interno ou misconfiguration |
 
@@ -112,7 +112,12 @@ A conta informada em `account_id` é sempre ignorada na verificação — o escr
 
 ### Autorização
 
-Antes de consultar `accounts`, a function valida que o usuário do JWT tem acesso à conta via RPC `is_user_in_account_or_shared(target_account_id, p_user_id)`. Isso cobre conta principal (`users.account_id`) e contas compartilhadas (`users_accounts`).
+Antes de consultar `accounts`, a function autoriza se **qualquer** condição for verdadeira:
+
+1. `is_super_admin(p_user_id)` — bypass para role `super_admin` (troca de contexto no SystemBar sem exigência de `users_accounts`);
+2. `is_user_in_account_or_shared(target_account_id, p_user_id)` — conta principal (`users.account_id`) ou compartilhada (`users_accounts`).
+
+Sem uma das duas, responde `403 Forbidden`.
 
 ---
 
@@ -169,9 +174,10 @@ Caminho de otimização futura no Causi:
 
 | Função | Uso nesta Edge Function |
 |--------|-------------------------|
+| `is_super_admin(p_user_id)` | Bypass de autorização para super admin |
 | `is_user_in_account_or_shared(target_account_id, p_user_id)` | Valida acesso do usuário à conta antes da consulta global |
 
-Documentação da RPC: [functions.md](./functions.md#helpers-de-autorização-rls).
+Documentação das RPCs: [functions.md](./functions.md#helpers-de-autorização-rls).
 
 ---
 
@@ -181,6 +187,6 @@ Documentação da RPC: [functions.md](./functions.md#helpers-de-autorização-rl
 |-----------|-----------|
 | [overview.md](./overview.md) | Visão geral do banco Causi |
 | [schema-public.md](./schema-public.md) | Tabela `accounts` |
-| [functions.md](./functions.md) | RPC `is_user_in_account_or_shared` |
+| [functions.md](./functions.md) | RPCs `is_super_admin` e `is_user_in_account_or_shared` |
 | [../database.md](../database.md) | `lp_accounts` e subdomínio canônico no Projeto B |
 | [../features/landing-pages.md](../features/landing-pages.md) | URLs públicas e subdomínio por conta |

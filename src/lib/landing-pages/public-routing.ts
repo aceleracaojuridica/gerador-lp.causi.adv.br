@@ -1,4 +1,7 @@
-/** Segmentos reservados do app — não são slugs de LP pública. */
+/**
+ * Nomes bloqueados para `office_subdomain` (host `{nome}.{APP_DOMAIN}`).
+ * Não se aplica a slugs de LP em `/{slug}` — qualquer slug de path é válido.
+ */
 export const RESERVED_SEGMENTS = new Set([
   "causi",
   "login",
@@ -35,6 +38,24 @@ export const RESERVED_SEGMENTS = new Set([
   "perfil",
   "usuarios",
   "templates",
+]);
+
+/**
+ * Primeiro segmento de rotas do app no domínio marketing.
+ * `/{segment}` nesses valores não é tratado como LP no host errado.
+ */
+const APP_ROOT_SEGMENTS = new Set([
+  "login",
+  "cadastrar",
+  "confirmar",
+  "redefinir",
+  "nova",
+  "galeria",
+  "contatos",
+  "lp",
+  "configuracoes",
+  "auth",
+  "sem-acesso",
 ]);
 
 export function isReservedSegment(value: string): boolean {
@@ -99,18 +120,21 @@ export function officeSubdomainFromHost(host: string): string | null {
   return office;
 }
 
-/** Slug da LP em `/{lpSlug}` no host do escritório (um segmento, não reservado). */
+/** Slug da LP em `/{lpSlug}` no host do escritório (qualquer segmento único). */
 export function parsePublicLpPath(pathname: string): string | null {
   const match = /^\/([^/]+)\/?$/.exec(pathname);
   if (!match) return null;
-  const segment = match[1];
-  if (RESERVED_SEGMENTS.has(segment)) return null;
-  return segment;
+  return match[1];
 }
 
-/** `/{slug}` no domínio principal — não serve LP pública (404). */
+/**
+ * `/{slug}` no domínio principal — tenta servir LP pública no host errado (404),
+ * exceto rotas raiz do app marketing.
+ */
 export function isPublicLpSlugPath(pathname: string): boolean {
-  return parsePublicLpPath(pathname) !== null;
+  const slug = parsePublicLpPath(pathname);
+  if (!slug) return false;
+  return !APP_ROOT_SEGMENTS.has(slug);
 }
 
 /** @deprecated Use officeSubdomainFromHost */

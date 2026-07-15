@@ -13,7 +13,36 @@ O produto não persiste HTML. O que o banco guarda é:
 - tema ativo
 - estado de layout por seção em `schema.layout`
 
-O preview do editor e a página publicada usam o mesmo renderer React: `src/components/Preview/landing-preview.tsx`.
+O preview do editor usa `LandingPreview` (client, com controles de variante).
+A rota pública monta seções via RSC (`LandingSections`) e chrome client
+(`LpPublicChrome`: CTA, popup de lead, política).
+
+## Cache da rota pública
+
+`getLpPublic` usa `unstable_cache` com revalidate de 120s.
+
+| Tag | Conteúdo |
+|---|---|
+| `lp-public:{office}:{slug}` | schema publicado da LP |
+| `lp-marketing:{accountId}` | padrão de marketing da conta |
+
+Invalidação (`revalidateTag(..., "max")`) ocorre em publish, unpublish e save
+de LP já publicada, e ao salvar o config de marketing da conta.
+
+## Fontes
+
+- Root layout: só Inter
+- Layout `(app)` (editor): catálogo completo via `next/font`
+- Layout `(subdomains)`: Fraunces (display padrão) + Inter do root
+- Fonte escolhida na LP (fora de Inter/Fraunces): um stylesheet Google Fonts
+  (`display=swap`) com overrides das CSS vars `--font-*`
+
+## Captura de lead (Turnstile)
+
+Na LP publicada, o popup de lead renderiza Cloudflare Turnstile no passo final
+(nome + telefone). A site key vem da page RSC (`getTurnstileSiteKey`) com
+fallback em `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. O submit valida o token com
+Siteverify no servidor.
 
 ## Núcleo da feature
 
@@ -277,8 +306,10 @@ https://garcia-e-kleeman.causi.adv.br/previdenciario
 
 Regras:
 
+- `slug` é o path da LP (`/{slug}`); qualquer segmento único é válido (ex.: `/causi`)
 - `slug` é derivado do tema e precisa ser único por conta
 - `office_subdomain` é canônico em `lp_accounts.office_subdomain` e único globalmente
+- nomes em `RESERVED_SEGMENTS` (`public-routing.ts`) bloqueiam apenas o **subdomínio**, não o slug da LP
 - primeira resolução usa `account.name` do Causi slugificado; depois usa sempre o valor persistido
 - owner pode alterar em `/configuracoes`; a alteração propaga para todas as LPs da conta
 
@@ -335,7 +366,10 @@ type LpSchema = {
 | Validação do editor | `src/forms/LpEditorForm/schema.ts` |
 | Estado e ações do editor | `src/hooks/use-lp-editor-form.ts` |
 | Shell do editor | `src/components/Builder/editor/editor-shell.tsx` |
-| Renderer compartilhado | `src/components/Preview/landing-preview.tsx` |
+| Renderer do editor | `src/components/Preview/landing-preview.tsx` |
+| Seções RSC (rota pública) | `src/components/Preview/landing-sections.tsx` |
+| Chrome client (CTA/popup) | `src/components/Preview/lp-public-chrome.tsx` |
+| Cache público | `src/lib/landing-pages/lp-public-cache.ts` |
 
 ## Fluxo resumido
 
@@ -349,7 +383,7 @@ flowchart TD
   F --> G[Publicação]
   G --> H[getLpPublic]
   H --> I[migrate]
-  I --> J[LandingPreview]
+  I --> J[LandingSections + LpPublicChrome]
 ```
 
 ## Referências

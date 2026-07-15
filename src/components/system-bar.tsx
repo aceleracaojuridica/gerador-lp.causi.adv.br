@@ -14,7 +14,6 @@ import {
   SettingsAccountBox,
 } from "@material-symbols-svg/react/rounded";
 import Image from "next/image";
-import Link from "next/link";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +32,7 @@ import {
   useAccountSwitcher,
 } from "@/hooks/use-account-switcher";
 import { useSession } from "@/hooks/use-session";
+import { CAUSI_APP_URL } from "@/lib/session/access";
 
 export function SystemBar() {
   const session = useSession();
@@ -69,9 +69,13 @@ export function SystemBar() {
             title="Configurações"
             className="size-9 hover:bg-white/10"
           >
-            <Link href="/admin-contas">
+            <a
+              href={`${CAUSI_APP_URL}/admin-contas`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <SettingsAccountBox className="size-6 text-white hover:text-primary transition-colors" />
-            </Link>
+            </a>
           </Button>
         </div>
       )}

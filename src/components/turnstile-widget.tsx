@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 
 type TurnstileWidgetProps = {
   siteKey: string;
@@ -26,7 +26,12 @@ declare global {
   }
 }
 
-/** Widget Cloudflare Turnstile para formulários públicos. */
+/**
+ * Widget Cloudflare Turnstile (render explícito).
+ * Não usa turnstile.ready(): next/script carrega api.js com async/defer, e a
+ * Cloudflare exige script síncrono para ready(). Com onLoad / window.turnstile
+ * já presente, render() é seguro.
+ */
 export function TurnstileWidget({
   siteKey,
   onToken,
@@ -34,39 +39,48 @@ export function TurnstileWidget({
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const [ready, setReady] = useState(false);
 
-  const renderWidget = useCallback(() => {
+  const onTokenEvent = useEffectEvent((token: string) => {
+    onToken(token);
+  });
+  const onExpireEvent = useEffectEvent(() => {
+    onExpire?.();
+  });
+
+  const mountWidget = useEffectEvent(() => {
     const container = containerRef.current;
     if (!container || !window.turnstile || widgetIdRef.current) return;
 
     widgetIdRef.current = window.turnstile.render(container, {
       sitekey: siteKey,
-      callback: onToken,
-      "expired-callback": onExpire,
+      callback: (token) => onTokenEvent(token),
+      "expired-callback": () => onExpireEvent(),
       theme: "auto",
     });
-  }, [siteKey, onToken, onExpire]);
+  });
 
+  // Remonta quando siteKey muda; mountWidget é useEffectEvent (identity estável).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: siteKey força remount; mountWidget é EffectEvent
   useEffect(() => {
-    if (ready) renderWidget();
-  }, [ready, renderWidget]);
+    // Script já no documento (reabrir popup): onLoad do next/script não refira.
+    if (window.turnstile) {
+      mountWidget();
+    }
 
-  useEffect(() => {
     return () => {
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
     };
-  }, []);
+  }, [siteKey]);
 
   return (
     <>
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
-        onLoad={() => setReady(true)}
+        onLoad={() => mountWidget()}
       />
       <div ref={containerRef} className="flex justify-center" />
     </>
