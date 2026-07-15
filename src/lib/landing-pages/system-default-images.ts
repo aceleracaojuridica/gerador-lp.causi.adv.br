@@ -15,10 +15,10 @@ import {
 import { getPublicMediaUrl } from "./media-storage";
 import type { Theme } from "./schema";
 import {
-  EMPTY_SECTION_IMAGES,
-  SECTION_IMAGE_KEYS,
-  type SectionImageKey,
-  type SectionImages,
+  EMPTY_SCENE_IMAGES,
+  SCENE_SECTION_KEYS,
+  type SceneImages,
+  type SceneSectionKey,
 } from "./section-images";
 
 type SystemImageRow = {
@@ -36,7 +36,7 @@ export type SystemGalleryImageItem = {
   id: string;
   storagePath: string;
   url: string;
-  sectionKey: SectionImageKey;
+  sectionKey: SceneSectionKey;
   label: string;
   semanticTags: string[];
   /** Tags de seção da galeria da conta (vazio no catálogo de sistema). */
@@ -47,7 +47,7 @@ export type SystemGalleryImageItem = {
   source?: "system" | "account";
 };
 
-function normalizeSectionKey(value: string): SectionImageKey | null {
+function normalizeSectionKey(value: string): SceneSectionKey | null {
   if (
     value === "hero" ||
     value === "dor" ||
@@ -152,7 +152,7 @@ export async function listAccountImagesForRanking(
   const items: SystemGalleryImageItem[] = [];
   for (const row of data as AccountImageRow[]) {
     const taggedSections = normalizeSemanticTags(row.section_tags).filter(
-      (tag): tag is SectionImageKey => normalizeSectionKey(tag) !== null,
+      (tag): tag is SceneSectionKey => normalizeSectionKey(tag) !== null,
     );
     // Sem section_tags a imagem ainda não foi usada em nenhuma seção — não
     // oferecer em todas as seções (ex.: logo virava candidata a dor/sobre/solução).
@@ -184,18 +184,18 @@ export function pickDefaultSystemImages(
   catalog: SystemGalleryImageItem[],
   seedInput: string,
   semanticTheme = "",
-): SectionImages {
-  const grouped = new Map<SectionImageKey, SystemGalleryImageItem[]>();
-  for (const key of SECTION_IMAGE_KEYS) grouped.set(key, []);
+): SceneImages {
+  const grouped = new Map<SceneSectionKey, SystemGalleryImageItem[]>();
+  for (const key of SCENE_SECTION_KEYS) grouped.set(key, []);
   for (const image of catalog) {
     grouped.get(image.sectionKey)?.push(image);
   }
 
   const rand = seededRandom(seedInput);
-  const selected: SectionImages = { ...EMPTY_SECTION_IMAGES };
+  const selected: SceneImages = { ...EMPTY_SCENE_IMAGES };
   const used = new Set<string>();
 
-  for (const key of SECTION_IMAGE_KEYS) {
+  for (const key of SCENE_SECTION_KEYS) {
     const pool = grouped.get(key) ?? [];
     const ranked = sortCandidatesDeterministically(
       pool.map((item) => ({
@@ -290,7 +290,7 @@ export function describeThemeMood(theme: Theme): string {
 
 function ensureSectionRanks(value: unknown): RankedSystemSelection {
   const parsed = (value ?? {}) as Record<string, unknown>;
-  const toArray = (key: SectionImageKey): string[] => {
+  const toArray = (key: SceneSectionKey): string[] => {
     const arr = parsed[key];
     if (!Array.isArray(arr)) return [];
     return arr.filter((id): id is string => typeof id === "string");
@@ -385,12 +385,12 @@ async function rankSystemImagesByAi({
 function selectFromRankedIds(
   rankedIds: RankedSystemSelection,
   catalog: SystemGalleryImageItem[],
-): SectionImages {
+): SceneImages {
   const byId = new Map(catalog.map((item) => [item.id, item]));
-  const selected: SectionImages = { ...EMPTY_SECTION_IMAGES };
+  const selected: SceneImages = { ...EMPTY_SCENE_IMAGES };
   const used = new Set<string>();
 
-  for (const key of SECTION_IMAGE_KEYS) {
+  for (const key of SCENE_SECTION_KEYS) {
     const ids = rankedIds[key];
     for (const id of ids) {
       const item = byId.get(id);
@@ -419,7 +419,7 @@ export async function pickSystemImagesWithAiRanking(input: {
   catalog: SystemGalleryImageItem[];
   seedInput: string;
   log?: ExternalApiLogMeta;
-}): Promise<SectionImages> {
+}): Promise<SceneImages> {
   const { apiKey, theme, paletteHint, catalog, seedInput, log } = input;
   try {
     const ranked = await rankSystemImagesByAi({

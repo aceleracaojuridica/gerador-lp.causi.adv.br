@@ -1,3 +1,5 @@
+import type { SceneSectionKey } from "./section-images";
+
 export type GalleryImageFilter = "all" | "system" | "account" | "mine";
 
 export const GALLERY_IMAGE_FILTER_OPTIONS: {
@@ -69,7 +71,7 @@ export function filterGalleryImages<T extends FilterableGalleryImage>(
 
 type SemanticCandidate = {
   id: string;
-  sectionKey: "hero" | "dor" | "sobre" | "solucao";
+  sectionKey: SceneSectionKey;
   label: string;
   semanticTags: string[];
   sortOrder: number;

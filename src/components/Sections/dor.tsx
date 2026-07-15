@@ -171,7 +171,7 @@ export function Dor({
               </Reveal>
               <Reveal delay={120}>
                 <div
-                  className="relative h-72 overflow-hidden rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand md:h-80"
+                  className="relative h-72 overflow-hidden rounded-[var(--lp-corner)] bg-lp-brand md:h-80"
                   style={
                     image
                       ? {
@@ -257,7 +257,8 @@ function CardGrid({ content, dark }: { content: DorContent; dark: boolean }) {
     >
       {content.cards.map((d, i) => {
         return (
-          <Reveal key={`${d.title}-${d.text}`} delay={i * 90}>
+          // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do texto do card faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+          <Reveal key={`dor-card-${i}`} delay={i * 90}>
             <div
               className={`h-full rounded-xl p-7 transition hover:-translate-y-0.5 hover:shadow-sm ${
                 dark

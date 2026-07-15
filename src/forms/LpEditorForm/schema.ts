@@ -11,6 +11,7 @@ import type {
   Theme,
 } from "@/lib/landing-pages/schema";
 import { DEFAULT_LAYOUT, DEFAULT_THEME } from "@/lib/landing-pages/schema";
+import { EMPTY_SECTION_IMAGES } from "@/lib/landing-pages/section-images";
 import { normalizeTracking } from "@/lib/landing-pages/tracking";
 import {
   refineRequiredEmail,
@@ -171,6 +172,8 @@ const officeSchema = z.object({
   socials: z.array(socialSchema),
   sectionImages: z.object({
     hero: z.string(),
+    // Ausente nas LPs criadas antes do campo existir — o editor normaliza para "".
+    heroDestaque: z.string().default(""),
     dor: z.string(),
     sobre: z.string(),
     solucao: z.string(),
@@ -220,6 +223,7 @@ const customSectionSchema = z.object({
   mapsUrl: z.string().optional(),
   variant: z.enum(["boxed", "fullWidth"]).optional(),
   cta: z.string().optional(),
+  hidden: z.boolean().optional(),
 });
 
 /** Schema permissivo do editor — validação estrita só ao salvar/publicar. */
@@ -275,7 +279,7 @@ export const EMPTY_OFFICE: LpEditorFormValues["office"] = {
   logoBg: DEFAULT_LOGO_BG,
   lawyers: [],
   socials: [{ network: "instagram", url: "" }],
-  sectionImages: { hero: "", dor: "", sobre: "", solucao: "" },
+  sectionImages: { ...EMPTY_SECTION_IMAGES },
   metrics: [],
   heroFeatures: [],
 };

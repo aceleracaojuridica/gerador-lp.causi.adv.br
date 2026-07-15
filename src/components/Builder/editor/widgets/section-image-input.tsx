@@ -47,7 +47,7 @@ export function SectionImageInput({
           onClick={iaEscolhe}
           disabled={loadingIA}
           title="Busca uma imagem relacionada ao tema da página"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-ui/30 bg-ui-soft px-2.5 py-1.5 text-xs font-medium text-ui transition hover:bg-ui/15 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-1.5 rounded-[5px] border border-ui/30 bg-ui-soft px-2.5 py-1.5 text-xs font-medium text-ui transition hover:bg-ui/15 disabled:opacity-60"
         >
           {loadingIA ? (
             <ProgressActivity size={14} className="animate-spin" />

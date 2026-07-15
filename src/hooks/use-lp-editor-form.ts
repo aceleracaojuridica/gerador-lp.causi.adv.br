@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import {
+  CUSTOM_CARDS_MAX,
+  CUSTOM_CARDS_MIN,
+} from "@/components/Sections/custom-section";
 import {
   type LpEditorFormValues,
   lpEditorDefaultValues,
@@ -10,6 +14,7 @@ import {
 import {
   detectLogoBackground,
   extractPalette,
+  loadLogoImage,
 } from "@/lib/landing-pages/colors";
 import {
   buildSchema,
@@ -86,6 +91,9 @@ export function useLpEditorForm(seed?: LpSeed) {
   });
 
   const watched = useWatch({ control: form.control });
+  // Paleta lida da logo atual — base para "Sugerir semelhante" e para o botão de
+  // reextrair. Só é preenchida quando a leitura dá certo.
+  const [extractedTheme, setExtractedTheme] = useState<Theme | null>(null);
   const office = (watched.office ?? lpEditorDefaultValues().office) as Office;
   const theme = (watched.theme ?? DEFAULT_THEME) as Theme;
   const autoTheme = watched.autoTheme ?? false;
@@ -464,10 +472,10 @@ export function useLpEditorForm(seed?: LpSeed) {
                   eyebrow: "",
                   title: "Nova seção",
                   text: "",
+                  // Começa no mínimo (2), lado a lado ocupando 50% cada.
                   cards: [
                     { title: "Item 1", text: "Descrição do primeiro item." },
                     { title: "Item 2", text: "Descrição do segundo item." },
-                    { title: "Item 3", text: "Descrição do terceiro item." },
                   ],
                 };
 
@@ -521,6 +529,15 @@ export function useLpEditorForm(seed?: LpSeed) {
       { shouldDirty: true },
     );
   }
+  function setCustomHidden(id: string, hidden: boolean) {
+    form.setValue(
+      "customSections",
+      form
+        .getValues("customSections")
+        .map((s) => (s.id === id ? { ...s, hidden } : s)),
+      { shouldDirty: true },
+    );
+  }
   function removeCustomSection(id: string) {
     form.setValue(
       "customSections",
@@ -534,7 +551,7 @@ export function useLpEditorForm(seed?: LpSeed) {
       form
         .getValues("customSections")
         .map((s) =>
-          s.id === id
+          s.id === id && s.cards.length < CUSTOM_CARDS_MAX
             ? { ...s, cards: [...s.cards, { title: "", text: "" }] }
             : s,
         ),
@@ -568,7 +585,7 @@ export function useLpEditorForm(seed?: LpSeed) {
       form
         .getValues("customSections")
         .map((s) =>
-          s.id === id
+          s.id === id && s.cards.length > CUSTOM_CARDS_MIN
             ? { ...s, cards: s.cards.filter((_, i) => i !== idx) }
             : s,
         ),
@@ -644,39 +661,22 @@ export function useLpEditorForm(seed?: LpSeed) {
     });
   }
 
-  function onLogo(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result);
-      set("logoSrc", dataUrl);
-      const img = new Image();
-      img.onload = () => {
-        const pal = extractPalette(img);
-        form.setValue("theme", pal, { shouldDirty: true });
-        const o = form.getValues("office");
-        form.setValue(
-          "office",
-          { ...o, logoBg: detectLogoBackground(img) },
-          { shouldDirty: true },
-        );
-        form.setValue(
-          "autoTheme",
-          pal.brand !== DEFAULT_THEME.brand ||
-            pal.accent !== DEFAULT_THEME.accent,
-          { shouldDirty: true },
-        );
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function setLogoUrl(url: string) {
-    set("logoSrc", url);
-    if (!url) return;
-    const img = new Image();
-    img.onload = () => {
+  /**
+   * Lê as cores da logo e aplica ao tema. Devolve `false` quando a extração não
+   * produz nada de útil (logo ilegível, ou remota sem CORS) — nesse caso o tema
+   * atual é preservado em vez de ser zerado para o padrão.
+   */
+  async function applyLogoPalette(src: string): Promise<boolean> {
+    if (!src) return false;
+    try {
+      const img = await loadLogoImage(src);
       const pal = extractPalette(img);
+      const usable =
+        pal.brand !== DEFAULT_THEME.brand ||
+        pal.accent !== DEFAULT_THEME.accent;
+      if (!usable) return false;
+
+      setExtractedTheme(pal);
       form.setValue("theme", pal, { shouldDirty: true });
       const o = form.getValues("office");
       form.setValue(
@@ -685,8 +685,26 @@ export function useLpEditorForm(seed?: LpSeed) {
         { shouldDirty: true },
       );
       form.setValue("autoTheme", true, { shouldDirty: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function onLogo(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      set("logoSrc", dataUrl);
+      void applyLogoPalette(dataUrl);
     };
-    img.src = url;
+    reader.readAsDataURL(file);
+  }
+
+  function setLogoUrl(url: string) {
+    set("logoSrc", url);
+    if (!url) return;
+    void applyLogoPalette(url);
   }
 
   function resetTheme() {
@@ -810,6 +828,7 @@ export function useLpEditorForm(seed?: LpSeed) {
     addCustomSection,
     setCustomField,
     setCustomTone,
+    setCustomHidden,
     removeCustomSection,
     addCustomCard,
     setCustomCardField,
@@ -820,6 +839,8 @@ export function useLpEditorForm(seed?: LpSeed) {
     onPhone,
     onLogo,
     setLogoUrl,
+    applyLogoPalette,
+    extractedTheme,
     theme,
     autoTheme,
     resetTheme,

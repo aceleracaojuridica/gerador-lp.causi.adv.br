@@ -180,7 +180,7 @@ export function Solucao({
               </Reveal>
               <Reveal delay={120}>
                 <div
-                  className="relative h-72 overflow-hidden rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand md:h-80"
+                  className="relative h-72 overflow-hidden rounded-[var(--lp-corner)] bg-lp-brand md:h-80"
                   style={
                     image
                       ? {
@@ -238,7 +238,8 @@ function Cards({ content }: { content: SolucaoContent }) {
     >
       {content.cards.map((c, i) => {
         return (
-          <Reveal key={`${c.title}-${c.text}`} delay={i * 80}>
+          // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do texto do card faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+          <Reveal key={`solucao-card-${i}`} delay={i * 80}>
             <div className="relative h-full overflow-hidden rounded-xl border-t-2 border-lp-accent bg-white p-7 ring-1 ring-lp-ink-soft/10 transition hover:-translate-y-0.5">
               <span className="relative mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-lp-accent text-lp-accent">
                 <IconForKey iconKey={c.icon} size={28} />

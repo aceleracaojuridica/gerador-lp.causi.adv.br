@@ -81,7 +81,8 @@ function Numerado({
           className={`mt-16 grid grid-cols-1 gap-x-10 gap-y-12 md:gap-x-14 ${colsCls}`}
         >
           {content.steps.map((s, i) => (
-            <Reveal key={`${s.title}-${s.text}`} delay={i * 80}>
+            // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do texto do card faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+            <Reveal key={`etapa-${i}`} delay={i * 80}>
               <div className="mx-auto max-w-xs text-center">
                 <span
                   className={`block font-display text-5xl leading-none md:text-6xl ${

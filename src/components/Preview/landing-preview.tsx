@@ -179,7 +179,7 @@ export function LandingPreview({
     if (item.startsWith("custom:")) {
       const id = item.slice(7);
       const sec = customSections.find((s) => s.id === id);
-      if (!sec) return null;
+      if (!sec || sec.hidden) return null;
       return (
         <div key={item} id={`sec-custom-${sec.id}`} className={anchor}>
           <CustomSection section={sec} demo={demo} />

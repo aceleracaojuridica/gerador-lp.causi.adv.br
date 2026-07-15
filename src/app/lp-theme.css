@@ -54,10 +54,35 @@
     line-height: 1.12;
   }
 
+  /* Subtítulo acima do título da seção.
+
+     O traço decorativo antes do texto existia só na variante "imagem + lista"
+     (Dores/Solução), montado à mão em JSX. Aqui ele vira parte da própria
+     classe: toda seção que usa .eyebrow ganha o mesmo estilo, e um eyebrow novo
+     não nasce mais sem ele.
+
+     - inline-flex: o elemento encolhe até o conteúdo, então continua centralizado
+       sozinho dentro dos blocos com text-center (Topo centralizado, FAQ, CTA final)
+       e alinhado à esquerda nos demais. Sem isso, um <p> em bloco esticaria e o
+       traço grudaria na borda esquerda mesmo em seções centralizadas.
+     - currentColor: o traço herda a cor do texto, então acompanha claro/escuro
+       sem precisar repetir a lógica de tom em cada seção. */
   .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
     letter-spacing: 0.22em;
     text-transform: uppercase;
+  }
+
+  .eyebrow::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 1px;
+    background-color: currentColor;
+    opacity: 0.6;
   }
 }

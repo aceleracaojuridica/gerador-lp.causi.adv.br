@@ -1,11 +1,10 @@
 "use client";
 
-import { Group, Home } from "@material-symbols-svg/react";
+import { Home } from "@material-symbols-svg/react";
 import {
   ChevronLeft,
   FileCopy,
   Help,
-  Image,
 } from "@material-symbols-svg/react/rounded";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -28,6 +27,11 @@ interface AppSidebarProps {
   isOpen?: boolean;
   /** Callback for when the sidebar open state changes */
   setIsOpen?: (open: boolean) => void;
+  /**
+   * Recolhe a trilha de ícones no desktop (no mobile ela já é off-canvas e é
+   * `isOpen` que manda). Usado pelo editor de LP ao esconder a navegação.
+   */
+  hiddenOnDesktop?: boolean;
   /** Link do Kanban de deals — `/oportunidades/{cookie}` ou `/oportunidades`. */
   dealsHref?: string;
 }
@@ -53,6 +57,7 @@ export function AppSidebar({
   currentPath = "/",
   isOpen: externalIsOpen,
   setIsOpen: externalSetIsOpen,
+  hiddenOnDesktop = false,
   dealsHref = "/",
 }: AppSidebarProps) {
   void dealsHref;
@@ -80,19 +85,10 @@ export function AppSidebar({
     {
       href: "/",
       icon: FileCopy,
-      label: "Página inicial",
-    },
-    {
-      href: "/galeria",
-      icon: Image,
-      label: "Galeria de imagens",
-      routes: ["/galeria"],
-    },
-    {
-      href: "/contatos",
-      icon: Group,
-      label: "Contatos",
-      routes: ["/contatos"],
+      label: "Landing pages",
+      // Ativo em toda a área de landing pages (lista, imagens e contatos vivem
+      // na sub-navegação interna dessa seção).
+      routes: ["/", "/galeria", "/contatos"],
     },
   ];
 
@@ -130,6 +126,7 @@ export function AppSidebar({
           transition-transform duration-300 ease-in-out
           md:relative md:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          ${hiddenOnDesktop ? "md:hidden" : ""}
         `}
       >
         <button

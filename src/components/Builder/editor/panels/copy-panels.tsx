@@ -10,6 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import {
+  AREA_CARDS_MAX,
+  AREA_CARDS_MIN,
+  AREA_ITEMS_MAX,
+  AREA_ITEMS_MIN,
+} from "@/lib/landing-pages/areas-limits";
+import {
   AREAS_CTA_FALLBACK,
   CTA_PRIMARY,
   CTA_SECONDARY,
@@ -108,15 +114,19 @@ function PairList({
       <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-ui-gray">
         {title}
       </p>
-      <div className="flex flex-col gap-2">
+      {/* Sem borda em volta de cada card: apenas uma linha horizontal separa um
+          do outro (a borda dupla — card + inputs — poluía e intimidava a edição).
+          -mx-3/px-3: a linha estoura o padding e vai de ponta a ponta, como as
+          faixas dos accordions; o conteúdo continua recuado. */}
+      <div className="flex flex-col">
         {items.map((it, i) => (
           <div
             key={itemKeys[i]}
-            className="flex flex-col gap-2 rounded-lg border border-slate-200 p-2.5"
+            className="-mx-3 flex flex-col gap-2 border-t border-border px-3 pt-3 first:border-t-0 first:pt-0 [&:not(:first-child)]:mt-3"
           >
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-foreground">
                   {phA} {i + 1}
                 </span>
                 {onRemove && items.length > minItems ? (
@@ -124,7 +134,7 @@ function PairList({
                     type="button"
                     aria-label="Remover"
                     onClick={() => onRemove(i)}
-                    className="flex h-5 w-5 items-center justify-center rounded text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-red-50 hover:text-red-600"
                   >
                     <Close size={14} />
                   </button>
@@ -137,7 +147,9 @@ function PairList({
               />
             </div>
             <div>
-              <p className="mb-1 text-xs font-semibold text-slate-600">{phB}</p>
+              <p className="mb-1 text-xs font-semibold text-foreground">
+                {phB}
+              </p>
               {multilineB ? (
                 <AutoTextarea
                   className="min-h-[56px] resize-y"
@@ -410,10 +422,6 @@ export function AreasTexts({ form }: { form: LpEditorForm }) {
   );
 }
 
-/** Sub-itens exibidos em bullets na variante "Quadrantes" das Áreas. */
-const AREA_ITEMS_MIN = 2;
-const AREA_ITEMS_MAX = 6;
-
 function AreaSubItems({
   form,
   cardIndex,
@@ -427,7 +435,7 @@ function AreaSubItems({
 
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold text-slate-600">
+      <p className="mb-1 text-xs font-semibold text-foreground">
         Sub-itens ({AREA_ITEMS_MIN} a {AREA_ITEMS_MAX})
       </p>
       <div className="flex flex-col gap-1.5">
@@ -455,7 +463,7 @@ function AreaSubItems({
                   c.areas.cards[cardIndex].items?.splice(j, 1);
                 })
               }
-              className="shrink-0 rounded-lg px-1.5 text-slate-400 transition hover:bg-ui-hover hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0 rounded-lg px-1.5 text-muted-foreground transition hover:bg-ui-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Close size={14} />
             </button>
@@ -471,7 +479,7 @@ function AreaSubItems({
               card.items = [...(card.items ?? []), ""];
             })
           }
-          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-ui-hover hover:text-slate-800"
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
         >
           <Add size={13} /> Adicionar sub-item
         </button>
@@ -484,21 +492,41 @@ export function AreasCards({ form }: { form: LpEditorForm }) {
   const a = form.copy.areas;
   const cardKeys = useStableListKeys(
     a.cards,
-    (c) => `${c.title} ${c.text}`,
+    (c) => `${c.title}\u0000${c.text}`,
     "area-card",
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       {a.cards.map((card, i) => (
         <div
           key={cardKeys[i]}
-          className="flex flex-col gap-2 rounded-lg border border-slate-200 p-2.5"
+          className="-mx-3 flex flex-col gap-2 border-t border-border px-3 pt-3 first:border-t-0 first:pt-0 [&:not(:first-child)]:mt-3"
         >
           <div>
-            <p className="mb-1 text-xs font-semibold text-slate-600">
-              Nome da área {i + 1}
-            </p>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground">
+                Nome da área {i + 1}
+              </p>
+              <button
+                type="button"
+                aria-label={`Remover área ${i + 1}`}
+                disabled={a.cards.length <= AREA_CARDS_MIN}
+                title={
+                  a.cards.length <= AREA_CARDS_MIN
+                    ? `A seção precisa de pelo menos ${AREA_CARDS_MIN} áreas.`
+                    : "Remover esta área"
+                }
+                onClick={() =>
+                  form.editCopy((c) => {
+                    c.areas.cards.splice(i, 1);
+                  })
+                }
+                className="shrink-0 rounded-lg px-1.5 text-muted-foreground transition hover:bg-ui-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Close size={14} />
+              </button>
+            </div>
             <Input
               value={card.title}
               onChange={(e) =>
@@ -510,7 +538,7 @@ export function AreasCards({ form }: { form: LpEditorForm }) {
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-semibold text-slate-600">
+            <p className="mb-1 text-xs font-semibold text-foreground">
               Descrição
             </p>
             <AutoTextarea
@@ -528,6 +556,29 @@ export function AreasCards({ form }: { form: LpEditorForm }) {
           <AreaSubItems form={form} cardIndex={i} items={card.items ?? []} />
         </div>
       ))}
+
+      {a.cards.length < AREA_CARDS_MAX ? (
+        <button
+          type="button"
+          onClick={() =>
+            form.editCopy((c) => {
+              c.areas.cards.push({
+                icon: "shield-check",
+                title: "",
+                text: "",
+                items: [""],
+              });
+            })
+          }
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs font-medium text-muted-foreground transition hover:bg-ui-hover hover:text-foreground"
+        >
+          <Add size={13} /> Adicionar área ({a.cards.length}/{AREA_CARDS_MAX})
+        </button>
+      ) : (
+        <p className="text-center text-xs text-muted-foreground">
+          Máximo de {AREA_CARDS_MAX} áreas atingido.
+        </p>
+      )}
     </div>
   );
 }

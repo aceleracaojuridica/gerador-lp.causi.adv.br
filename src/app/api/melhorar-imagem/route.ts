@@ -13,6 +13,62 @@ export const maxDuration = 60;
 const MAX_SIDE = 2000;
 const MAX_SCALE = 2;
 
+function hostOf(url: string | undefined): string | null {
+  try {
+    return url ? new URL(url).host : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Hosts de onde o servidor aceita BAIXAR uma imagem.
+ *
+ * A allowlist não é decorativa: a URL vem do cliente, então um `fetch` livre
+ * transformaria este endpoint num proxy de requisições internas (SSRF).
+ */
+const ALLOWED_HOSTS = new Set(
+  [hostOf(process.env.LP_SUPABASE_URL), "images.unsplash.com"].filter(
+    (h): h is string => Boolean(h),
+  ),
+);
+
+/**
+ * A foto pode chegar como data URL (upload recém-feito, ainda não persistido) ou
+ * como URL pública do Storage (LP já salva — o caso normal no editor).
+ */
+async function readImageBytes(
+  source: string,
+): Promise<{ ok: true; bytes: Buffer } | { ok: false; error: string }> {
+  const dataUrl = source.match(
+    /^data:(?:image\/(?:png|jpe?g|webp));base64,([\s\S]+)$/,
+  );
+  if (dataUrl) {
+    return { ok: true, bytes: Buffer.from(dataUrl[1], "base64") };
+  }
+
+  if (/^https?:\/\//i.test(source)) {
+    const host = hostOf(source);
+    if (!host || !ALLOWED_HOSTS.has(host)) {
+      return { ok: false, error: "Origem da imagem não permitida." };
+    }
+    try {
+      const res = await fetch(source, { signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: `Falha ao baixar a imagem (${res.status}).`,
+        };
+      }
+      return { ok: true, bytes: Buffer.from(await res.arrayBuffer()) };
+    } catch {
+      return { ok: false, error: "Falha ao baixar a imagem." };
+    }
+  }
+
+  return { ok: false, error: "Imagem inválida. Envie um PNG, JPG ou WEBP." };
+}
+
 export async function POST(request: Request) {
   try {
     await requireLpSession();
@@ -32,19 +88,14 @@ export async function POST(request: Request) {
   }
 
   const image = (body.image ?? "").trim();
-  const match = image.match(
-    /^data:(image\/(?:png|jpe?g|webp));base64,([\s\S]+)$/,
-  );
-  if (!match) {
-    return Response.json(
-      { error: "Imagem inválida. Envie um PNG, JPG ou WEBP." },
-      { status: 400 },
-    );
+  const source = await readImageBytes(image);
+  if (!source.ok) {
+    return Response.json({ error: source.error }, { status: 400 });
   }
 
   try {
     const sharp = (await import("sharp")).default;
-    const input = Buffer.from(match[2], "base64");
+    const input = source.bytes;
     const meta = await sharp(input).metadata();
     const w = meta.width ?? 0;
     const h = meta.height ?? 0;

@@ -6,6 +6,16 @@ import "server-only";
 */
 import OpenAI from "openai";
 import { getOpenAiChatModel, openAiTokenLimit } from "@/lib/env";
+import {
+  AREA_CARDS_GENERATED,
+  AREA_ITEMS_GENERATED,
+  normalizeGeneratedAreaCards,
+} from "./areas-limits";
+import {
+  EYEBROW_MAX_CHARS,
+  EYEBROW_MAX_WORDS,
+  normalizeGeneratedEyebrows,
+} from "./eyebrow";
 import type { FocoCopy } from "./focos";
 import { ICON_KEYS } from "./icons";
 import {
@@ -80,6 +90,12 @@ MANCHETE DO HERO (hero.headline) — é o que mais importa:
 
 CTAs: ctaPrimary = ação de contato direta ("Falar com um advogado", "Agendar atendimento"); ctaSecondary = passo mais leve ("Tirar minha dúvida", "Ver como funciona"). NÃO invente oferta: não escreva "grátis"/"gratuita" se isso não foi informado nos fatos.
 
+ÁREAS DE ATUAÇÃO: exatamente ${AREA_CARDS_GENERATED} cards, cada um com exatamente ${AREA_ITEMS_GENERATED} sub-itens em "items". Nem mais, nem menos. Cada card é uma FRENTE ampla de atuação; os sub-itens são os serviços concretos dentro dela.
+
+EYEBROW (o rótulo curto acima do título, em TODAS as seções): no máximo ${EYEBROW_MAX_WORDS} palavras e ${EYEBROW_MAX_CHARS} caracteres. É um RÓTULO, não uma frase — sem verbo, sem ponto final. Ele é exibido em caixa alta com espaçamento largo, então texto longo quebra em várias linhas e polui o mobile.
+  BOM: "Sobre o escritório" · "Áreas de atuação" · "Etapas do atendimento" · "Dúvidas frequentes"
+  RUIM: "Conheça um pouco mais sobre a história do nosso escritório" ← é frase, não rótulo
+
 Use APENAS estes ícones (campo "icon"): ${ICON_KEYS.join(", ")}.
 
 Responda com este JSON EXATO (sem comentários):
@@ -87,7 +103,7 @@ Responda com este JSON EXATO (sem comentários):
   "hero": { "eyebrow": "string curta", "headline": { "pre": "início", "em": "destaque", "post": "fim (pode ser vazio)" }, "sub": "1-2 frases sobre a dor do público", "ctaPrimary": "botão", "ctaSecondary": "botão", "features": [ { "icon": "chave", "title": "curto", "text": "1 frase" }, {…}, {…} ] },
   "dor": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "? " }, "intro": "2-3 frases de empatia", "cards": [ { "icon": "chave", "title": "dor concreta", "text": "1-2 frases" } x4 ] },
   "solucao": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "como atuamos", "text": "1 frase" } x4 ] },
-  "areas": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "frente de atuação", "text": "1 frase", "items": [ "serviço concreto dessa frente (2-5 palavras)" x4 ] } x4 ], "cta": "botão" },
+  "areas": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1 frase", "cards": [ { "icon": "chave", "title": "frente de atuação", "text": "1 frase", "items": [ "serviço concreto dessa frente (2-5 palavras)" x4 ] } x2 ], "cta": "botão" },
   "etapas": { "eyebrow": "string (ex: Etapas do atendimento)", "headline": { "pre": "...", "em": "...", "post": "" }, "steps": [ { "title": "passo curto", "text": "1 frase do que acontece" } x4 ] },
   "faq": { "eyebrow": "string", "headline": { "pre": "...", "em": "...", "post": "" }, "items": [ { "q": "pergunta real do público", "a": "resposta sóbria" } x4 ] },
   "ctaFinal": { "headline": { "pre": "...", "em": "...", "post": "" }, "sub": "1-2 frases", "cta": "botão" },
@@ -166,6 +182,13 @@ export async function callOpenAiForCopy(
     delete parsed.imageQueries;
     delete parsed.seo;
     const copy: FocoCopy = { ...(parsed as unknown as FocoCopy), seo };
+
+    // O modelo costuma escorregar na contagem pedida ("x2", "x4"): recorta ao
+    // contrato para a LP não nascer com 4 cards ou 6 sub-itens.
+    copy.areas.cards = normalizeGeneratedAreaCards(copy.areas.cards ?? []);
+    // Mesma lógica para o eyebrow: o prompt pede rótulo curto, mas a IA às vezes
+    // devolve frase — e frase longa em caixa alta destrói o mobile.
+    normalizeGeneratedEyebrows(copy);
 
     return { copy, imageQueries };
   };

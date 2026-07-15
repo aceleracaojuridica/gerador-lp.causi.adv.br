@@ -57,7 +57,7 @@ export function SocialsInput({
                 size="icon-sm"
                 aria-label="Remover rede"
                 onClick={() => onRemove(i)}
-                className="shrink-0 text-slate-400 hover:text-slate-700"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
               >
                 <Close size={16} />
               </Button>

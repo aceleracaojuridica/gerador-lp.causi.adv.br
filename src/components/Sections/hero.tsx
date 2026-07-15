@@ -148,6 +148,41 @@ function bandFeatures(office: Office, content: HeroContent): HeroFeature[] {
   ).slice(0, HERO_BAND_MAX_ITEMS);
 }
 
+/**
+ * Faixa de destaques EXPLÍCITA: o usuário preencheu `heroFeatures` com itens
+ * suficientes. Diferente da faixa-fallback (que vem da copy gerada) — só a
+ * explícita esconde as métricas.
+ */
+export function hasExplicitHeroBand(office: Office): boolean {
+  return (
+    (office.heroFeatures ?? []).filter((f) => f.text.trim()).length >=
+    HERO_BAND_MIN_ITEMS
+  );
+}
+
+type HeroFigure = { src: string; alt: string; portrait: boolean };
+
+/**
+ * Figura à direita do Topo, em ordem de precedência:
+ *
+ * 1. `sectionImages.heroDestaque` — escolha EXPLÍCITA do usuário no editor.
+ *    Sempre vence: ele pode não querer rosto nenhum no topo.
+ * 2. Retrato do advogado, só quando há exatamente UM. Com 2+ a seção Equipe
+ *    existe e eleger um rosto para o topo seria favoritismo.
+ * 3. Nada — o topo fica só com o texto sobre a cena de fundo.
+ */
+function heroFigure(office: Office): HeroFigure | null {
+  const chosen = office.sectionImages.heroDestaque?.trim();
+  if (chosen) return { src: chosen, alt: "", portrait: false };
+
+  const solo = office.lawyers.length === 1 ? office.lawyers[0] : undefined;
+  if (solo?.photo?.trim()) {
+    return { src: solo.photo, alt: solo.name || office.name, portrait: true };
+  }
+
+  return null;
+}
+
 export function Hero(props: HeroProps) {
   switch (props.variant) {
     case HERO_SPLIT_MEDIA_ID:
@@ -339,11 +374,17 @@ function HeroStats({
   tone,
 }: HeroProps) {
   const dark = tone === "dark";
-  // Foto recortada do advogado, sobreposta à direita (sem moldura). Sem foto,
-  // o hero fica só com o texto sobre o fundo (cena/cor).
-  const lawyer = office.lawyers[0]?.photo;
-  const hasMetrics = office.metrics.length > 0;
-  const features = bandFeatures(office, content);
+  // Figura recortada, sobreposta à direita (sem moldura). Sem figura, o hero
+  // fica só com o texto sobre o fundo (cena/cor).
+  const figure = heroFigure(office);
+  // Regra: faixa de destaques e métricas são mutuamente exclusivas.
+  // - Faixa EXPLÍCITA (o usuário preencheu heroFeatures) tem prioridade e
+  //   esconde as métricas.
+  // - Havendo métricas, elas suprimem a faixa-fallback (a que vem da copy).
+  // Assim os dois recursos continuam usáveis, mas nunca aparecem juntos.
+  const hasExplicitBand = hasExplicitHeroBand(office);
+  const hasMetrics = !hasExplicitBand && office.metrics.length > 0;
+  const features = hasMetrics ? [] : bandFeatures(office, content);
   const hasBand = features.length >= HERO_BAND_MIN_ITEMS;
 
   // Foto de fundo da seção (cenário/escritório) com overlay — como no Hero
@@ -441,13 +482,13 @@ function HeroStats({
           ) : null}
         </div>
 
-        {/* Foto recortada sobreposta, ancorada na base — sem moldura (oculta no mobile) */}
+        {/* Figura sobreposta, ancorada na base — sem moldura (oculta no mobile) */}
         <div className="relative hidden items-end justify-center self-stretch lg:flex">
-          {lawyer ? (
+          {figure?.portrait ? (
             // biome-ignore lint/performance/noImgElement: recorte precisa de object-contain + máscara de fade
             <img
-              src={lawyer}
-              alt={office.lawyers[0]?.name || office.name}
+              src={figure.src}
+              alt={figure.alt}
               className="relative z-10 h-full max-h-[min(34rem,70vh)] w-auto self-end object-contain object-bottom"
               style={{
                 maskImage:
@@ -455,6 +496,16 @@ function HeroStats({
                 WebkitMaskImage:
                   "linear-gradient(to bottom, #000 88%, transparent 100%)",
               }}
+            />
+          ) : figure ? (
+            // Imagem genérica: é uma cena, não um recorte de pessoa — entra como
+            // cartão coberto, sem a máscara de fade que só faz sentido em retrato.
+            // biome-ignore lint/performance/noImgElement: LP renderiza <img> puro (sem otimização do Next)
+            <img
+              src={figure.src}
+              alt=""
+              aria-hidden
+              className="relative z-10 my-auto h-[min(30rem,62vh)] w-full rounded-2xl object-cover shadow-2xl ring-1 ring-black/10"
             />
           ) : null}
         </div>
@@ -479,9 +530,8 @@ function HeroRecorte({
   brandDarkRgb,
   anchorCta,
 }: HeroProps) {
-  const lawyer = office.lawyers[0]?.photo;
+  const figure = heroFigure(office);
   const bgImg = office.sectionImages.hero;
-  const hasMetrics = office.metrics.length > 0;
   const dark = tone === "dark";
   // Cor base dos gradientes (overlay, transição e fumaça): escuro usa a marca,
   // claro usa o creme para o texto ficar legível sobre a cena.
@@ -564,41 +614,18 @@ function HeroRecorte({
               </CTAButton>
             ) : null}
           </div>
-
-          {hasMetrics ? (
-            <div
-              className={`mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t pt-7 ${
-                dark ? "border-white/15" : "border-lp-ink-soft/15"
-              }`}
-            >
-              {office.metrics.slice(0, 4).map((m) => (
-                <div key={m.label} className="flex items-center gap-3">
-                  <span
-                    className={dark ? "text-lp-accent-soft" : "text-lp-accent"}
-                  >
-                    <IconForKey iconKey={m.icon} size={28} />
-                  </span>
-                  <p
-                    className={`max-w-[11rem] text-sm leading-snug ${
-                      dark ? "text-white/75" : "text-lp-ink-soft"
-                    }`}
-                  >
-                    {m.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {/* Métricas só existem na variação "Com métricas" (HeroStats). Aqui,
+              na variação Recorte, elas não aparecem. */}
         </div>
 
-        {/* Foto recortada, ancorada na base, dissolvendo no fundo (máscara + fumaça) */}
+        {/* Figura recortada, ancorada na base, dissolvendo no fundo (máscara + fumaça) */}
         <div className="relative hidden items-end justify-end lg:flex">
-          {lawyer ? (
+          {figure?.portrait ? (
             <div className="relative flex h-full items-end justify-end self-stretch">
               {/* biome-ignore lint/performance/noImgElement: recorte precisa de object-contain + máscara */}
               <img
-                src={lawyer}
-                alt={office.lawyers[0]?.name || office.name}
+                src={figure.src}
+                alt={figure.alt}
                 className="relative z-10 h-full w-auto self-end object-contain object-bottom"
                 style={{
                   maskImage:
@@ -614,6 +641,18 @@ function HeroRecorte({
                 style={{
                   backgroundImage: `radial-gradient(120% 95% at 50% 100%, rgba(${baseRgb},0.95), rgba(${baseRgb},0.6) 55%, transparent 82%)`,
                 }}
+              />
+            </div>
+          ) : figure ? (
+            // Imagem genérica: cena, não recorte de pessoa — cartão coberto, sem
+            // a máscara/fumaça que só faz sentido dissolvendo um retrato.
+            <div className="flex h-full items-center justify-end self-stretch py-16 lg:py-20">
+              {/* biome-ignore lint/performance/noImgElement: LP renderiza <img> puro (sem otimização do Next) */}
+              <img
+                src={figure.src}
+                alt=""
+                aria-hidden
+                className="relative z-10 h-full max-h-[min(32rem,66vh)] w-full rounded-2xl object-cover shadow-2xl ring-1 ring-black/10"
               />
             </div>
           ) : null}

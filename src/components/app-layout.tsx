@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSession } from "@/hooks/use-session";
+import { AppChromeProvider } from "./app-chrome-context";
 import { AppSidebar } from "./app-sidebar";
 import { SystemBar } from "./system-bar";
 
@@ -25,36 +26,46 @@ export function AppLayout({
   dealsHref = "/oportunidades",
 }: AppLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Recolhida no desktop a pedido da página (hoje: o editor de LP).
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const currentPath = usePathname();
   const session = useSession();
+
+  const chrome = useMemo(
+    () => ({ sidebarHidden, setSidebarHidden }),
+    [sidebarHidden],
+  );
 
   const showSystemBar =
     session.hasSharedAccounts || session.role.accessLevel === 999;
 
   return (
-    <div className="min-h-dvh max-h-dvh h-dvh bg-background text-foreground overflow-hidden flex flex-col">
-      {/* Top-bar horizontal - Sempre no topo */}
-      {showSystemBar && <SystemBar />}
+    <AppChromeProvider value={chrome}>
+      <div className="min-h-dvh max-h-dvh h-dvh bg-background text-foreground overflow-hidden flex flex-col">
+        {/* Top-bar horizontal - Sempre no topo */}
+        {showSystemBar && <SystemBar />}
 
-      <main
-        className={`flex max-w-full mx-auto shadow-lg relative w-full grow ${
-          showSystemBar
-            ? "overflow-hidden max-h-[calc(100dvh-50px)]"
-            : "overflow-hidden max-h-full"
-        }`}
-      >
-        <AppSidebar
-          currentPath={currentPath}
-          isOpen={isSidebarOpen}
-          setIsOpen={setIsSidebarOpen}
-          dealsHref={dealsHref}
-        />
+        <main
+          className={`flex max-w-full mx-auto shadow-lg relative w-full grow ${
+            showSystemBar
+              ? "overflow-hidden max-h-[calc(100dvh-50px)]"
+              : "overflow-hidden max-h-full"
+          }`}
+        >
+          <AppSidebar
+            currentPath={currentPath}
+            isOpen={isSidebarOpen}
+            setIsOpen={setIsSidebarOpen}
+            hiddenOnDesktop={sidebarHidden}
+            dealsHref={dealsHref}
+          />
 
-        {/* Renderiza conteudo das paginas */}
-        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-          {children}
-        </div>
-      </main>
-    </div>
+          {/* Renderiza conteudo das paginas */}
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+            {children}
+          </div>
+        </main>
+      </div>
+    </AppChromeProvider>
   );
 }

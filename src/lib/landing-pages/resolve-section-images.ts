@@ -10,9 +10,9 @@ import "server-only";
 import { imagensDoTema } from "./image-bank";
 import type { ExternalApiLogMeta } from "./lp-external-api-log";
 import {
-  EMPTY_SECTION_IMAGES,
-  SECTION_IMAGE_KEYS,
-  type SectionImages,
+  EMPTY_SCENE_IMAGES,
+  SCENE_SECTION_KEYS,
+  type SceneImages,
 } from "./section-images";
 import {
   pickSystemImagesWithAiRanking,
@@ -25,7 +25,7 @@ export type ResolveSectionImagesInput = {
   tema: string;
   paletteHint?: string;
   catalog: SystemGalleryImageItem[];
-  imageQueries: Partial<SectionImages>;
+  imageQueries: Partial<SceneImages>;
   seedInput: string;
   log?: ExternalApiLogMeta;
 };
@@ -35,11 +35,11 @@ export type ResolveSectionImagesInput = {
  */
 export async function resolveSectionImages(
   input: ResolveSectionImagesInput,
-): Promise<SectionImages> {
+): Promise<SceneImages> {
   const { apiKey, tema, paletteHint, catalog, imageQueries, seedInput, log } =
     input;
 
-  const picked: SectionImages =
+  const picked: SceneImages =
     catalog.length > 0
       ? await pickSystemImagesWithAiRanking({
           apiKey,
@@ -49,11 +49,11 @@ export async function resolveSectionImages(
           seedInput,
           log,
         })
-      : { ...EMPTY_SECTION_IMAGES };
+      : { ...EMPTY_SCENE_IMAGES };
 
-  const gaps = SECTION_IMAGE_KEYS.filter((key) => !picked[key]?.trim());
+  const gaps = SCENE_SECTION_KEYS.filter((key) => !picked[key]?.trim());
   if (gaps.length > 0) {
-    const queries: Partial<SectionImages> = {};
+    const queries: Partial<SceneImages> = {};
     for (const key of gaps) {
       queries[key] = imageQueries[key] ?? "";
     }

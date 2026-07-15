@@ -123,6 +123,7 @@ export type LpListItem = {
   status: "draft" | "published";
   preview: LpListPreview;
   updatedAt: string | null;
+  createdAt: string | null;
   createdByUserId: string;
 };
 
@@ -133,7 +134,7 @@ export async function listLps(session: Session): Promise<LpListItem[]> {
   const { data, error } = await db
     .from("landing_pages")
     .select(
-      "slug,office_subdomain,name,tema,status,schema,updated_at,created_by_user_id",
+      "slug,office_subdomain,name,tema,status,schema,updated_at,created_at,created_by_user_id",
     )
     .eq("account_id", ctx.accountId)
     .order("updated_at", { ascending: false });
@@ -172,6 +173,7 @@ export async function listLps(session: Session): Promise<LpListItem[]> {
         name,
       }),
       updatedAt: (r as { updated_at?: string | null }).updated_at ?? null,
+      createdAt: (r as { created_at?: string | null }).created_at ?? null,
       createdByUserId: r.created_by_user_id,
     };
   });
@@ -525,6 +527,12 @@ function migrate(lp: StoredLp): StoredLp {
   }
   if (office?.sectionImages && office.sectionImages.solucao === undefined) {
     office.sectionImages.solucao = "";
+  }
+  if (
+    office?.sectionImages &&
+    office.sectionImages.heroDestaque === undefined
+  ) {
+    office.sectionImages.heroDestaque = "";
   }
   if (office && !Array.isArray((office as { socials?: unknown }).socials)) {
     office.socials = [];

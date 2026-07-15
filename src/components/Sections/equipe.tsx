@@ -69,7 +69,7 @@ function SoloPortrait({ lawyer, dark }: { lawyer: Lawyer; dark: boolean }) {
     <Reveal className="mt-10">
       <div className="grid items-center gap-8 lg:grid-cols-[42%_58%] lg:gap-12">
         <div
-          className="h-[26rem] w-full rounded-tl-[var(--lp-corner)] rounded-br-[var(--lp-corner)] bg-lp-brand shadow-md md:h-[30rem]"
+          className="h-[26rem] w-full rounded-[var(--lp-corner)] bg-lp-brand shadow-md md:h-[30rem]"
           style={
             lawyer.photo
               ? {
@@ -88,8 +88,10 @@ function SoloPortrait({ lawyer, dark }: { lawyer: Lawyer; dark: boolean }) {
             {lawyer.name || "Advogado(a)"}
           </h3>
           {lawyer.role ? (
+            // whitespace-pre-line: o campo é um textarea, então as quebras que o
+            // usuário digita precisam sobreviver ao HTML (que as colapsaria).
             <p
-              className={`mt-3 text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+              className={`mt-3 whitespace-pre-line text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
             >
               {lawyer.role}
             </p>
@@ -119,12 +121,13 @@ function SplitAlternado({
       {lawyers.map((l, i) => {
         const fotoDireita = i % 2 === 1;
         return (
-          <Reveal key={`${l.name}-${l.role}`}>
+          // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do nome/cargo faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+          <Reveal key={`equipe-split-${i}`}>
             <div className="grid items-center gap-6 md:gap-10 lg:grid-cols-2">
               {/* Foto — altura contida para não inflar a seção */}
               <div className={fotoDireita ? "lg:order-2" : ""}>
                 <div
-                  className="h-56 w-full rounded-tl-[var(--lp-corner-sm)] rounded-br-[var(--lp-corner-sm)] bg-lp-brand bg-cover shadow-md md:h-64 lg:h-72"
+                  className="h-56 w-full rounded-[var(--lp-corner-sm)] bg-lp-brand bg-cover shadow-md md:h-64 lg:h-72"
                   style={
                     l.photo
                       ? {
@@ -145,7 +148,7 @@ function SplitAlternado({
                 </h3>
                 {l.role ? (
                   <p
-                    className={`mt-2 text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
+                    className={`mt-2 whitespace-pre-line text-lg font-medium ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
                   >
                     {l.role}
                   </p>
@@ -180,7 +183,8 @@ function RetratoElegante({
   return (
     <div className={`mt-12 ${gridCls}`}>
       {lawyers.map((l, i) => (
-        <Reveal key={`${l.name}-${l.role}`} delay={i * 70}>
+        // biome-ignore lint/suspicious/noArrayIndexKey: a key precisa ser posicional. Derivá-la do nome/cargo faz o Reveal remontar a cada tecla no editor (volta a visible:false e refaz o fade) — a seção pisca. A lista não reordena.
+        <Reveal key={`equipe-grid-${i}`} delay={i * 70}>
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-lp-brand shadow-md">
             {l.photo ? (
               <div
@@ -203,7 +207,9 @@ function RetratoElegante({
                 {l.name || "Advogado(a)"}
               </p>
               {l.role ? (
-                <p className="mt-0.5 text-sm text-white/75">{l.role}</p>
+                <p className="mt-0.5 whitespace-pre-line text-sm text-white/75">
+                  {l.role}
+                </p>
               ) : null}
             </div>
           </div>

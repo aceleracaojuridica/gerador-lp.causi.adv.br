@@ -5,7 +5,13 @@ import {
   ChevronRight,
   KeyboardArrowDown,
 } from "@material-symbols-svg/react";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -50,12 +56,28 @@ export function FieldGroupAccordion({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const ref = useRef<HTMLDivElement>(null);
+
+  function handleToggle() {
+    const next = !open;
+    setOpen(next);
+    // Ao abrir, traz o cabeçalho para o topo da área rolável — senão o conteúdo
+    // expandido pode ficar fora de vista e o usuário precisa rolar até ele.
+    if (next) {
+      requestAnimationFrame(() => {
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }
 
   return (
-    <div className="border-t border-border pt-2 first:border-t-0 first:pt-0">
+    <div
+      ref={ref}
+      className="scroll-mt-2 border-t border-border pt-2 first:border-t-0 first:pt-0"
+    >
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         aria-expanded={open ? "true" : "false"}
         className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-muted/60"
       >
@@ -140,7 +162,8 @@ export function EditorSectionAccordion({
     >
       <div
         className={cn(
-          "group relative flex items-center gap-3 px-4 py-3 transition",
+          // py-4: área de toque maior no cabeçalho (o botão cobre todo este bloco).
+          "group relative flex items-center gap-3 px-4 py-4 transition",
           open ? "bg-card" : "bg-card hover:bg-muted/50",
           asFlush ? "" : open ? "rounded-t-xl" : "rounded-xl",
         )}
@@ -154,14 +177,12 @@ export function EditorSectionAccordion({
           className="absolute inset-0 h-auto rounded-[inherit] hover:bg-transparent"
         />
         {icon ? (
+          // Mesmo estilo do ícone das linhas de seção (EditorSectionMenuRow):
+          // fundo branco, borda #808c97 a 10%, ícone #808c97, rounded-md.
           <span
             className={cn(
-              "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-lg",
-              off
-                ? "bg-muted text-muted-foreground/50"
-                : open
-                  ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground",
+              "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-md border border-[#808c97]/10 bg-card",
+              off ? "text-[#808c97]/50" : "text-[#808c97]",
             )}
           >
             {icon}
@@ -234,7 +255,6 @@ export const Accordion = EditorSectionAccordion;
 export function EditorSectionMenuRow({
   title,
   subtitle: _subtitle,
-  meta,
   icon,
   toggle: sectionToggle,
   active = false,
@@ -242,7 +262,6 @@ export function EditorSectionMenuRow({
 }: {
   title: string;
   subtitle?: string;
-  meta?: string;
   icon?: React.ReactNode;
   toggle?: { on: boolean; onChange: (on: boolean) => void };
   active?: boolean;
@@ -293,27 +312,14 @@ export function EditorSectionMenuRow({
           >
             {title}
           </span>
-          {meta ? (
-            <Badge
-              variant="outline"
-              className={cn(
-                "hidden h-4 shrink-0 rounded-full px-1 text-[0.6rem] font-medium sm:inline-flex",
-                active
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "text-muted-foreground",
-              )}
-            >
-              {meta}
-            </Badge>
-          ) : null}
           {sectionToggle ? (
             <Badge
               variant="secondary"
               className={cn(
-                "pointer-events-auto h-4 shrink-0 cursor-pointer rounded-full px-1.5 text-[0.6rem]",
+                "pointer-events-auto ml-auto h-4 shrink-0 cursor-pointer rounded-[4px] px-1.5 text-[0.6rem]",
                 sectionToggle.on
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                  : "bg-muted text-muted-foreground",
+                  ? "bg-[#e4f7e5] text-[#2c9e30] hover:bg-[#d5f0d7] dark:bg-[#05df65]/15 dark:text-[#05df65] dark:hover:bg-[#05df65]/25"
+                  : "bg-muted text-muted-foreground dark:bg-[#bc90f9]/15 dark:text-[#bc90f9] dark:hover:bg-[#bc90f9]/25",
               )}
               onClick={(e) => {
                 e.stopPropagation();
