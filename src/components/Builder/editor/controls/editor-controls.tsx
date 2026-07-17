@@ -73,13 +73,20 @@ export function FieldGroupAccordion({
   return (
     <div
       ref={ref}
-      className="scroll-mt-2 border-t border-border pt-2 first:border-t-0 first:pt-0"
+      // -mx-3 anula o px-3 do container: a barra do cabeçalho vai de ponta a
+      // ponta (largura total). O conteúdo volta a recuar com px-3. O respiro
+      // vertical fica DENTRO do botão (py-3) para o hover cobri-lo por inteiro.
+      className="-mx-3 scroll-mt-2 border-t border-border first:border-t-0"
     >
       <button
         type="button"
         onClick={handleToggle}
         aria-expanded={open ? "true" : "false"}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-muted/60"
+        className={cn(
+          "flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition hover:bg-muted/60",
+          // Aberto: mantém o realce do hover para separar o cabeçalho do conteúdo.
+          open && "bg-muted/60",
+        )}
       >
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-foreground">
@@ -99,7 +106,7 @@ export function FieldGroupAccordion({
           )}
         />
       </button>
-      {open ? <div className="mt-3 space-y-3 px-0.5">{children}</div> : null}
+      {open ? <div className="mt-3 space-y-3 px-3 pb-3">{children}</div> : null}
     </div>
   );
 }

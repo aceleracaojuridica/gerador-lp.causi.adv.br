@@ -90,7 +90,7 @@ import {
 } from "@/lib/landing-pages/variants";
 import { showLpMessageError, showLpUpgradeToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { BuilderField, inputCls } from "../shared/fields";
+import { BuilderField, BuilderSelect, inputCls } from "../shared/fields";
 import {
   AREAS_OPTIONS,
   AREAS_VARIANT_LABELS,
@@ -185,7 +185,7 @@ function getSectionDescription(sectionId: DetailSectionId): string {
     case "imagens":
       return "Fotos das seções e retratos da equipe";
     case "aparencia":
-      return "Tipografia, botões e detalhes visuais";
+      return "Logo, cores, tipografia e botões";
     case "integracoes":
       return "Tracking, scripts e visibilidade nos buscadores";
     case "seo":
@@ -353,43 +353,6 @@ export function Editor({
     );
   }, [availableEquipeOptions, lawyerCount, layout.equipe]);
 
-  const editorNotices = useMemo(() => {
-    if (lawyerCount === 0) {
-      return [
-        {
-          id: "equipe-empty",
-          title: "Equipe indisponível",
-          description:
-            "Adicione ao menos um advogado para liberar a seção Equipe no editor.",
-        },
-      ];
-    }
-
-    if (lawyerCount === 1 && layout.equipe !== EQUIPE_VARIANT_SOLO_PORTRAIT) {
-      return [
-        {
-          id: "equipe-solo-only",
-          title: "Somente Retrato solo",
-          description:
-            "Com um advogado, a seção Equipe só pode usar a variação Retrato solo.",
-        },
-      ];
-    }
-
-    if (lawyerCount >= 2 && layout.equipe === EQUIPE_VARIANT_SOLO_PORTRAIT) {
-      return [
-        {
-          id: "equipe-multi-only",
-          title: "Variação solo incompatível",
-          description:
-            "Com dois ou mais advogados, use Split alternado ou Retrato elegante.",
-        },
-      ];
-    }
-
-    return [];
-  }, [lawyerCount, layout.equipe]);
-
   useEffect(() => {
     if (!seoIndexable && detailSection === "seo") {
       setDetailSection(null);
@@ -398,14 +361,6 @@ export function Editor({
 
   const editorSections = useMemo((): WorkspaceSectionMeta[] => {
     const items: WorkspaceSectionMeta[] = [
-      {
-        id: "identidade",
-        label: "Identidade",
-        previewTarget: "sec-hero",
-        description: getSectionDescription("identidade"),
-        stage: "foundation",
-        enabled: true,
-      },
       {
         id: "imagens",
         label: "Imagens",
@@ -1259,30 +1214,6 @@ export function Editor({
                   <AddSectionButton onAdd={form.addCustomSection} />
                 </div>
               ) : null}
-
-              {editorNotices.length ? (
-                <div className="px-3 py-3">
-                  <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-                    <div>
-                      <p className="text-xs font-semibold text-amber-900">
-                        Avisos da página
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      {editorNotices.map((notice) => (
-                        <div key={notice.id} className="space-y-1">
-                          <p className="text-xs font-medium text-amber-950">
-                            {notice.title}
-                          </p>
-                          <p className="text-[11px] leading-relaxed text-amber-900/80">
-                            {notice.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              ) : null}
             </>
           )}
         </div>
@@ -1372,7 +1303,6 @@ export function Editor({
     }
     return (
       <div className="min-w-0 max-w-full space-y-3">
-        {detailSection === "identidade" && <IdentidadePanel form={form} />}
         {detailSection === "imagens" && <ImagensPanel form={form} />}
         {detailSection === "seo" && <SeoPanel form={form} />}
         {detailSection === "integracoes" && (
@@ -1428,11 +1358,20 @@ export function Editor({
           </>
         )}
         {detailSection === "aparencia" && (
-          <>
-            <div>
-              <p className="mb-2 text-sm font-medium text-foreground">
-                Cantos (arredondado ou quadrado)
-              </p>
+          // Accordions encostados (sem o gap do space-y): separados só pela
+          // borda, para nenhum ficar com espaço vazio embaixo.
+          <div>
+            <FieldGroupAccordion
+              title="Logo e cores"
+              hint="Logo, tema e paleta da marca"
+            >
+              <IdentidadePanel form={form} />
+            </FieldGroupAccordion>
+
+            <FieldGroupAccordion
+              title="Cantos"
+              hint="Arredondamento de cards e botões"
+            >
               <div className="space-y-2">
                 <Segmented
                   label="Cards"
@@ -1447,26 +1386,116 @@ export function Editor({
                   options={CORNER_OPTIONS}
                 />
               </div>
-            </div>
+            </FieldGroupAccordion>
 
-            <div className="space-y-2 border-t border-border/60 pt-3">
+            <FieldGroupAccordion
+              title="Tipografia"
+              hint="Fontes de títulos e textos"
+            >
               <BuilderField
-                label="O que acontece ao clicar num botão"
-                hint="Vale para todos os botões de chamada da página."
+                label="Títulos e destaques"
+                hint="Fonte usada nos títulos de seção e manchetes."
               >
-                <select
-                  aria-label="Ação dos botões"
-                  className={inputCls}
-                  value={office.buttons?.action ?? "popup"}
-                  onChange={(e) =>
-                    form.setButtonField("action", e.target.value)
-                  }
+                <BuilderSelect
+                  aria-label="Fonte dos títulos"
+                  value={office.fonts?.heading ?? ""}
+                  onChange={(e) => form.setFont("heading", e.target.value)}
                 >
-                  <option value="popup">Abrir popup de formulário</option>
-                  <option value="whatsapp">Abrir WhatsApp</option>
-                  <option value="link">Abrir link personalizado</option>
-                </select>
+                  <option value="">Padrão do site</option>
+                  {HEADING_FONTS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </BuilderSelect>
               </BuilderField>
+              <BuilderField
+                label="Textos e parágrafos"
+                hint="Fonte usada nos parágrafos e textos de apoio."
+              >
+                <BuilderSelect
+                  aria-label="Fonte dos textos"
+                  value={office.fonts?.body ?? ""}
+                  onChange={(e) => form.setFont("body", e.target.value)}
+                >
+                  <option value="">Padrão do site</option>
+                  {BODY_FONTS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </BuilderSelect>
+              </BuilderField>
+            </FieldGroupAccordion>
+
+            <FieldGroupAccordion
+              title="Ação de botão"
+              hint="O que acontece ao clicar nos botões"
+            >
+              <BuilderSelect
+                aria-label="Ação dos botões"
+                value={office.buttons?.action ?? "popup"}
+                onChange={(e) => form.setButtonField("action", e.target.value)}
+              >
+                <option value="popup">Popup de formulário + WhatsApp</option>
+                <option value="whatsapp">Abrir WhatsApp</option>
+                <option value="link">Abrir link personalizado</option>
+              </BuilderSelect>
+
+              {/* Botão flutuante de WhatsApp: vive dentro de "Ação de botão". */}
+              <div className="space-y-2 border-t border-border/60 pt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Botão flutuante de WhatsApp
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Fixo no canto inferior direito da página.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      form.setFloatingButtonField(
+                        "enabled",
+                        !(office.floatingButton?.enabled ?? true),
+                      )
+                    }
+                    className={`shrink-0 rounded-[5px] px-2.5 py-1 text-[0.7rem] font-semibold transition ${
+                      (office.floatingButton?.enabled ?? true)
+                        ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
+                        : "bg-muted text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {(office.floatingButton?.enabled ?? true) ? "Ativo" : "Off"}
+                  </button>
+                </div>
+                {(office.floatingButton?.enabled ?? true) ? (
+                  <BuilderSelect
+                    aria-label="Ação do botão flutuante"
+                    value={office.floatingButton?.action ?? "whatsapp"}
+                    onChange={(e) =>
+                      form.setFloatingButtonField(
+                        "action",
+                        e.target.value as "whatsapp" | "popup",
+                      )
+                    }
+                  >
+                    <option value="whatsapp">Abrir o WhatsApp direto</option>
+                    <option value="popup">
+                      Abrir o formulário e depois enviar ao WhatsApp
+                    </option>
+                  </BuilderSelect>
+                ) : null}
+                {(office.floatingButton?.action ?? "whatsapp") === "whatsapp" &&
+                !office.whatsapp?.trim() ? (
+                  <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+                    Informe o WhatsApp no <strong>Rodapé</strong> para o botão
+                    flutuante aparecer.
+                  </p>
+                ) : null}
+              </div>
+
               {(office.buttons?.action ?? "popup") === "link" ? (
                 <BuilderField
                   label="Link do botão"
@@ -1489,65 +1518,23 @@ export function Editor({
               ) : (
                 <div className="rounded-lg border border-border bg-muted/40 p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Abre um formulário que termina sempre com{" "}
-                    <strong>nome</strong> e <strong>telefone</strong>. Adicione
-                    perguntas personalizadas (texto, e-mail, valor, CEP, etc.)
-                    antes desse passo.
+                    Adicione perguntas personalizadas (texto, e-mail, valor,
+                    CEP, etc.)
                   </p>
                   <button
                     type="button"
                     onClick={() => setBuilderOpen(true)}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ui px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ui-dark"
+                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[5px] border border-ui bg-transparent px-3 py-2.5 text-sm font-semibold text-ui transition hover:bg-ui/10"
                   >
-                    <Tune size={15} /> Personalizar formulário
+                    <Tune size={16} /> Personalizar formulário
                     {office.buttons?.popup?.questions.length
                       ? ` (${office.buttons.popup.questions.length})`
                       : ""}
                   </button>
                 </div>
               )}
-            </div>
-
-            <div className="space-y-2 border-t border-border/60 pt-3">
-              <p className="text-sm font-medium text-foreground">Tipografia</p>
-              <BuilderField
-                label="Títulos e destaques"
-                hint="Fonte usada nos títulos de seção e manchetes."
-              >
-                <select
-                  aria-label="Fonte dos títulos"
-                  className={inputCls}
-                  value={office.fonts?.heading ?? ""}
-                  onChange={(e) => form.setFont("heading", e.target.value)}
-                >
-                  <option value="">Padrão do site</option>
-                  {HEADING_FONTS.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </BuilderField>
-              <BuilderField
-                label="Textos e parágrafos"
-                hint="Fonte usada nos parágrafos e textos de apoio."
-              >
-                <select
-                  aria-label="Fonte dos textos"
-                  className={inputCls}
-                  value={office.fonts?.body ?? ""}
-                  onChange={(e) => form.setFont("body", e.target.value)}
-                >
-                  <option value="">Padrão do site</option>
-                  {BODY_FONTS.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </BuilderField>
-            </div>
-          </>
+            </FieldGroupAccordion>
+          </div>
         )}
         {detailSection === "dor" && (
           <>
@@ -1591,7 +1578,7 @@ export function Editor({
               value: tones.sobre,
               onChange: (t) => form.setTone("sobre", t),
             })}
-            <SectionImageInput form={form} sectionKey="sobre" />
+            <SectionImageInput form={form} sectionKey="sobre" framable />
             <FieldGroup title="Texto">
               <BuilderField
                 label="Apresentação"

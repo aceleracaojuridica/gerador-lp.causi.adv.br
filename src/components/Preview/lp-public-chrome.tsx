@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { FloatingWhatsAppButton } from "@/components/Sections/floating-whatsapp-button";
 import {
   type LeadCaptureContext,
   LeadPopup,
@@ -9,8 +10,9 @@ import {
 import { PolicyPage } from "@/components/Sections/policy-page";
 import { CtaConfigContext } from "@/components/ui/cta-config";
 import { bodyFontVar, headingFontVar } from "@/lib/landing-pages/fonts";
+import { whatsappLandingPath } from "@/lib/landing-pages/lp-url";
 import type { LpSchema } from "@/lib/landing-pages/schema";
-import { themeToCssVars, waLink } from "@/lib/landing-pages/schema";
+import { themeToCssVars } from "@/lib/landing-pages/schema";
 import { LpPrivacyOpenContext } from "./lp-privacy-context";
 
 /**
@@ -50,10 +52,7 @@ export function LpPublicChrome({
     action === "link"
       ? (btn?.link ?? "").trim() || undefined
       : action === "whatsapp" && schema.office.whatsapp
-        ? waLink(
-            schema.office.whatsapp,
-            "Olá, vim pelo site e gostaria de falar com vocês.",
-          )
+        ? whatsappLandingPath(schema.office.whatsapp)
         : undefined;
   const ctaConfig = {
     href: ctaHref,
@@ -76,6 +75,10 @@ export function LpPublicChrome({
           ) : (
             <>
               <main>{children}</main>
+              <FloatingWhatsAppButton
+                office={schema.office}
+                onOpenPopup={() => setPopupOpen(true)}
+              />
               <LeadPopup
                 demo={false}
                 open={popupOpen}
@@ -83,6 +86,7 @@ export function LpPublicChrome({
                 questions={schema.office.buttons?.popup?.questions ?? []}
                 leadContext={leadContext}
                 turnstileSiteKey={turnstileSiteKey}
+                whatsapp={schema.office.whatsapp}
               />
             </>
           )}

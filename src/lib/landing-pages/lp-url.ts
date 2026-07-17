@@ -41,6 +41,16 @@ export function publicLpUrl(officeSubdomain: string, lpSlug: string): string {
   return `${protocol}://${publicLpHost(officeSubdomain)}/${lpSlug}`;
 }
 
+/**
+ * Caminho (relativo) da página intermediária que redireciona ao WhatsApp:
+ * `/whatsapp-landing/?whatsapp=NUMERO`. Fica no mesmo domínio da LP publicada,
+ * então o caminho relativo resolve para `{subdominio}.causi.adv.br/...`.
+ */
+export function whatsappLandingPath(whatsapp: string): string {
+  const digits = (whatsapp || "").replace(/\D/g, "");
+  return `/whatsapp-landing/?whatsapp=${digits}`;
+}
+
 /** Exibição amigável: `escritorio.causi.adv.br/slug`. */
 export function publicLpDisplayHost(
   officeSubdomain: string,

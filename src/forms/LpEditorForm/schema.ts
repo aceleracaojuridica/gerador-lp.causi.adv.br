@@ -31,6 +31,7 @@ import {
   customScriptTagSchema,
   extraAddressSchema,
   extraContactSchema,
+  focalSchema,
   heroFeatureSchema,
   lawyerSchema,
   logoBgSchema,
@@ -164,6 +165,12 @@ const officeSchema = z.object({
         .optional(),
     })
     .optional(),
+  floatingButton: z
+    .object({
+      enabled: z.boolean(),
+      action: z.enum(["whatsapp", "popup"]),
+    })
+    .optional(),
   about: z.string(),
   diferenciais: z.array(z.string()),
   logoSrc: z.string(),
@@ -178,6 +185,18 @@ const officeSchema = z.object({
     sobre: z.string(),
     solucao: z.string(),
   }),
+  // Enquadramento (ponto focal) das imagens de cenário — todas as chaves
+  // opcionais; ausência = centro. Ausente nas LPs antigas.
+  sectionImageFocals: z
+    .object({
+      hero: focalSchema,
+      heroDestaque: focalSchema,
+      dor: focalSchema,
+      sobre: focalSchema,
+      solucao: focalSchema,
+    })
+    .partial()
+    .optional(),
   metrics: z.array(metricSchema),
   heroFeatures: z.array(heroFeatureSchema).optional(),
 });
@@ -273,6 +292,7 @@ export const EMPTY_OFFICE: LpEditorFormValues["office"] = {
     link: "",
     popup: { questions: [] },
   },
+  floatingButton: { enabled: true, action: "whatsapp" },
   about: "",
   diferenciais: [""],
   logoSrc: "",

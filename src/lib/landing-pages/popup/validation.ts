@@ -55,7 +55,7 @@ export function validatePopupAnswer(
     }
     case "phone": {
       if (unmaskNumeric(trimmed).length < 10) {
-        return "Telefone inválido.";
+        return "Telefone incompleto: informe DDD + número.";
       }
       break;
     }

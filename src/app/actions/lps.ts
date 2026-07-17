@@ -8,7 +8,9 @@ import {
   deleteOrphanedAssets,
   getLpMeta,
   publishLp,
+  renameLpSlug,
   resolveOfficeSubdomain,
+  SLUG_TAKEN_ERROR,
   saveLp,
   unpublishLp,
 } from "@/lib/landing-pages/lp-store";
@@ -135,6 +137,49 @@ export async function unpublishLpAction(slug: string): Promise<ActionResult> {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: toMessage(err, "Erro ao despublicar.") };
+  }
+}
+
+/** Renomeia o slug (endereço) de uma LP. Só quem pode editar a LP. */
+export async function renameLpSlugAction(
+  oldSlug: string,
+  newSlug: string,
+): Promise<{ ok: true; slug: string } | { ok: false; error: string }> {
+  let session: Awaited<ReturnType<typeof requireLpSession>>;
+  try {
+    session = await requireLpSession();
+    await assertCanEditLp(oldSlug);
+  } catch (err) {
+    return { ok: false, error: toMessage(err, "Não autenticado.") };
+  }
+
+  if (!oldSlug || !newSlug.trim()) {
+    return { ok: false, error: "Informe o novo endereço." };
+  }
+
+  try {
+    const meta = await getLpMeta(session, oldSlug);
+    const { slug } = await renameLpSlug(session, oldSlug, newSlug);
+
+    // A URL antiga deixa de existir; invalida cache das duas (se publicada).
+    if (meta?.status === "published") {
+      const office =
+        meta.officeSubdomain?.trim() || (await resolveOfficeSubdomain(session));
+      revalidatePublishedPublic(office, oldSlug);
+      revalidatePublishedPublic(office, slug);
+    }
+    revalidatePath("/");
+    revalidatePath(`/lp/${oldSlug}`);
+    revalidatePath(`/lp/${slug}`);
+    return { ok: true, slug };
+  } catch (err) {
+    if (err instanceof Error && err.message === SLUG_TAKEN_ERROR) {
+      return {
+        ok: false,
+        error: "Já existe uma landing page com esse endereço.",
+      };
+    }
+    return { ok: false, error: toMessage(err, "Erro ao alterar o endereço.") };
   }
 }
 

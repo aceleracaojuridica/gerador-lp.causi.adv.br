@@ -30,6 +30,7 @@ import { persistLpSchemaMedia } from "./media-storage";
 import type { LpSchema, StoredLp } from "./schema";
 import { DEFAULT_LAYOUT } from "./schema";
 import { normalizeSeo } from "./seo";
+import { slugFromOfficeName } from "./slug";
 import {
   HERO_VARIANT_VIDEO_FALLBACK,
   isLegacyHeroVideoVariant,
@@ -215,6 +216,47 @@ export async function getLpMeta(
     officeSubdomain: (data.office_subdomain as string) ?? "",
     status: (data.status as "draft" | "published") ?? "draft",
   };
+}
+
+/** Erro lançado quando o novo slug já pertence a outra LP da conta. */
+export const SLUG_TAKEN_ERROR = "SLUG_TAKEN";
+
+/**
+ * Renomeia o slug (endereço) de uma LP da conta. O slug faz parte da URL
+ * pública e da chave `account_id,slug`; as imagens não quebram porque o schema
+ * guarda URLs absolutas. Retorna o slug efetivamente gravado (normalizado).
+ */
+export async function renameLpSlug(
+  session: Session,
+  oldSlug: string,
+  newSlug: string,
+): Promise<{ slug: string }> {
+  const ctx = sessionToLpContext(session);
+  const db = createLpUserClient(session);
+  const from = safeSlug(oldSlug);
+  // Normaliza como na criação (kebab, sem acentos, sem hífens nas pontas).
+  const to = slugFromOfficeName(newSlug);
+  if (!to) throw new Error("slug inválido");
+  if (from === to) return { slug: to };
+
+  // Slug precisa ser único dentro da conta.
+  const { data: taken, error: takenError } = await db
+    .from("landing_pages")
+    .select("id")
+    .eq("account_id", ctx.accountId)
+    .eq("slug", to)
+    .maybeSingle();
+  if (takenError) throwDbError(takenError);
+  if (taken) throw new Error(SLUG_TAKEN_ERROR);
+
+  const { error } = await db
+    .from("landing_pages")
+    .update({ slug: to, updated_at: new Date().toISOString() })
+    .eq("account_id", ctx.accountId)
+    .eq("slug", from);
+  if (error) throwDbError(error);
+
+  return { slug: to };
 }
 
 /** Carrega uma LP completa pelo slug (conta ativa). */

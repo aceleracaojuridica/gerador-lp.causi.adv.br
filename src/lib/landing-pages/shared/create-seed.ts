@@ -154,6 +154,8 @@ export function buildOfficeFromGerarLpPayload(
       heroDestaque: heroDestaqueFor(lawyers, images),
     },
     metrics: [],
+    // Botão flutuante de WhatsApp sempre presente (canto inferior direito).
+    floatingButton: { enabled: true, action: "whatsapp" },
     // Tipografia padrão da LP gerada: Cormorant Garamond nos títulos (peso 600).
     // Corpo fica no padrão do site. Editável em Aparência → Tipografia.
     fonts: { heading: DEFAULT_HEADING_FONT_ID, body: "" },

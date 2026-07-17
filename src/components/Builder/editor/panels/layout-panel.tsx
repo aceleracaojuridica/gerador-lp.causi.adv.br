@@ -144,6 +144,7 @@ export function ImagensPanel({ form }: { form: LpEditorForm }) {
           form={form}
           sectionKey="sobre"
           label="Foto do Sobre"
+          framable
         />
         <SectionImageInput
           form={form}

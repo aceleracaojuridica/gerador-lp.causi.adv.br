@@ -16,6 +16,37 @@ export function hexToRgbString(hex: string): string {
   return `${r}, ${g}, ${b}`;
 }
 
+/**
+ * Normaliza uma cor digitada (HEX ou HSL) para `#rrggbb`, ou `null` se inválida.
+ * Aceita: `#abc`, `#aabbcc`, `aabbcc`, `hsl(210, 40%, 30%)`, `210 40% 30%`.
+ */
+export function hexFromColorInput(input: string): string | null {
+  const s = input.trim().toLowerCase();
+  if (!s) return null;
+
+  const hex = s.replace(/^#/, "");
+  if (/^[0-9a-f]{6}$/.test(hex)) return `#${hex}`;
+  if (/^[0-9a-f]{3}$/.test(hex)) {
+    return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+  }
+
+  const inner = s.startsWith("hsl") ? s.replace(/^hsla?\(|\)$/g, "") : s;
+  const nums = inner
+    .split(/[\s,/]+/)
+    .filter(Boolean)
+    .map((p) => Number.parseFloat(p));
+  if (nums.length >= 3 && nums.every((n) => Number.isFinite(n))) {
+    const [h, sat, lig] = nums;
+    // hslToHex (privado, abaixo) usa s/l em fração 0-1.
+    return hslToHex({
+      h: ((h % 360) + 360) % 360,
+      s: Math.max(0, Math.min(1, sat / 100)),
+      l: Math.max(0, Math.min(1, lig / 100)),
+    });
+  }
+  return null;
+}
+
 /** Overlay vertical sobre foto de fundo do Hero centralizado. */
 export function heroImageOverlay(
   dark: boolean,

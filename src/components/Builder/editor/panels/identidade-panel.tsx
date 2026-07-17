@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 import { LogoImageHint } from "@/components/Builder/shared/image-hint";
 import { LazyImageSlot } from "@/components/Builder/shared/image-picker-dialog";
+import { ManualColorEditor } from "@/components/Builder/shared/manual-color-editor";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import { SugerirPaletasButton } from "../../create/sugerir-paletas-button";
 import { BuilderField } from "../../shared/fields";
@@ -15,8 +16,9 @@ import { PalettePicker } from "../../shared/palette-picker";
 
 /** Logo, cores da marca e tema de referência da LP. */
 export function IdentidadePanel({ form }: { form: LpEditorForm }) {
-  const { office, theme, autoTheme } = form;
+  const { office, theme } = form;
   const [palOpen, setPalOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [falhou, setFalhou] = useState(false);
 
@@ -65,7 +67,7 @@ export function IdentidadePanel({ form }: { form: LpEditorForm }) {
                 ) : (
                   <Palette size={14} />
                 )}
-                {extracting ? "Lendo a logo…" : "Extrair cores da logo"}
+                {extracting ? "Lendo a logo…" : "Extrair cores"}
               </button>
             ) : undefined
           }
@@ -74,10 +76,6 @@ export function IdentidadePanel({ form }: { form: LpEditorForm }) {
         {office.logoSrc && falhou ? (
           <p className="text-xs text-red-600">
             Não consegui ler cores dessa logo. As cores atuais foram mantidas.
-          </p>
-        ) : office.logoSrc && autoTheme ? (
-          <p className="text-xs text-emerald-600">
-            <Palette size={13} className="inline" /> Cores extraídas da logo
           </p>
         ) : null}
       </div>
@@ -129,6 +127,35 @@ export function IdentidadePanel({ form }: { form: LpEditorForm }) {
           open={palOpen}
           className="pt-1"
         />
+
+        <div className="border-t border-border/60 pt-2">
+          <button
+            type="button"
+            onClick={() => setManualOpen((v) => !v)}
+            aria-expanded={manualOpen}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <span className="text-sm font-medium text-foreground">
+              Ajustar manualmente
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground transition hover:bg-ui-hover">
+              {manualOpen ? "Fechar" : "Editar"}
+              <KeyboardArrowDown
+                size={14}
+                className={`transition-transform ${manualOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+          {manualOpen ? (
+            <div className="mt-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                Clique no quadrado para escolher, ou digite a cor em HEX
+                (#0f1828) ou HSL (hsl(210, 40%, 30%)).
+              </p>
+              <ManualColorEditor theme={theme} onChange={form.setThemeColor} />
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
