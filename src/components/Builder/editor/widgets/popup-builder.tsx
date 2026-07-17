@@ -2,6 +2,7 @@
 
 import { Add, Close, Delete } from "@material-symbols-svg/react";
 import type { KeyboardEvent, MouseEvent } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { LpEditorForm } from "@/forms/LpEditorForm";
 import {
@@ -10,7 +11,7 @@ import {
   type PopupQuestionType,
 } from "@/lib/landing-pages/popup/types";
 import type { PopupQuestion } from "@/lib/landing-pages/schema";
-import { BuilderField } from "../../shared/fields";
+import { BuilderField, BuilderSelect } from "../../shared/fields";
 
 export function PopupBuilder({
   form,
@@ -124,11 +125,11 @@ export function PopupBuilder({
           <div>
             <h2
               id="popup-builder-title"
-              className="text-sm font-semibold text-foreground"
+              className="text-base font-semibold text-foreground"
             >
               Personalizar formulário
             </h2>
-            <p className="text-xs text-ui-gray">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Perguntas antes do passo de nome e telefone
             </p>
           </div>
@@ -179,7 +180,7 @@ export function PopupBuilder({
                 />
               </BuilderField>
               <BuilderField label="Tipo de resposta">
-                <select
+                <BuilderSelect
                   aria-label={`Tipo da pergunta ${i + 1}`}
                   value={q.type}
                   onChange={(e) =>
@@ -196,25 +197,24 @@ export function PopupBuilder({
                       {label}
                     </option>
                   ))}
-                </select>
+                </BuilderSelect>
               </BuilderField>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground">Obrigatório</span>
-                <button
-                  type="button"
-                  onClick={() => setRequired(i, q.required === false)}
-                  className={`rounded-[5px] px-2 py-0.5 text-[0.7rem] font-semibold transition ${
-                    q.required !== false
-                      ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
-                      : "bg-muted text-muted-foreground hover:bg-muted"
-                  }`}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`req-${q.id}`}
+                  checked={q.required !== false}
+                  onCheckedChange={(c) => setRequired(i, c === true)}
+                />
+                <label
+                  htmlFor={`req-${q.id}`}
+                  className="cursor-pointer text-xs text-foreground"
                 >
-                  {q.required !== false ? "Sim" : "Não"}
-                </button>
+                  Obrigatório
+                </label>
               </div>
               {q.type === "currency" ? (
                 <BuilderField label="Moeda">
-                  <select
+                  <BuilderSelect
                     aria-label={`Moeda da pergunta ${i + 1}`}
                     value={q.currency}
                     onChange={(e) =>
@@ -224,26 +224,23 @@ export function PopupBuilder({
                     <option value="BRL">Real (BRL)</option>
                     <option value="USD">Dólar (USD)</option>
                     <option value="EUR">Euro (EUR)</option>
-                  </select>
+                  </BuilderSelect>
                 </BuilderField>
               ) : null}
               {q.type === "choice" ? (
                 <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-foreground">
-                      Várias respostas
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setAllowMultiple(i, !q.allowMultiple)}
-                      className={`rounded-[5px] px-2 py-0.5 text-[0.7rem] font-semibold transition ${
-                        q.allowMultiple
-                          ? "bg-[#e4f7e5] text-[#1b961f] hover:bg-[#d3f1d5]"
-                          : "bg-muted text-muted-foreground hover:bg-muted"
-                      }`}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`multi-${q.id}`}
+                      checked={!!q.allowMultiple}
+                      onCheckedChange={(c) => setAllowMultiple(i, c === true)}
+                    />
+                    <label
+                      htmlFor={`multi-${q.id}`}
+                      className="cursor-pointer text-xs text-foreground"
                     >
-                      {q.allowMultiple ? "Sim" : "Não"}
-                    </button>
+                      Várias respostas
+                    </label>
                   </div>
                   <div className="space-y-1.5">
                     <p className="text-sm font-medium text-foreground">

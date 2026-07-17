@@ -10,6 +10,7 @@ import { Dor } from "@/components/Sections/dor";
 import { Equipe } from "@/components/Sections/equipe";
 import { Etapas } from "@/components/Sections/etapas";
 import { FAQ } from "@/components/Sections/faq";
+import { FloatingWhatsAppButton } from "@/components/Sections/floating-whatsapp-button";
 import { Footer } from "@/components/Sections/footer";
 import { Hero } from "@/components/Sections/hero";
 import {
@@ -22,8 +23,9 @@ import { Solucao } from "@/components/Sections/solucao";
 import { CtaConfigContext } from "@/components/ui/cta-config";
 import { hexToRgbString } from "@/lib/landing-pages/colors";
 import { bodyFontVar, headingFontVar } from "@/lib/landing-pages/fonts";
+import { whatsappLandingPath } from "@/lib/landing-pages/lp-url";
 import type { LpSchema } from "@/lib/landing-pages/schema";
-import { themeToCssVars, waLink } from "@/lib/landing-pages/schema";
+import { themeToCssVars } from "@/lib/landing-pages/schema";
 import { effectiveOrder } from "@/lib/landing-pages/section-order";
 import { cn } from "@/lib/utils";
 
@@ -118,11 +120,10 @@ export function LandingPreview({
   const ctaHref =
     action === "link"
       ? (btn?.link ?? "").trim() || undefined
-      : action === "whatsapp" && schema.office.whatsapp
-        ? waLink(
-            schema.office.whatsapp,
-            "Olá, vim pelo site e gostaria de falar com vocês.",
-          )
+      : // No preview (demo) o link do WhatsApp fica inerte: `/whatsapp-landing`
+        // não existe no domínio da app e abriria um 404 dentro do iframe.
+        action === "whatsapp" && schema.office.whatsapp && !demo
+        ? whatsappLandingPath(schema.office.whatsapp)
         : undefined;
   const ctaConfig = {
     href: ctaHref,
@@ -346,12 +347,18 @@ export function LandingPreview({
                 onPrivacyClick={() => setShowPolicy(true)}
               />,
             )}
+            <FloatingWhatsAppButton
+              office={schema.office}
+              onOpenPopup={() => setPopupOpen(true)}
+              demo={demo}
+            />
             <LeadPopup
               demo={demo}
               open={popupOpen}
               onClose={() => setPopupOpen(false)}
               questions={schema.office.buttons?.popup?.questions ?? []}
               leadContext={leadContext}
+              whatsapp={schema.office.whatsapp}
             />
           </>
         )}

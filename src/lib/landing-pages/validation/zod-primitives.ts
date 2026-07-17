@@ -26,16 +26,17 @@ export const addressEntrySchema = z.object({
   showMaps: z.boolean(),
 });
 
+/** Ponto focal de enquadramento (% x/y) para background-position "cover". */
+export const focalSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+
 export const lawyerSchema = z.object({
   photo: z.string(),
   name: z.string(),
   role: z.string(),
-  focal: z
-    .object({
-      x: z.number(),
-      y: z.number(),
-    })
-    .optional(),
+  focal: focalSchema.optional(),
 });
 
 export const logoBgSchema = z.object({

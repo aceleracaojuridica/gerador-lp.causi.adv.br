@@ -65,6 +65,11 @@ const DEFAULT_BUTTONS = {
   popup: { questions: [] as PopupQuestion[] },
 };
 
+const DEFAULT_FLOATING_BUTTON = {
+  enabled: true,
+  action: "whatsapp" as const,
+};
+
 function seedToFormValues(seed?: LpSeed): LpEditorFormValues {
   if (!seed) return lpEditorDefaultValues();
   return lpEditorDefaultValues({
@@ -356,6 +361,18 @@ export function useLpEditorForm(seed?: LpSeed) {
       { shouldDirty: true },
     );
   }
+  function setFloatingButtonField<K extends "enabled" | "action">(
+    key: K,
+    value: NonNullable<Office["floatingButton"]>[K],
+  ) {
+    const current =
+      form.getValues("office.floatingButton") ?? DEFAULT_FLOATING_BUTTON;
+    form.setValue(
+      "office.floatingButton",
+      { ...DEFAULT_FLOATING_BUTTON, ...current, [key]: value },
+      { shouldDirty: true },
+    );
+  }
 
   function setSeoField<K extends keyof SeoMeta>(key: K, value: SeoMeta[K]) {
     editCopy((c) => {
@@ -621,6 +638,17 @@ export function useLpEditorForm(seed?: LpSeed) {
     );
   }
 
+  // Outra imagem, outro enquadramento: descarta o focal anterior da seção.
+  function resetSectionImageFocal(key: SectionImageKey) {
+    const focals = form.getValues("office.sectionImageFocals") ?? {};
+    if (focals[key] === undefined) return;
+    form.setValue(
+      "office.sectionImageFocals",
+      { ...focals, [key]: undefined },
+      { shouldDirty: true },
+    );
+  }
+
   function onSectionImage(key: SectionImageKey, file: File) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -631,6 +659,7 @@ export function useLpEditorForm(seed?: LpSeed) {
         { ...sectionImages, [key]: dataUrl },
         { shouldDirty: true },
       );
+      resetSectionImageFocal(key);
     };
     reader.readAsDataURL(file);
   }
@@ -641,12 +670,25 @@ export function useLpEditorForm(seed?: LpSeed) {
       { ...sectionImages, [key]: "" },
       { shouldDirty: true },
     );
+    resetSectionImageFocal(key);
   }
   function setSectionImageUrl(key: SectionImageKey, url: string) {
     const sectionImages = form.getValues("office.sectionImages");
     form.setValue(
       "office.sectionImages",
       { ...sectionImages, [key]: url },
+      { shouldDirty: true },
+    );
+    resetSectionImageFocal(key);
+  }
+  function setSectionImageFocal(
+    key: SectionImageKey,
+    focal: { x: number; y: number },
+  ) {
+    const focals = form.getValues("office.sectionImageFocals") ?? {};
+    form.setValue(
+      "office.sectionImageFocals",
+      { ...focals, [key]: focal },
       { shouldDirty: true },
     );
   }
@@ -715,6 +757,13 @@ export function useLpEditorForm(seed?: LpSeed) {
   function applyPalette(t: Theme) {
     form.setValue("theme", t, { shouldDirty: true });
     form.setValue("autoTheme", true, { shouldDirty: true });
+  }
+
+  /** Ajuste manual de UMA cor do tema (HEX). Marca o tema como personalizado. */
+  function setThemeColor(key: keyof Theme, value: string) {
+    const current = form.getValues("theme") ?? DEFAULT_THEME;
+    form.setValue("theme", { ...current, [key]: value }, { shouldDirty: true });
+    form.setValue("autoTheme", false, { shouldDirty: true });
   }
 
   function setTema(value: string) {
@@ -823,6 +872,7 @@ export function useLpEditorForm(seed?: LpSeed) {
     setFont,
     setButtonField,
     setPopupQuestions,
+    setFloatingButtonField,
     applyAccountDefaults,
     customSections,
     addCustomSection,
@@ -836,6 +886,7 @@ export function useLpEditorForm(seed?: LpSeed) {
     onSectionImage,
     clearSectionImage,
     setSectionImageUrl,
+    setSectionImageFocal,
     onPhone,
     onLogo,
     setLogoUrl,
@@ -845,6 +896,7 @@ export function useLpEditorForm(seed?: LpSeed) {
     autoTheme,
     resetTheme,
     applyPalette,
+    setThemeColor,
     tema,
     setTema,
     layout,

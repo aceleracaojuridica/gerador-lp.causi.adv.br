@@ -1,5 +1,5 @@
 import type { PopupQuestion } from "./schema";
-import type { SectionImages } from "./section-images";
+import type { SectionImageKey, SectionImages } from "./section-images";
 import type {
   AreasVariant,
   DorVariant,
@@ -170,6 +170,13 @@ export type Office = {
       questions: PopupQuestion[];
     };
   };
+  // Botão flutuante de WhatsApp no canto inferior direito (sempre gerado).
+  // - whatsapp: abre o WhatsApp direto.
+  // - popup: abre o formulário de lead e, ao enviar, redireciona ao WhatsApp.
+  floatingButton?: {
+    enabled: boolean;
+    action: "whatsapp" | "popup";
+  };
   about: string; // texto "sobre o escritório" (fornecido pelo usuário)
   diferenciais: string[]; // pontos fortes (opcional) — exibidos na seção Sobre
   logoSrc: string; // URL pública no Supabase Storage (ou data URL em preview)
@@ -182,6 +189,11 @@ export type Office = {
   socials: Social[];
   // Imagens de CENÁRIO por seção (Storage, Unsplash ou upload do usuário).
   sectionImages: SectionImages;
+  // Enquadramento (ponto focal % x/y) das imagens de cenário, por seção.
+  // Opcional/parcial: ausente = centro. Ex.: reposicionar a foto do Sobre.
+  sectionImageFocals?: Partial<
+    Record<SectionImageKey, { x: number; y: number }>
+  >;
   metrics: Metric[]; // destaques do Hero "Com métricas" (opcional) — ex: { icon: "trophy", label: "anos de atuação" }
   // Mini-cards de destaque do Hero centralizado (ícone + texto). Opcional p/
   // compatibilidade: ausente = usa os destaques da copy gerada; vazio = sem cards.

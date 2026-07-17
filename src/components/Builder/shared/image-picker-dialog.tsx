@@ -221,6 +221,8 @@ type LazyImageSlotProps = {
   onClear: () => void;
   className?: string;
   extraActions?: React.ReactNode;
+  /** Conteúdo sobreposto ao preview (ex.: superfície de enquadramento). */
+  overlay?: React.ReactNode;
 };
 
 /** Slot colapsado: preview + botão explícito para abrir galeria. */
@@ -231,6 +233,7 @@ export function LazyImageSlot({
   onClear,
   className,
   extraActions,
+  overlay,
 }: LazyImageSlotProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -268,6 +271,7 @@ export function LazyImageSlot({
             alt=""
             className="h-[120px] w-full rounded-[5px] object-cover ring-1 ring-border"
           />
+          {overlay}
         </div>
       ) : (
         <div className="flex h-[120px] w-full items-center justify-center rounded-[5px] border border-dashed border-border bg-muted/40 text-xs text-muted-foreground">

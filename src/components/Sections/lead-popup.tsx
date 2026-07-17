@@ -9,6 +9,8 @@ import {
 import { useEffect, useState } from "react";
 import { submitLeadAction } from "@/app/actions/leads";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { InputMask } from "@/components/ui/input-mask";
+import { whatsappLandingPath } from "@/lib/landing-pages/lp-url";
 import { validatePopupAnswer } from "@/lib/landing-pages/popup/validation";
 import type { PopupQuestion } from "@/lib/landing-pages/schema";
 import { PopupQuestionField } from "./popup-question-field";
@@ -33,6 +35,7 @@ export function LeadPopup({
   demo = false,
   leadContext,
   turnstileSiteKey,
+  whatsapp,
 }: {
   open: boolean;
   onClose: () => void;
@@ -41,6 +44,8 @@ export function LeadPopup({
   leadContext?: LeadCaptureContext;
   /** Site key injetada pela page RSC (fallback: NEXT_PUBLIC_TURNSTILE_SITE_KEY). */
   turnstileSiteKey?: string;
+  /** WhatsApp do escritório: ao enviar, redireciona o lead para lá. */
+  whatsapp?: string;
 }) {
   const siteKey = turnstileSiteKey?.trim() || FALLBACK_TURNSTILE_SITE_KEY;
   const [step, setStep] = useState(0);
@@ -86,6 +91,11 @@ export function LeadPopup({
       setSubmitError("Preencha nome e telefone.");
       return;
     }
+    // Exige DDD + número (mínimo 10 dígitos: 2 do DDD + 8 do telefone).
+    if (telefone.replace(/\D/g, "").length < 10) {
+      setSubmitError("Telefone incompleto: informe DDD + número.");
+      return;
+    }
     if (siteKey && !captchaToken) {
       setSubmitError("Confirme o captcha antes de enviar.");
       return;
@@ -106,6 +116,14 @@ export function LeadPopup({
 
     if (!res.ok) {
       setSubmitError(res.error);
+      return;
+    }
+
+    // Lead capturado: redireciona para a página que abre o WhatsApp (loading de
+    // 5s + wa.me). Sem número cadastrado, cai na tela de confirmação.
+    const wa = whatsapp?.trim();
+    if (wa) {
+      window.location.href = whatsappLandingPath(wa);
       return;
     }
     setSent(true);
@@ -230,12 +248,13 @@ export function LeadPopup({
                 placeholder="Seu nome"
                 required
               />
-              <input
+              <InputMask
                 aria-label="Telefone"
-                className="w-full rounded-[5px] border border-lp-ink-soft/20 px-4 py-3 text-sm text-lp-ink outline-none transition focus:border-lp-accent"
+                mask="(00) 00000-0000"
+                className="h-auto w-full rounded-[5px] border border-lp-ink-soft/20 bg-transparent px-4 py-3 text-sm text-lp-ink outline-none transition hover:border-lp-ink-soft/20 focus:border-lp-accent focus-visible:border-lp-accent"
                 value={lead.telefone}
-                onChange={(e) =>
-                  setLead((l) => ({ ...l, telefone: e.target.value }))
+                onAccept={(v: string) =>
+                  setLead((l) => ({ ...l, telefone: v }))
                 }
                 placeholder="(00) 00000-0000"
                 inputMode="tel"

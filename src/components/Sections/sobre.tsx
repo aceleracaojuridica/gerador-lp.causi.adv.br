@@ -86,11 +86,12 @@ function sobreImg(office: Office): string {
     : office.sectionImages.sobre;
 }
 
-// Enquadramento: usa o focal do advogado solo (quando a imagem é a foto dele).
+// Enquadramento: foto do advogado solo usa o focal dele; imagem de cenário
+// (equipe/sem foto) usa o focal definido na seção (Enquadrar do editor).
 function sobrePos(office: Office): string {
   return office.lawyers.length === 1
     ? focalPos(office.lawyers[0].focal)
-    : "center";
+    : focalPos(office.sectionImageFocals?.sobre);
 }
 
 function imgStyle(

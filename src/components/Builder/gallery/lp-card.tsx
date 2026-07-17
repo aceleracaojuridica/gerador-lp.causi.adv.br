@@ -1,9 +1,16 @@
 "use client";
 
-import { Delete, MoreVert, OpenInNew, Web } from "@material-symbols-svg/react";
+import {
+  Delete,
+  Edit,
+  MoreVert,
+  OpenInNew,
+  Web,
+} from "@material-symbols-svg/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteLpAction } from "@/app/actions/lps";
+import { toast } from "sonner";
+import { deleteLpAction, renameLpSlugAction } from "@/app/actions/lps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { useLpPermissions } from "@/hooks/use-lp-permissions";
 import { useLpWriteAccess } from "@/hooks/use-lp-write-access";
 import { useSession } from "@/hooks/use-session";
@@ -59,9 +67,14 @@ export function LpCard({
   const { canDelete, canEdit } = useLpPermissions(createdByUserId);
   const [excluindo, setExcluindo] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [novoSlug, setNovoSlug] = useState(slug);
+  const [renomeando, setRenomeando] = useState(false);
 
   const statusLabel = status === "published" ? "Publicada" : "Rascunho";
   const responsibleName = createdByLabel || "Usuário";
+  // Prefixo do domínio (sem o slug), ex.: "escritorio.causi.adv.br".
+  const hostPrefix = preview.host.replace(/\/.*$/, "");
   // Título limpo (só o tema, ex.: "Direito Médico") em vez do título de SEO
   // completo ("Direito Médico | Escritório").
   const displayTitle = tema.trim() || preview.title || name;
@@ -100,6 +113,47 @@ export function LpCard({
       );
     } finally {
       setExcluindo(false);
+    }
+  }
+
+  function pedirRename() {
+    if (!guardWrite()) return;
+    if (!canEdit) {
+      showLpMessageError("Você só pode editar landing pages que você criou.");
+      return;
+    }
+    setNovoSlug(slug);
+    setRenameOpen(true);
+  }
+
+  async function confirmarRename() {
+    const alvo = novoSlug.trim();
+    if (!alvo || alvo === slug) {
+      setRenameOpen(false);
+      return;
+    }
+    setRenomeando(true);
+    try {
+      const res = await renameLpSlugAction(slug, alvo);
+      if (!res.ok) {
+        if (isAccessDeniedError(res.error)) {
+          showLpUpgradeToast(session);
+        } else {
+          showLpMessageError(res.error);
+        }
+        return;
+      }
+      setRenameOpen(false);
+      toast.success("Endereço alterado.", {
+        description: `${hostPrefix}/${res.slug}`,
+      });
+      router.refresh();
+    } catch {
+      showLpMessageError(
+        "Não foi possível alterar o endereço. Tente de novo em instantes.",
+      );
+    } finally {
+      setRenomeando(false);
     }
   }
 
@@ -168,13 +222,84 @@ export function LpCard({
         </DialogContent>
       </Dialog>
 
-      <div className="group relative w-full shrink-0 sm:w-[300px]">
+      <Dialog
+        open={renameOpen}
+        onOpenChange={(open) => {
+          if (!renomeando) setRenameOpen(open);
+        }}
+      >
+        <DialogContent showCloseButton={!renomeando}>
+          <DialogHeader>
+            <DialogTitle>Alterar endereço</DialogTitle>
+            <DialogDescription>
+              O endereço faz parte do link público da página.
+              {status === "published"
+                ? " Como ela está publicada, o link antigo deixa de funcionar."
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-3 p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void confirmarRename();
+            }}
+          >
+            <label
+              htmlFor={`slug-${slug}`}
+              className="block text-sm font-medium text-foreground"
+            >
+              Endereço
+            </label>
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 truncate text-sm text-muted-foreground">
+                {hostPrefix}/
+              </span>
+              <Input
+                id={`slug-${slug}`}
+                autoFocus
+                value={novoSlug}
+                disabled={renomeando}
+                onChange={(e) =>
+                  setNovoSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+                  )
+                }
+                placeholder="direito-medico"
+              />
+            </div>
+          </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={renomeando}
+              onClick={() => setRenameOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                renomeando || !novoSlug.trim() || novoSlug.trim() === slug
+              }
+              onClick={() => void confirmarRename()}
+            >
+              {renomeando ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="group relative w-full shrink-0 sm:w-[340px]">
         <button
           type="button"
           className="w-full cursor-pointer rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50"
           onClick={openEditor}
         >
-          <div className="mb-3 flex items-start gap-3">
+          {/* pr-8 reserva a coluna do botão de ⋮ (absolute), para o título não
+              passar por baixo dele. */}
+          <div className="mb-3 flex items-start gap-3 pr-8">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full border-6 border-border bg-primary/10 sm:size-12">
               <Web className="size-5 text-primary" />
             </div>
@@ -258,7 +383,19 @@ export function LpCard({
                   </a>
                 </DropdownMenuItem>
               ) : null}
-              {status === "published" && canDelete ? (
+              {canEdit ? (
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    pedirRename();
+                  }}
+                >
+                  <Edit className="size-4" />
+                  Alterar endereço
+                </DropdownMenuItem>
+              ) : null}
+              {(status === "published" || canEdit) && canDelete ? (
                 <DropdownMenuSeparator />
               ) : null}
               {canDelete ? (
