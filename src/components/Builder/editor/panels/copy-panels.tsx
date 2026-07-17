@@ -19,6 +19,7 @@ import {
   AREAS_CTA_FALLBACK,
   CTA_PRIMARY,
   CTA_SECONDARY,
+  DEFAULT_SOBRE_CONTENT,
   GENERIC_ETAPAS,
 } from "@/lib/landing-pages/focos";
 import { useStableListKeys } from "../use-stable-list-keys";
@@ -273,6 +274,31 @@ export function DorTexts({ form }: { form: LpEditorForm }) {
           }
         />
       </BuilderField>
+    </>
+  );
+}
+
+export function SobreTexts({ form }: { form: LpEditorForm }) {
+  const s = form.copy.sobre ?? DEFAULT_SOBRE_CONTENT;
+  return (
+    <>
+      <EyebrowField
+        value={s.eyebrow}
+        onChange={(v) =>
+          form.editCopy((c) => {
+            c.sobre = { ...(c.sobre ?? DEFAULT_SOBRE_CONTENT), eyebrow: v };
+          })
+        }
+      />
+      <HeadlineFields
+        headline={s.headline}
+        onPart={(p, v) =>
+          form.editCopy((c) => {
+            const base = c.sobre ?? DEFAULT_SOBRE_CONTENT;
+            c.sobre = { ...base, headline: { ...base.headline, [p]: v } };
+          })
+        }
+      />
     </>
   );
 }

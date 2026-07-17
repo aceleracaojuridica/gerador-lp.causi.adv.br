@@ -19,10 +19,17 @@ import type {
   LpSchema,
   Office,
   SeoMeta,
+  SobreContent,
   SolucaoContent,
   Theme,
 } from "./schema";
 import { normalizeSeo } from "./seo";
+
+/** Título padrão do Sobre (usado quando a copy não traz um). */
+export const DEFAULT_SOBRE_CONTENT: SobreContent = {
+  eyebrow: "Sobre o escritório",
+  headline: { pre: "Quem vai cuidar do ", em: "seu caso", post: "" },
+};
 
 /** Etapas genéricas (fallback sóbrio quando a IA/mock não traz etapas). */
 export const GENERIC_ETAPAS: EtapasContent = {
@@ -61,6 +68,7 @@ export type FocoCopy = {
   etapas?: EtapasContent; // opcional: fallback p/ GENERIC_ETAPAS
   faq: FaqContent;
   ctaFinal: CtaFinalContent;
+  sobre?: SobreContent; // opcional: fallback p/ DEFAULT_SOBRE_CONTENT
   seo?: SeoMeta; // gerado pela IA; ausente nos focos mock (não prejudica LP)
 };
 
@@ -803,6 +811,7 @@ export function buildSchema(
     etapas: copy.etapas ?? GENERIC_ETAPAS,
     faq: copy.faq,
     ctaFinal: copy.ctaFinal,
+    sobre: copy.sobre ?? DEFAULT_SOBRE_CONTENT,
   };
 
   return {

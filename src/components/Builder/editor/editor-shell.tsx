@@ -131,6 +131,7 @@ import {
   FaqPerguntas,
   FaqTexts,
   HeroTexts,
+  SobreTexts,
   SolucaoCards,
   SolucaoTexts,
 } from "./panels/copy-panels";
@@ -1579,6 +1580,9 @@ export function Editor({
               onChange: (t) => form.setTone("sobre", t),
             })}
             <SectionImageInput form={form} sectionKey="sobre" framable />
+            <FieldGroup title="Título">
+              <SobreTexts form={form} />
+            </FieldGroup>
             <FieldGroup title="Texto">
               <BuilderField
                 label="Apresentação"

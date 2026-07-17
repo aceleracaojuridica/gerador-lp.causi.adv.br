@@ -234,6 +234,7 @@ export function LandingPreview({
                 office={schema.office}
                 variant={schema.layout.sobre}
                 tone={schema.layout.tones.sobre}
+                content={schema.sobre}
               />,
             )}
           </div>
