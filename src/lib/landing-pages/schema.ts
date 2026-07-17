@@ -253,6 +253,12 @@ export type CtaFinalContent = {
   cta: string;
 };
 
+/** Título (eyebrow + manchete) editável da seção "Sobre o escritório". */
+export type SobreContent = {
+  eyebrow: string;
+  headline: Headline;
+};
+
 export type FaqItem = { q: string; a: string };
 export type FaqContent = {
   eyebrow: string;
@@ -388,6 +394,8 @@ export type LpSchema = {
   etapas: EtapasContent;
   faq: FaqContent;
   ctaFinal: CtaFinalContent;
+  // Título editável do Sobre. Opcional p/ compatibilidade: ausente = padrão.
+  sobre?: SobreContent;
   // Metadados SEO gerados pela IA. Opcional p/ compatibilidade com LPs antigas.
   seo?: SeoMeta;
   // Seções extras criadas pelo usuário (renderizadas antes do FAQ). Opcional

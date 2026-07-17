@@ -1,8 +1,9 @@
+import { Mail } from "@material-symbols-svg/react";
 import { SocialIcon } from "@/components/icons/social-icon";
 import { FooterPrivacyTrigger } from "@/components/Preview/lp-privacy-context";
 import type { Office } from "@/lib/landing-pages/schema";
-import { waLink } from "@/lib/landing-pages/schema";
 import { detectNetwork, SOCIALS_META } from "@/lib/landing-pages/socials";
+import { FooterPhoneLink } from "./footer-phone-link";
 
 export function Footer({
   office,
@@ -134,24 +135,20 @@ export function Footer({
                   >
                     {c.whatsappDisplay ? (
                       <p>
-                        <a
-                          href={waLink(
-                            c.whatsapp,
-                            "Olá, vim pelo site e gostaria de tirar uma dúvida.",
-                          )}
-                          className="transition hover:text-lp-accent-soft"
-                        >
-                          {c.whatsappDisplay}
-                        </a>
+                        <FooterPhoneLink
+                          whatsapp={c.whatsapp}
+                          display={c.whatsappDisplay}
+                        />
                       </p>
                     ) : null}
                     {c.email ? (
                       <p>
                         <a
                           href={`mailto:${c.email}`}
-                          className="break-all transition hover:text-lp-accent-soft"
+                          className="flex w-fit items-center gap-2 transition hover:text-lp-accent-soft"
                         >
-                          {c.email}
+                          <Mail size={16} className="shrink-0" />
+                          <span className="break-all">{c.email}</span>
                         </a>
                       </p>
                     ) : null}

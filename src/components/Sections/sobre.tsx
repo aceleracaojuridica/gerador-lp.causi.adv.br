@@ -1,14 +1,26 @@
 import { CheckCircle } from "@material-symbols-svg/react";
 import { CTAButton } from "@/components/ui/cta-button";
 import { Reveal } from "@/components/ui/reveal";
-import type { Office, SobreVariant, Tone } from "@/lib/landing-pages/schema";
+import { DEFAULT_SOBRE_CONTENT } from "@/lib/landing-pages/focos";
+import type {
+  Headline,
+  Office,
+  SobreContent,
+  SobreVariant,
+  Tone,
+} from "@/lib/landing-pages/schema";
 import { focalPos } from "@/lib/landing-pages/schema";
 import {
   SOBRE_VARIANT_OVERLAY_PORTRAIT,
   SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT,
 } from "@/lib/landing-pages/variants";
 
-type SobreProps = { office: Office; variant: SobreVariant; tone: Tone };
+type SobreProps = {
+  office: Office;
+  variant: SobreVariant;
+  tone: Tone;
+  content?: SobreContent;
+};
 
 /**
  * Seção "Sobre o escritório" — 3 layouts (overlay · duasColunas · fotoLista),
@@ -16,31 +28,43 @@ type SobreProps = { office: Office; variant: SobreVariant; tone: Tone };
  * A imagem vem de office.sectionImages.sobre (ou da foto do advogado solo).
  * Renderiza só se houver texto OU diferenciais.
  */
-export function Sobre({ office, variant, tone }: SobreProps) {
+export function Sobre({ office, variant, tone, content }: SobreProps) {
   const hasText = office.about.trim().length > 0;
   if (!hasText && office.diferenciais.length === 0) return null;
   const dark = tone === "dark";
+  const eyebrow = content?.eyebrow ?? DEFAULT_SOBRE_CONTENT.eyebrow;
+  const headline = content?.headline ?? DEFAULT_SOBRE_CONTENT.headline;
 
+  const shared = { office, hasText, dark, eyebrow, headline };
   if (variant === SOBRE_VARIANT_OVERLAY_PORTRAIT)
-    return <Overlay office={office} hasText={hasText} dark={dark} />;
+    return <Overlay {...shared} />;
   if (variant === SOBRE_VARIANT_TWO_COLUMNS_PORTRAIT)
-    return <DuasColunas office={office} hasText={hasText} dark={dark} />;
-  return <FotoLista office={office} hasText={hasText} dark={dark} />;
+    return <DuasColunas {...shared} />;
+  return <FotoLista {...shared} />;
 }
 
-const EYEBROW = "Sobre o escritório";
+type LayoutProps = {
+  office: Office;
+  hasText: boolean;
+  dark: boolean;
+  eyebrow: string;
+  headline: Headline;
+};
 
-function Title({ dark }: { dark: boolean }) {
+function Title({ dark, headline }: { dark: boolean; headline: Headline }) {
   return (
     <h2 className={`section-title ${dark ? "text-white" : "text-lp-brand"}`}>
-      Quem vai cuidar do{" "}
-      <span
-        style={{
-          color: dark ? "var(--lp-accent-soft)" : "var(--lp-accent)",
-        }}
-      >
-        seu caso
-      </span>
+      {headline.pre}
+      {headline.em ? (
+        <span
+          style={{
+            color: dark ? "var(--lp-accent-soft)" : "var(--lp-accent)",
+          }}
+        >
+          {headline.em}
+        </span>
+      ) : null}
+      {headline.post}
     </h2>
   );
 }
@@ -108,15 +132,7 @@ function imgStyle(
 }
 
 /* ===== Tema 1 — Hero com Overlay (foto flutuante) ===== */
-function Overlay({
-  office,
-  hasText,
-  dark,
-}: {
-  office: Office;
-  hasText: boolean;
-  dark: boolean;
-}) {
+function Overlay({ office, hasText, dark, eyebrow, headline }: LayoutProps) {
   const img = sobreImg(office);
   const pos = sobrePos(office);
   return (
@@ -128,9 +144,9 @@ function Overlay({
           <p
             className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
-            {EYEBROW}
+            {eyebrow}
           </p>
-          <Title dark={dark} />
+          <Title dark={dark} headline={headline} />
           {hasText ? <AboutParas about={office.about} dark={dark} /> : null}
           <div className="mt-8">
             <CTAButton variant={dark ? "primary" : "accent"}>
@@ -157,11 +173,9 @@ function DuasColunas({
   office,
   hasText,
   dark,
-}: {
-  office: Office;
-  hasText: boolean;
-  dark: boolean;
-}) {
+  eyebrow,
+  headline,
+}: LayoutProps) {
   const img = sobreImg(office);
   const pos = sobrePos(office);
   const diferenciais = withStableTextKeys(office.diferenciais);
@@ -178,9 +192,9 @@ function DuasColunas({
           <p
             className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
           >
-            {EYEBROW}
+            {eyebrow}
           </p>
-          <Title dark={dark} />
+          <Title dark={dark} headline={headline} />
           {hasText ? <AboutParas about={office.about} dark={dark} /> : null}
           {diferenciais.length > 0 ? (
             <ul className="mt-6 space-y-2.5">
@@ -211,15 +225,7 @@ function DuasColunas({
 }
 
 /* ===== Tema 3 — Foto + Lista de Diferenciais ===== */
-function FotoLista({
-  office,
-  hasText,
-  dark,
-}: {
-  office: Office;
-  hasText: boolean;
-  dark: boolean;
-}) {
+function FotoLista({ office, hasText, dark, eyebrow, headline }: LayoutProps) {
   const img = sobreImg(office);
   const pos = sobrePos(office);
   const difs = withStableTextKeys(office.diferenciais);
@@ -242,9 +248,9 @@ function FotoLista({
             <p
               className={`eyebrow mb-3 ${dark ? "text-lp-accent-soft" : "text-lp-accent"}`}
             >
-              {EYEBROW}
+              {eyebrow}
             </p>
-            <Title dark={dark} />
+            <Title dark={dark} headline={headline} />
             {hasText ? <AboutParas about={office.about} dark={dark} /> : null}
             {difs.length > 0 ? (
               <ul className="mt-7 space-y-3">

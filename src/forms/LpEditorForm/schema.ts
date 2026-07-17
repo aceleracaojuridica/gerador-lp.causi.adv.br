@@ -126,6 +126,12 @@ const focoCopySchema = z.object({
     sub: z.string(),
     cta: z.string(),
   }),
+  sobre: z
+    .object({
+      eyebrow: z.string(),
+      headline: headlineSchema,
+    })
+    .optional(),
   seo: seoMetaSchema.optional(),
 });
 
